@@ -1,0 +1,525 @@
+import 'dart:math';
+
+import 'classified_puzzle.dart';
+import 'difficulty.dart';
+import 'solver.dart';
+import 'strategy.dart';
+import 'sudoku.dart';
+
+// Helper class for generator beam state (used in Generator.generate)
+class _State {
+  final List<int> grid;
+  final int dist;
+  const _State(this.grid, this.dist);
+}
+
+enum Symmetry { none, rot180, diag, central }
+
+class PrunePolicy {
+  final Symmetry symmetry;
+  final bool enforceMinimality;
+  final bool ratingGuided;
+  final int backboneSteps; // require first K steps to be gentle
+  final int minPerBox;
+  final int minPerRow;
+  final int minPerCol;
+  final int minPerDigit;
+  const PrunePolicy({
+    this.symmetry = Symmetry.rot180,
+    this.enforceMinimality = true,
+    this.ratingGuided = true,
+    this.backboneSteps = 5,
+    this.minPerBox = 0,
+    this.minPerRow = 0,
+    this.minPerCol = 0,
+    this.minPerDigit = 0,
+  });
+}
+
+class Generator {
+  final Random rng;
+  final Solver solver;
+  final PrunePolicy policy;
+  Generator({int? seed, PrunePolicy? policy})
+    : rng = Random(seed),
+      solver = Solver(),
+      policy = policy ?? const PrunePolicy();
+
+  Difficulty? _difficultyFromString(String t) {
+    switch (t) {
+      case 'trivial':
+        return Difficulty.trivial;
+      case 'easy':
+        return Difficulty.easy;
+      case 'medium':
+        return Difficulty.medium;
+      case 'hard':
+        return Difficulty.hard;
+      case 'impossible':
+        return Difficulty.impossible;
+      default:
+        return null; // treat 'any' or unknown as no specific target
+    }
+  }
+
+  // Create a complete solved board by randomized backtracking
+  List<int> _randomSolvedGrid() {
+    final s = Sudoku(List.filled(81, 0));
+    bool fillSmart() {
+      // Choose cell with fewest valid options (MRV)
+      int best = -1, bestCount = 10;
+      for (var i = 0; i < 81; i++) {
+        if (s.cells[i] == 0) {
+          int c = 0;
+          for (var d = 1; d <= 9; d++) {
+            if (s.isValidPlacement(i, d)) c++;
+          }
+          if (c < bestCount) {
+            bestCount = c;
+            best = i;
+          }
+        }
+      }
+      if (best == -1) return true;
+      final ds = List<int>.generate(9, (i) => i + 1)..shuffle(rng);
+      for (final d in ds) {
+        if (s.isValidPlacement(best, d)) {
+          s.cells[best] = d;
+          if (fillSmart()) return true;
+          s.cells[best] = 0;
+        }
+      }
+      return false;
+    }
+
+    fillSmart();
+    return s.cells;
+  }
+
+  int _distanceToTarget(String target, List<int> grid) {
+    // compute rating with broad logical flags enabled
+    final r = solver.rateLogical(
+      Sudoku(List<int>.from(grid)),
+      // Allow everything so we can measure hardest and signature uses
+      allowHiddenSingles: true,
+      allowLocked: true,
+      allowPairs: true,
+      allowTriples: true,
+      allowQuads: true,
+      allowHiddenSubsets: true,
+      allowXWing: true,
+      allowXYWing: true,
+      allowColoring: true,
+      allowSwordfish: true,
+      allowSkyscraper: true,
+      allowTwoStringKite: true,
+      allowTurbotFish: true,
+      allowXYZWing: true,
+      allowWWing: true,
+      allowUR: true,
+      allowBUG: true,
+      allowRemotePairs: true,
+      allowXYChain: true,
+      allowALS: true,
+      allowALSXYWing: true,
+      allowAIC: true,
+    );
+
+    final hardest = r.hardestIdx;
+    int idxOf(StrategyUsed s) => strategyDifficultyIndex(s);
+
+    // Helper: count signature uses
+    final sigX =
+        (r.counts[StrategyUsed.xWing] ?? 0) +
+        (r.counts[StrategyUsed.xyWing] ?? 0);
+
+    // Heavily penalize states that are "trivialish" for non-trivial targets
+    int nonSingles = 0;
+    r.counts.forEach((k, v) {
+      if (k != StrategyUsed.nakedSingle && k != StrategyUsed.hiddenSingle) {
+        nonSingles += v;
+      }
+    });
+    final bool trivialish = nonSingles == 0; // no steps beyond singles
+
+    // penalties
+    const big = 1000; // strong veto
+    var dist = 0;
+    switch (target) {
+      case 'trivial':
+        // Anything beyond singles is bad
+        final cap = idxOf(StrategyUsed.hiddenSingle);
+        if (hardest > cap) dist += big + (hardest - cap);
+        // Prefer fewer steps overall (optional): penalize count of non-singles
+        for (final e in r.counts.entries) {
+          if (e.key != StrategyUsed.nakedSingle &&
+              e.key != StrategyUsed.hiddenSingle)
+            dist += e.value;
+        }
+        break;
+      case 'easy':
+        // Allow up to hiddenQuad (and locked), forbid fish/wings/advanced
+        final cap = idxOf(StrategyUsed.hiddenQuad);
+        if (hardest > cap) dist += big + (hardest - cap);
+        if (trivialish) dist += 200; // avoid singles-only when targeting Easy
+        // Encourage presence of at least one pair/triple/quad to avoid drifting into trivial
+        final basics =
+            (r.counts[StrategyUsed.nakedPair] ?? 0) +
+            (r.counts[StrategyUsed.hiddenPair] ?? 0) +
+            (r.counts[StrategyUsed.nakedTriple] ?? 0) +
+            (r.counts[StrategyUsed.hiddenTriple] ?? 0) +
+            (r.counts[StrategyUsed.nakedQuad] ?? 0) +
+            (r.counts[StrategyUsed.hiddenQuad] ?? 0) +
+            (r.counts[StrategyUsed.pointing] ?? 0) +
+            (r.counts[StrategyUsed.claiming] ?? 0);
+        if (basics == 0) dist += 5; // gentle nudge
+        break;
+      case 'medium':
+        // Require at least one X/XY-Wing, forbid harder than those
+        final cap = idxOf(StrategyUsed.xyWing);
+        if (hardest > cap) dist += big + (hardest - cap);
+        if (sigX == 0) dist += 50; // encourage signature to appear
+        if (trivialish) dist += 500; // strongly avoid singles-only
+        break;
+      case 'hard':
+        // Require at least one advanced (above xyWing), forbid guessing later (handled elsewhere)
+        final cap = idxOf(StrategyUsed.xyWing);
+        if (hardest <= cap) dist += 50; // too easy if nothing beyond xyWing
+        if (trivialish) dist += 800; // absolutely avoid singles-only
+        break;
+      case 'any':
+        dist = 0;
+        break;
+      default:
+        dist = 0;
+    }
+    return dist;
+  }
+
+  int distanceToTarget(String target, List<int> grid) =>
+      _distanceToTarget(target, grid);
+
+  ClassifiedPuzzle generate({
+    String target = 'any',
+    int beamWidth = 1,
+    int expansions = 8,
+    int timeoutMs = 20000,
+    int maxRounds = 400,
+  }) {
+    final full = _randomSolvedGrid();
+    final _watch = Stopwatch()..start();
+
+    bool isUnique(List<int> grid) {
+      final s = Sudoku(List<int>.from(grid));
+      return solver.countSolutions(s) == 1;
+    }
+
+    List<int> symGroup(int i) {
+      switch (policy.symmetry) {
+        case Symmetry.none:
+          return [i];
+        case Symmetry.rot180:
+          return (i == 80 - i) ? [i] : [i, 80 - i];
+        case Symmetry.diag:
+          final r = i ~/ 9, c = i % 9;
+          final j = c * 9 + r; // transpose
+          return (i == j) ? [i] : [i, j];
+        case Symmetry.central:
+          final r = i ~/ 9, c = i % 9;
+          final j = (8 - r) * 9 + (8 - c);
+          final k = r * 9 + (8 - c);
+          final l = (8 - r) * 9 + c;
+          final set = {i, j, k, l}.toList();
+          return set;
+      }
+    }
+
+    bool violatesQuotas(List<int> grid) {
+      final perRow = List.filled(9, 0);
+      final perCol = List.filled(9, 0);
+      final perBox = List.filled(9, 0);
+      final perDigit = List.filled(10, 0);
+      for (var r = 0; r < 9; r++) {
+        for (var c = 0; c < 9; c++) {
+          final v = grid[r * 9 + c];
+          if (v != 0) {
+            perRow[r]++;
+            perCol[c]++;
+            perBox[(r ~/ 3) * 3 + (c ~/ 3)]++;
+            perDigit[v]++;
+          }
+        }
+      }
+      for (var i = 0; i < 9; i++) {
+        if (perRow[i] < policy.minPerRow) return true;
+        if (perCol[i] < policy.minPerCol) return true;
+        if (perBox[i] < policy.minPerBox) return true;
+      }
+      for (var d = 1; d <= 9; d++)
+        if (perDigit[d] < policy.minPerDigit) return true;
+      return false;
+    }
+
+    // (Local _State class removed; now using top-level _State)
+
+    // Helper: compare two grids for equality
+    bool _gridsEqual(List<int> a, List<int> b) {
+      if (identical(a, b)) return true;
+      if (a.length != b.length) return false;
+      for (var i = 0; i < a.length; i++) {
+        if (a[i] != b[i]) return false;
+      }
+      return true;
+    }
+
+    // start from the full solution and dig
+    List<_State> beam = [
+      _State(List<int>.from(full), _distanceToTarget(target, full)),
+    ];
+
+    bool withinBackbone(List<int> grid) {
+      if (policy.backboneSteps <= 0) return true;
+      final s = Sudoku(List<int>.from(grid));
+      final res = solver.solveLogical(
+        s,
+        allowHiddenSingles: true,
+        allowLocked: true,
+        allowPairs: true,
+        allowTriples: true,
+        allowQuads: true,
+        allowHiddenSubsets: true,
+        allowXWing: true,
+        allowXYWing: true,
+      );
+      final hardest = res.hardestInPrefix(policy.backboneSteps);
+      StrategyUsed cap;
+      switch (target) {
+        case 'easy':
+          cap = StrategyUsed.hiddenQuad; // ≤ quads
+          break;
+        case 'medium':
+          cap = StrategyUsed.xyWing; // ≤ x/xy-wing
+          break;
+        case 'hard':
+          cap = StrategyUsed.xyWing; // opening still gentle
+          break;
+        default:
+          cap = StrategyUsed.hiddenQuad;
+      }
+      return strategyDifficultyIndex(hardest) <= strategyDifficultyIndex(cap);
+    }
+
+    // helper to try removing a symmetric group from a grid
+    List<int>? tryRemove(List<int> grid, int cell) {
+      if (grid[cell] == 0) return null;
+      final group = symGroup(cell).where((g) => grid[g] != 0).toList();
+      if (group.isEmpty) return null;
+      final next = List<int>.from(grid);
+      for (final g in group) next[g] = 0;
+      if (!isUnique(next)) return null;
+      if (!withinBackbone(next)) return null;
+      if (violatesQuotas(next)) return null;
+      // Signature forcing via distance
+      final nd = _distanceToTarget(target, next);
+      // Reject if it obviously pushes outside target by a large amount
+      if (nd > 2000) return null;
+      return next;
+    }
+
+    int stagnant = 0;
+    List<int>? lastBestGrid;
+    int lastBestDist = 1 << 30;
+    int digSteps = 0;
+    while (true) {
+      final children = <_State>[];
+      for (final st in beam) {
+        // choose a few random candidates to try
+        for (var e = 0; e < expansions; e++) {
+          final i = rng.nextInt(81);
+          final next = tryRemove(st.grid, i);
+          if (next == null) continue;
+          final dist = _distanceToTarget(target, next);
+          children.add(_State(next, dist));
+        }
+      }
+      if (children.isEmpty) break;
+      // keep best beamWidth
+      children.sort((a, b) => a.dist.compareTo(b.dist));
+      beam = children.take(max(1, beamWidth)).toList();
+      digSteps++;
+
+      // Timeout / max-rounds guard
+      if (_watch.elapsedMilliseconds > timeoutMs || digSteps >= maxRounds) {
+        break;
+      }
+
+      // Stagnation detection: if best grid and dist do not change for many rounds, stop
+      final best = beam.first;
+      if (lastBestGrid != null &&
+          best.dist == lastBestDist &&
+          _gridsEqual(best.grid, lastBestGrid!)) {
+        stagnant++;
+      } else {
+        stagnant = 0;
+        lastBestDist = best.dist;
+        lastBestGrid = List<int>.from(best.grid);
+      }
+      if (stagnant >= 30) {
+        break;
+      }
+
+      // check best for fit
+      final bestClass = classify(best.grid);
+      final diff = bestClass.$1;
+      if (target == 'any'
+          ? diff != Difficulty.impossible
+          : diff == _difficultyFromString(target)) {
+        final sol = Sudoku(List<int>.from(best.grid));
+        solver.solveBacktracking(sol);
+        return ClassifiedPuzzle(
+          best.grid,
+          sol.cells,
+          diff,
+          'Found by beam (dist=${best.dist}, steps=$digSteps)',
+        );
+      }
+      // stop if puzzle is too empty
+      final clues = best.grid.where((v) => v != 0).length;
+      if (clues <= 22) break; // guardrail
+    }
+
+    if (beam.isNotEmpty) {
+      final best = beam.first;
+      final bestClass = classify(best.grid);
+      final diff = bestClass.$1;
+      // If we timed out or stagnated, return the best-so-far (if it has a valid solution)
+      final sol = Sudoku(List<int>.from(best.grid));
+      if (solver.solveBacktracking(sol)) {
+        return ClassifiedPuzzle(
+          best.grid,
+          sol.cells,
+          diff,
+          'Beam terminated (timeout/stagnation/maxRounds); best-so-far dist=${best.dist}, steps=$digSteps',
+        );
+      }
+    }
+
+    final greedy = List<int>.from(full);
+    final candidates = [for (var i = 0; i < 81; i++) i]..shuffle(rng);
+    for (final i in candidates) {
+      if (greedy[i] == 0) continue;
+      final group = symGroup(i).where((g) => greedy[g] != 0).toList();
+      if (group.isEmpty) continue;
+      final saved = [for (final g in group) greedy[g]];
+      for (final g in group) greedy[g] = 0;
+      if (!isUnique(greedy) ||
+          violatesQuotas(greedy) ||
+          !withinBackbone(greedy)) {
+        for (var k = 0; k < group.length; k++) greedy[group[k]] = saved[k];
+      }
+    }
+    final classification = classify(greedy);
+    final sol = Sudoku(List<int>.from(greedy));
+    if (!solver.solveBacktracking(sol)) {
+      return ClassifiedPuzzle(
+        greedy,
+        List<int>.from(full),
+        Difficulty.impossible,
+        'No solution exists (unsolvable by backtracking)',
+      );
+    }
+    return ClassifiedPuzzle(
+      greedy,
+      sol.cells,
+      classification.$1,
+      classification.$2,
+    );
+  }
+
+  (Difficulty, String) classify(List<int> grid) {
+    // Trivial: singles only (naked + hidden)
+    final t = Sudoku(List<int>.from(grid));
+    final tr = solver.solveLogical(
+      t,
+      allowHiddenSingles: true,
+      allowLocked: false,
+      allowPairs: false,
+      allowTriples: false,
+      allowQuads: false,
+      allowHiddenSubsets: false,
+      allowXWing: false,
+      allowXYWing: false,
+    );
+    if (tr.solved) return (Difficulty.trivial, 'Singles only');
+
+    // Easy: Locked + Naked/Hidden Pairs/Triples/Quads; no fish
+    final e = Sudoku(List<int>.from(grid));
+    final er = solver.solveLogical(
+      e,
+      allowHiddenSingles: true,
+      allowLocked: true,
+      allowPairs: true,
+      allowTriples: true,
+      allowQuads: true,
+      allowHiddenSubsets: true,
+      allowXWing: false,
+      allowXYWing: false,
+    );
+    if (er.solved)
+      return (Difficulty.easy, 'Locked + Naked/Hidden Pairs/Triples/Quads');
+
+    // Medium: add X-Wing / XY-Wing
+    final m = Sudoku(List<int>.from(grid));
+    final mr = solver.solveLogical(
+      m,
+      allowHiddenSingles: true,
+      allowLocked: true,
+      allowPairs: true,
+      allowTriples: true,
+      allowQuads: true,
+      allowHiddenSubsets: true,
+      allowXWing: true,
+      allowXYWing: true,
+    );
+    if (mr.solved) return (Difficulty.medium, 'X-Wing / XY-Wing');
+
+    // Hard: enable advanced human techniques (no guessing)
+    final h = Sudoku(List<int>.from(grid));
+    final hr = solver.solveLogical(
+      h,
+      allowHiddenSingles: true,
+      allowLocked: true,
+      allowPairs: true,
+      allowTriples: true,
+      allowQuads: true,
+      allowHiddenSubsets: true,
+      allowXWing: true,
+      allowXYWing: true,
+      allowColoring: true,
+      allowSwordfish: true,
+      allowSkyscraper: true,
+      allowTwoStringKite: true,
+      allowTurbotFish: true,
+      allowXYZWing: true,
+      allowWWing: true,
+      allowUR: true,
+      allowBUG: true,
+      allowRemotePairs: true,
+      allowXYChain: true,
+      allowALS: true,
+      allowALSXYWing: true,
+      allowAIC: true,
+    );
+    if (hr.solved) return (Difficulty.hard, 'Advanced human techniques');
+
+    // If it needs guessing, treat as Impossible (invalid puzzle)
+    final bt = Sudoku(List<int>.from(grid));
+    final solvable = solver.solveBacktracking(bt);
+    if (solvable)
+      return (
+        Difficulty.impossible,
+        'Requires guessing/backtracking — invalid',
+      );
+    return (Difficulty.impossible, 'No solution exists');
+  }
+}

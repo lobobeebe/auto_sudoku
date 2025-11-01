@@ -1,0 +1,135 @@
+[
+    {
+        "difficulty": "Hard",
+        "puzzle": "300080600609000000145607000000360040703000908050079000000508374000000201004020006",
+        "solution": "327984615689251437145637829891365742763412958452879163216598374538746291974123586",
+        "techniques": [
+            "Hidden Single",
+            "Locked Candidates (Pointing)",
+            "Naked Pair",
+            "Naked Single",
+            "Two-String Kite",
+            "W-Wing",
+            "XY-Wing"
+        ]
+    },
+    {
+        "difficulty": "Hard",
+        "puzzle": "300040000090107005006000390031000800200000009008000740053000900100904030000050008",
+        "solution": "315649287892137465746528391931475826274386159568291743653812974187964532429753618",
+        "techniques": [
+            "Hidden Single",
+            "Locked Candidates (Claiming)",
+            "Locked Candidates (Pointing)",
+            "Naked Pair",
+            "Naked Single",
+            "Simple Coloring",
+            "XY-Wing"
+        ]
+    },
+    {
+        "difficulty": "Hard",
+        "puzzle": "051030000080000000002000740306910050810372069040056103063000200000000010000060980",
+        "solution": "751438692489627531632591748326914857815372469947856123563189274298745316174263985",
+        "techniques": [
+            "Hidden Single",
+            "Locked Candidates (Pointing)",
+            "Naked Pair",
+            "Naked Single",
+            "W-Wing"
+        ]
+    },
+    {
+        "difficulty": "Hard",
+        "puzzle": "000402000802670000574800023100726000030584010000931008340007582000065104000208000",
+        "solution": "693452871812673945574819623185726439239584716467931258346197582728365194951248367",
+        "techniques": [
+            "Hidden Single",
+            "Locked Candidates (Pointing)",
+            "Naked Pair",
+            "Naked Quad",
+            "Naked Single",
+            "Naked Triple",
+            "W-Wing"
+        ]
+    },
+    {
+        "difficulty": "Hard",
+        "puzzle": "056978301003200084000040000000700009709030108500001000000010000910007400308459710",
+        "solution": "456978321173265984892143657631782549729534168584691273247316895915827436368459712",
+        "techniques": [
+            "Hidden Single",
+            "Locked Candidates (Pointing)",
+            "Naked Pair",
+            "Naked Single",
+            "Simple Coloring",
+            "XY-Wing"
+        ]
+    },
+    {
+        "difficulty": "Hard",
+        "puzzle": "010000000045030200390400507700049000003050100000310009209005041006020730000000020",
+        "solution": "617592483845731296392486517781649352963258174524317869239875641156924738478163925",
+        "techniques": [
+            "Hidden Single",
+            "Locked Candidates (Claiming)",
+            "Locked Candidates (Pointing)",
+            "Naked Single",
+            "Simple Coloring"
+        ]
+    },
+    {
+        "difficulty": "Hard",
+        "puzzle": "000008170900046080000050000350000600140060038006000051000070000090210007013900000",
+        "solution": "564398172972146385831752469357821694149567238286439751428675913695213847713984526",
+        "techniques": [
+            "Hidden Single",
+            "Locked Candidates (Claiming)",
+            "Locked Candidates (Pointing)",
+            "Naked Pair",
+            "Naked Single",
+            "Simple Coloring",
+            "Skyscraper"
+        ]
+    },
+    {
+        "difficulty": "Hard",
+        "puzzle": "060080400900064027003000080000502079000000000120908000090000300830640002004020050",
+        "solution": "261785493958364127473291685346512879589476231127938564692157348835649712714823956",
+        "techniques": [
+            "Hidden Single",
+            "Locked Candidates (Pointing)",
+            "Naked Single",
+            "Simple Coloring",
+            "Skyscraper"
+        ]
+    },
+    {
+        "difficulty": "Hard",
+        "puzzle": "703600080201000504040000000000030256002506700675090000000000070907000802010007903",
+        "solution": "753624189291378564846915327489731256132546798675892431324189675967453812518267943",
+        "techniques": [
+            "Hidden Single",
+            "Locked Candidates (Claiming)",
+            "Locked Candidates (Pointing)",
+            "Naked Single",
+            "Skyscraper",
+            "XY-Wing"
+        ]
+    },
+    {
+        "difficulty": "Hard",
+        "puzzle": "080050070000608500070204090105000400000000000004000107050302080003105000010090060",
+        "solution": "386951274249678513571234896165729438728413659934586127657342981893165742412897365",
+        "techniques": [
+            "Hidden Single",
+            "Locked Candidates (Claiming)",
+            "Locked Candidates (Pointing)",
+            "Naked Pair",
+            "Naked Quad",
+            "Naked Single",
+            "Simple Coloring",
+            "W-Wing"
+        ]
+    }
+]
