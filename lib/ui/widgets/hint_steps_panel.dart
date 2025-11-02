@@ -85,9 +85,11 @@ class _HintStepsPanelState extends State<HintStepsPanel> {
 
   List<_HintPageData> _buildPages() {
     final hint = widget.hint;
-    final pages = <_HintPageData>[
-      _HintPageData(title: solver.techniqueLabel(hint.technique), lines: []),
-    ];
+    final technique = solver.techniqueLabel(hint.technique);
+    final title = hint.unit == null
+        ? technique
+        : '$technique (${_unitLabel(hint.unit!)})';
+    final pages = <_HintPageData>[_HintPageData(title: title, lines: [])];
 
     if (hint.placements.isNotEmpty) {
       final lines = hint.placements.map((entry) {
@@ -126,6 +128,17 @@ class _HintStepsPanelState extends State<HintStepsPanel> {
     final row = index ~/ 9 + 1;
     final col = index % 9 + 1;
     return 'r$row c$col';
+  }
+
+  String _unitLabel(solver.HintUnit unit) {
+    switch (unit) {
+      case solver.HintUnit.row:
+        return 'Row';
+      case solver.HintUnit.column:
+        return 'Column';
+      case solver.HintUnit.box:
+        return 'Box';
+    }
   }
 }
 

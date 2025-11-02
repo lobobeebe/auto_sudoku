@@ -166,7 +166,7 @@ class Solver {
   }
 
   Hint? _findHiddenSingleHint(Sudoku s, CandidateMap cand) {
-    Hint? checkUnit(Iterable<int> unit) {
+    Hint? checkUnit(Iterable<int> unit, HintUnit unitType) {
       final spots = List.generate(10, (_) => <int>[]);
       for (final cell in unit) {
         if (s.cells[cell] != 0) continue;
@@ -183,6 +183,7 @@ class Solver {
             placements: [(cell, digit)],
             cells: [cell],
             digits: [digit],
+            unit: unitType,
           );
         }
       }
@@ -190,15 +191,15 @@ class Solver {
     }
 
     for (var r = 0; r < 9; r++) {
-      final hint = checkUnit(s.rowIndices(r));
+      final hint = checkUnit(s.rowIndices(r), HintUnit.row);
       if (hint != null) return hint;
     }
     for (var c = 0; c < 9; c++) {
-      final hint = checkUnit(s.colIndices(c));
+      final hint = checkUnit(s.colIndices(c), HintUnit.column);
       if (hint != null) return hint;
     }
     for (var b = 0; b < 9; b++) {
-      final hint = checkUnit(s.boxIndices(b));
+      final hint = checkUnit(s.boxIndices(b), HintUnit.box);
       if (hint != null) return hint;
     }
     return null;
@@ -231,6 +232,7 @@ class Solver {
               eliminations: elim,
               cells: inBox,
               digits: [d],
+              unit: HintUnit.row,
             );
           }
         }
@@ -251,6 +253,7 @@ class Solver {
               eliminations: elim,
               cells: inBox,
               digits: [d],
+              unit: HintUnit.column,
             );
           }
         }
@@ -280,6 +283,7 @@ class Solver {
               eliminations: elim,
               cells: rowCells,
               digits: [d],
+              unit: HintUnit.row,
             );
           }
         }
@@ -307,6 +311,7 @@ class Solver {
               eliminations: elim,
               cells: colCells,
               digits: [d],
+              unit: HintUnit.column,
             );
           }
         }
@@ -323,7 +328,7 @@ class Solver {
     required bool allowHidden,
   }) {
     // Try Naked subset in each unit
-    Hint? processUnitNaked(Iterable<int> unit) {
+    Hint? processUnitNaked(Iterable<int> unit, HintUnit unitType) {
       final empties = unit.where((i) => s.cells[i] == 0).toList();
       for (var a = 0; a < empties.length; a++) {
         for (var b = a + 1; b < empties.length; b++) {
@@ -345,6 +350,7 @@ class Solver {
                   eliminations: others,
                   cells: [empties[a], empties[b]],
                   digits: set.toList(),
+                  unit: unitType,
                 );
               }
             }
@@ -374,6 +380,7 @@ class Solver {
                     eliminations: others,
                     cells: [empties[a], empties[b], empties[c]],
                     digits: set.toList(),
+                    unit: unitType,
                   );
                 }
               }
@@ -385,7 +392,7 @@ class Solver {
     }
 
     // Try Hidden subset in each unit
-    Hint? processUnitHidden(Iterable<int> unit) {
+    Hint? processUnitHidden(Iterable<int> unit, HintUnit unitType) {
       final empties = unit.where((i) => s.cells[i] == 0).toList();
       final locs = List.generate(10, (_) => <int>[]);
       for (final i in empties) {
@@ -417,6 +424,7 @@ class Solver {
                 eliminations: toTrim,
                 cells: pos,
                 digits: union.toList(),
+                unit: unitType,
               );
             }
           }
@@ -427,20 +435,26 @@ class Solver {
 
     for (var r = 0; r < 9; r++) {
       final h =
-          processUnitNaked(s.rowIndices(r)) ??
-          (allowHidden ? processUnitHidden(s.rowIndices(r)) : null);
+          processUnitNaked(s.rowIndices(r), HintUnit.row) ??
+          (allowHidden
+              ? processUnitHidden(s.rowIndices(r), HintUnit.row)
+              : null);
       if (h != null) return h;
     }
     for (var c = 0; c < 9; c++) {
       final h =
-          processUnitNaked(s.colIndices(c)) ??
-          (allowHidden ? processUnitHidden(s.colIndices(c)) : null);
+          processUnitNaked(s.colIndices(c), HintUnit.column) ??
+          (allowHidden
+              ? processUnitHidden(s.colIndices(c), HintUnit.column)
+              : null);
       if (h != null) return h;
     }
     for (var b = 0; b < 9; b++) {
       final h =
-          processUnitNaked(s.boxIndices(b)) ??
-          (allowHidden ? processUnitHidden(s.boxIndices(b)) : null);
+          processUnitNaked(s.boxIndices(b), HintUnit.box) ??
+          (allowHidden
+              ? processUnitHidden(s.boxIndices(b), HintUnit.box)
+              : null);
       if (h != null) return h;
     }
     return null;
