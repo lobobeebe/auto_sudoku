@@ -43,9 +43,6 @@ class SudokuBoardState extends ChangeNotifier {
   bool _isLoading = true;
   String? _error;
   solver.Hint? _hint;
-  Map<int, int> _hintPlacements = const {};
-  Map<int, Set<int>> _hintEliminations = const {};
-  Set<int> _hintCells = const {};
   GameStatus _status = GameStatus.playing;
   PuzzleRepository repo;
 
@@ -88,16 +85,27 @@ class SudokuBoardState extends ChangeNotifier {
 
   void setHint(solver.Hint? hint) {
     _hint = hint;
-    _updateHintCaches(hint);
     _emitChange();
   }
 
-  int? hintPlacementDigitAt(int index) => _hintPlacements[index];
-
-  Set<int> hintEliminationDigitsAt(int index) =>
-      _hintEliminations[index] ?? const <int>{};
-
-  bool isHintClueCell(int index) => _hintCells.contains(index);
+  bool applyCurrentHint() {
+    final currentHint = _hint;
+    if (currentHint == null || _isAnimatingSingles) {
+      return false;
+    }
+    final snapshot = _makeSnapshot();
+    final mutated = _applyHintToBoard(
+      currentHint,
+      triggerAutomation: true,
+      emitChange: true,
+    );
+    if (!mutated) {
+      return false;
+    }
+    _history.add(snapshot);
+    _hint = null;
+    return true;
+  }
 
   bool canPlaceDigit(int digit) {
     final idx = _selectedIndex;
@@ -171,7 +179,7 @@ class SudokuBoardState extends ChangeNotifier {
   }
 
   void _initFromPuzzle(SudokuPuzzle puzzle) {
-    _clearHint();
+    clearHint();
     _currentPuzzle = puzzle;
     _selectedIndex = null;
     _noteMode = false;
@@ -245,7 +253,7 @@ class SudokuBoardState extends ChangeNotifier {
       if (!wasChanged) {
         return false;
       }
-      _clearHint();
+      clearHint();
       _pushSnapshot();
       _cells[idx] = cell.withNotes(updatedNotes);
       _status = GameStatus.playing;
@@ -254,7 +262,7 @@ class SudokuBoardState extends ChangeNotifier {
       return true;
     }
 
-    _clearHint();
+    clearHint();
     _pushSnapshot();
     if (cell.value == digit) {
       _cells[idx] = SudokuCell(
@@ -347,7 +355,7 @@ class SudokuBoardState extends ChangeNotifier {
       return;
     }
 
-    _clearHint();
+    clearHint();
     _isAnimatingSingles = true;
     _emitChange();
 
@@ -620,7 +628,7 @@ class SudokuBoardState extends ChangeNotifier {
     if (_isAnimatingSingles || _history.isEmpty) {
       return false;
     }
-    _clearHint();
+    clearHint();
     final snapshot = _history.removeLast();
     for (var i = 0; i < _cells.length; i++) {
       _cells[i] = snapshot.cells[i];
@@ -634,21 +642,7 @@ class SudokuBoardState extends ChangeNotifier {
   }
 
   void _pushSnapshot() {
-    final cellsCopy = List<SudokuCell>.generate(_cells.length, (index) {
-      final cell = _cells[index];
-      return SudokuCell(
-        value: cell.value,
-        notes: cell.notes,
-        isGiven: cell.isGiven,
-      );
-    });
-    _history.add(
-      _BoardSnapshot(
-        cells: cellsCopy,
-        selectedIndex: _selectedIndex,
-        status: _status,
-      ),
-    );
+    _history.add(_makeSnapshot());
   }
 
   void _evaluateCompletion() {
@@ -671,44 +665,60 @@ class SudokuBoardState extends ChangeNotifier {
   }
 
   void clearHint() {
-    _clearHint(notify: true);
-  }
-
-  void _updateHintCaches(solver.Hint? hint) {
-    if (hint == null) {
-      _hintPlacements = const {};
-      _hintEliminations = const {};
-      _hintCells = const {};
-      return;
-    }
-    final placements = <int, int>{};
-    for (final (index, digit) in hint.placements) {
-      placements[index] = digit;
-    }
-    final eliminations = <int, Set<int>>{};
-    for (final (index, digit) in hint.eliminations) {
-      eliminations.putIfAbsent(index, () => <int>{}).add(digit);
-    }
-    final frozenEliminations = eliminations.map(
-      (key, value) => MapEntry(key, Set<int>.unmodifiable(value)),
-    );
-    _hintPlacements = Map<int, int>.unmodifiable(placements);
-    _hintEliminations = Map<int, Set<int>>.unmodifiable(frozenEliminations);
-    _hintCells = Set<int>.unmodifiable(hint.cells);
-  }
-
-  void _clearHint({bool notify = false}) {
-    if (_hint == null &&
-        _hintPlacements.isEmpty &&
-        _hintEliminations.isEmpty &&
-        _hintCells.isEmpty) {
-      return;
-    }
     _hint = null;
-    _updateHintCaches(null);
-    if (notify) {
-      _emitChange();
+    _emitChange();
+  }
+
+  _BoardSnapshot _makeSnapshot() {
+    final cellsCopy = List<SudokuCell>.generate(_cells.length, (index) {
+      final cell = _cells[index];
+      return SudokuCell(
+        value: cell.value,
+        notes: cell.notes,
+        isGiven: cell.isGiven,
+      );
+    });
+    return _BoardSnapshot(
+      cells: cellsCopy,
+      selectedIndex: _selectedIndex,
+      status: _status,
+    );
+  }
+
+  bool _applyHintToBoard(
+    solver.Hint hint, {
+    required bool triggerAutomation,
+    required bool emitChange,
+  }) {
+    var mutated = false;
+
+    for (final (index, digit) in hint.placements) {
+      if (index < 0 || index >= _cells.length) continue;
+      final cell = _cells[index];
+      if (cell.isGiven || cell.value == digit) continue;
+      _cells[index] = cell.withValue(digit);
+      _pruneNotesAround(index, digit);
+      mutated = true;
     }
+
+    for (final (index, digit) in hint.eliminations) {
+      if (index < 0 || index >= _cells.length) continue;
+      final cell = _cells[index];
+      if (cell.value != null || !cell.notes.contains(digit)) continue;
+      final updatedNotes = {...cell.notes}..remove(digit);
+      _cells[index] = cell.withNotes(updatedNotes);
+      mutated = true;
+    }
+
+    if (!mutated) return false;
+
+    _status = GameStatus.playing;
+    if (triggerAutomation) {
+      _scheduleAutoSingles();
+      _evaluateCompletion();
+    }
+    if (emitChange) _emitChange();
+    return true;
   }
 }
 

@@ -2,7 +2,6 @@ import 'strategy.dart';
 
 class Hint {
   final StrategyUsed technique;
-  final String description;
   final List<(int, int)> placements; // (cellIndex, digit) to place immediately
   final List<(int, int)> eliminations; // (cellIndex, digit) to remove
   final List<int> cells; // indices of pattern cells
@@ -10,7 +9,6 @@ class Hint {
 
   Hint(
     this.technique, {
-    required this.description,
     List<(int, int)>? placements,
     List<(int, int)>? eliminations,
     List<int>? cells,

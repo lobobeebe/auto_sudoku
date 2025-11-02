@@ -108,7 +108,6 @@ class SudokuGrid extends StatelessWidget {
                     cell: cell,
                     isSelected: isSelected,
                     isHighlighted: isHighlighted,
-                    matchesSelectedValue: matchesSelectedValue,
                     selectedValue: selectedValue,
                     sudokuTheme: sudokuTheme,
                   ),
@@ -127,7 +126,6 @@ class SudokuCellContents extends StatelessWidget {
   final SudokuCell cell;
   final bool isSelected;
   final bool isHighlighted;
-  final bool matchesSelectedValue;
   final int? selectedValue;
   final SudokuTheme sudokuTheme;
 
@@ -137,7 +135,6 @@ class SudokuCellContents extends StatelessWidget {
     required this.cell,
     required this.isSelected,
     required this.isHighlighted,
-    required this.matchesSelectedValue,
     required this.selectedValue,
     required this.sudokuTheme,
   });
@@ -180,11 +177,7 @@ class SudokuCellContents extends StatelessWidget {
           return const SizedBox.shrink();
         }
 
-        return CellNotes(
-          activeNotes: cell.notes,
-          sudokuTheme: sudokuTheme,
-          index: index,
-        );
+        return CellNotes(index: index, activeNotes: cell.notes);
       },
     );
   }

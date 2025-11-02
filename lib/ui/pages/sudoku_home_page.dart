@@ -1,9 +1,12 @@
-import 'package:auto_sudoku/ui/widgets/action_bar.dart';
 import 'package:flutter/material.dart';
 
 import 'package:auto_sudoku/state/sudoku_board_state.dart';
+import 'package:auto_sudoku/ui/utils/feedback.dart';
+import 'package:auto_sudoku/ui/widgets/action_bar.dart';
+import 'package:auto_sudoku/ui/widgets/hint_steps_panel.dart';
 import 'package:auto_sudoku/ui/widgets/number_pad.dart';
 import 'package:auto_sudoku/ui/widgets/sudoku_grid.dart';
+import 'package:auto_sudoku_solver/auto_sudoku_solver.dart' as solver;
 import 'package:provider/provider.dart';
 
 class SudokuHomePage extends StatefulWidget {
@@ -15,6 +18,7 @@ class SudokuHomePage extends StatefulWidget {
 
 class _SudokuHomePageState extends State<SudokuHomePage> {
   final GlobalKey _boardKey = GlobalKey();
+  final solver.Solver _solver = solver.Solver();
   GameStatus? _lastGameStatus;
   String? _lastError;
 
@@ -84,6 +88,23 @@ class _SudokuHomePageState extends State<SudokuHomePage> {
       );
     }
 
+    final bottomChild = board.hint != null
+        ? HintStepsPanel(
+            key: const ValueKey('hintPanel'),
+            hint: board.hint!,
+            onSkip: _handleHintSkip,
+            onApply: _handleHintApply,
+          )
+        : Column(
+            key: const ValueKey('controls'),
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              ActionBar(onHintRequested: _handleHintRequest),
+              const SizedBox(height: 12),
+              NumberPad(),
+            ],
+          );
+
     return Padding(
       padding: EdgeInsets.symmetric(
         horizontal: horizontalPadding,
@@ -102,9 +123,25 @@ class _SudokuHomePageState extends State<SudokuHomePage> {
             ),
           ),
           const SizedBox(height: 24),
-          const ActionBar(),
-          const SizedBox(height: 12),
-          const NumberPad(),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 320),
+            transitionBuilder: (child, animation) {
+              final curved = CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeOut,
+                reverseCurve: Curves.easeIn,
+              );
+              final slide = Tween<Offset>(
+                begin: const Offset(0, 1),
+                end: Offset.zero,
+              ).animate(curved);
+              return SlideTransition(
+                position: slide,
+                child: FadeTransition(opacity: curved, child: child),
+              );
+            },
+            child: bottomChild,
+          ),
         ],
       ),
     );
@@ -159,20 +196,49 @@ class _SudokuHomePageState extends State<SudokuHomePage> {
             TextButton(
               onPressed: () {
                 Navigator.of(dialogContext).pop();
-                Navigator.of(context).pop();
               },
-              child: const Text('Exit'),
+              child: const Text('Review'),
             ),
             FilledButton(
               onPressed: () {
-                context.read<SudokuBoardState>().resetBoard();
                 Navigator.of(dialogContext).pop();
+                Navigator.of(context).pop();
               },
-              child: const Text('Replay'),
+              child: const Text('Exit'),
             ),
           ],
         );
       },
     );
+  }
+
+  Future<void> _handleHintRequest() async {
+    final board = context.read<SudokuBoardState>();
+    final sudoku = solver.Sudoku(
+      board.toValueList(),
+      notes: board.toNotesList(),
+    );
+    final hint = _solver.nextHint(sudoku);
+
+    if (hint == null) {
+      showFeedback(context, 'No logical hint available.');
+      return;
+    }
+
+    board.setHint(hint);
+  }
+
+  void _handleHintSkip() {
+    final board = context.read<SudokuBoardState>();
+    board.clearHint();
+  }
+
+  void _handleHintApply() {
+    final board = context.read<SudokuBoardState>();
+    final applied = board.applyCurrentHint();
+    if (!applied) {
+      board.clearHint();
+      showFeedback(context, 'Unable to apply hint.');
+    }
   }
 }

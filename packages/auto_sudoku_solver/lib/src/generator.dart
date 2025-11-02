@@ -15,6 +15,8 @@ class _State {
 
 enum Symmetry { none, rot180, diag, central }
 
+enum Direction { row, col, box }
+
 class PrunePolicy {
   final Symmetry symmetry;
   final bool enforceMinimality;

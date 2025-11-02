@@ -3,8 +3,10 @@ import 'sudoku.dart';
 class CandidateMap {
   final List<Set<int>> candidates;
   final bool usesProvidedNotes;
+
   CandidateMap._(this.candidates, this.usesProvidedNotes);
   bool get isNotesDriven => usesProvidedNotes;
+
   factory CandidateMap.fromBoard(Sudoku s) {
     final provided = s.notes;
     final cand = List.generate(81, (_) => <int>{});
