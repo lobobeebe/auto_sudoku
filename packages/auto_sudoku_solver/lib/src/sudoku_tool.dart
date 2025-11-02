@@ -67,7 +67,7 @@ String formatGrid(List<int> g) {
 }
 
 void main(List<String> args) {
-  String target = 'any';
+  Difficulty target = Difficulty.easy;
   int? seed;
   bool showBoard = false;
   int maxAttempts = 500;
@@ -81,12 +81,13 @@ void main(List<String> args) {
   for (var i = 0; i < args.length; i++) {
     final a = args[i];
     if (a == '--target' && i + 1 < args.length) {
-      target = args[++i].toLowerCase();
-      if (!['trivial', 'easy', 'medium', 'hard', 'any'].contains(target)) {
+      final inTarget = Difficulty.fromString(args[++i].toLowerCase());
+      if (inTarget == null) {
         throw ArgumentError(
-          'Invalid --target. Use trivial|easy|medium|hard|any',
+          'Invalid --target. Use ${Difficulty.values.map((d) => d.name).join('|')}.',
         );
       }
+      target = inTarget;
     } else if (a == '--seed' && i + 1 < args.length) {
       seed = int.tryParse(args[++i]);
     } else if (a == '--board') {
@@ -110,7 +111,6 @@ void main(List<String> args) {
   }
 
   final gen = Generator(seed: seed);
-  final desired = Difficulty.fromString(target);
   final bool showSteps = args.contains('--steps');
 
   final List<Map<String, dynamic>> outList = [];
@@ -138,35 +138,15 @@ void main(List<String> args) {
       print(
         '  Attempt $attempts -> ${diff.toString().split('.').last} (dist=$dist)',
       );
-    } while (desired != null &&
-        target != 'any' &&
-        result.difficulty != desired &&
-        attempts < maxAttempts);
+    } while (result.difficulty != target && attempts < maxAttempts);
 
-    if (desired != null && target != 'any' && result.difficulty != desired) {
+    if (result.difficulty != target) {
       print(
         '  WARNING: Reached max attempts ($maxAttempts) without hitting exact difficulty for item $n; keeping closest attempt.',
       );
     }
 
-    String diffLabel;
-    switch (result.difficulty) {
-      case Difficulty.trivial:
-        diffLabel = 'Trivial';
-        break;
-      case Difficulty.easy:
-        diffLabel = 'Easy';
-        break;
-      case Difficulty.medium:
-        diffLabel = 'Medium';
-        break;
-      case Difficulty.hard:
-        diffLabel = 'Hard';
-        break;
-      case Difficulty.impossible:
-        diffLabel = 'Impossible';
-        break;
-    }
+    String diffLabel = result.difficulty.name;
     print('Difficulty: $diffLabel');
     if (showBoard) {
       print('Puzzle:');
@@ -195,24 +175,7 @@ void main(List<String> args) {
       }
     }
 
-    String diffOut;
-    switch (result.difficulty) {
-      case Difficulty.trivial:
-        diffOut = 'Trivial';
-        break;
-      case Difficulty.easy:
-        diffOut = 'Easy';
-        break;
-      case Difficulty.medium:
-        diffOut = 'Medium';
-        break;
-      case Difficulty.hard:
-        diffOut = 'Hard';
-        break;
-      case Difficulty.impossible:
-        diffOut = 'Impossible';
-        break;
-    }
+    String diffOut = result.difficulty.name;
 
     final puzzleStr = result.puzzle.map((e) => e.toString()).join();
     final solutionStr = result.solution.map((e) => e.toString()).join();

@@ -86,6 +86,27 @@ void main() {
       expect(hint.eliminations, contains((_cell(2, 4), 1)));
     });
 
+    test('naked pair (col)', () {
+      final hint = _nextHint({
+        (0, 3): {8, 9},
+        (2, 3): {4, 5},
+        (3, 3): {4, 5, 3, 9},
+        (6, 3): {3, 8, 9},
+        (8, 3): {4, 5},
+        (8, 4): {1, 3}, // Irrelavent - Added for noise
+      }, settings: SolverSettings(allowHiddenSingles: false));
+
+      expect(hint.technique, solver.StrategyUsed.nakedPair);
+      expect(hint.unit, solver.HintUnit.column);
+      expect(
+        hint.eliminations,
+        containsAll([
+          (_cell(3, 3), 4),
+          (_cell(3, 3), 5),
+        ]),
+      );
+    });
+
     test('hidden pair (row)', () {
       final hint = _nextHint(
         {
@@ -189,8 +210,11 @@ void main() {
         settings: SolverSettings.off(allowQuads: true),
       );
 
-      expect(hint, isNull,
-          reason: hint != null ? 'Hint is ${hint.technique.name}' : null);
+      expect(
+        hint,
+        isNull,
+        reason: hint != null ? 'Hint is ${hint.technique.name}' : null,
+      );
     });
 
     test('hidden quad (row)', () {

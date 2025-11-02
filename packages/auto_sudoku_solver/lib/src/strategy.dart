@@ -52,40 +52,39 @@ enum StrategyUsed {
   // ALS & AIC
   als,
   alsXyWing,
-  aic,
+  aic;
+
+  Difficulty getDifficulty() => difficultyMap[this] ?? Difficulty.impossible;
 }
 
-const List<(StrategyUsed, Difficulty)> strategyDifficultyOrder = [
-  (StrategyUsed.nakedSingle, Difficulty.trivial),
-  (StrategyUsed.hiddenSingle, Difficulty.trivial),
-  (StrategyUsed.nakedPair, Difficulty.easy),
-  (StrategyUsed.nakedTriple, Difficulty.easy),
-  (StrategyUsed.nakedQuad, Difficulty.easy),
-  (StrategyUsed.pointing, Difficulty.easy),
-  (StrategyUsed.claiming, Difficulty.easy),
-  (StrategyUsed.hiddenPair, Difficulty.easy),
-  (StrategyUsed.hiddenTriple, Difficulty.easy),
-  (StrategyUsed.hiddenQuad, Difficulty.easy),
-  (StrategyUsed.xWing, Difficulty.medium),
-  (StrategyUsed.xyWing, Difficulty.medium),
-  (StrategyUsed.coloring, Difficulty.medium),
-  (StrategyUsed.swordfish, Difficulty.medium),
-  (StrategyUsed.skyscraper, Difficulty.hard),
-  (StrategyUsed.twoStringKite, Difficulty.hard),
-  (StrategyUsed.turbotFish, Difficulty.hard),
-  (StrategyUsed.xyzWing, Difficulty.hard),
-  (StrategyUsed.wWing, Difficulty.hard),
-  (StrategyUsed.uniqueRectangle, Difficulty.hard),
-  (StrategyUsed.bug, Difficulty.hard),
-  (StrategyUsed.remotePairs, Difficulty.hard),
-  (StrategyUsed.xyChain, Difficulty.hard),
-  (StrategyUsed.als, Difficulty.hard),
-  (StrategyUsed.alsXyWing, Difficulty.hard),
-  (StrategyUsed.aic, Difficulty.hard),
-];
-
-int strategyDifficultyIndex(StrategyUsed s) =>
-    strategyDifficultyOrder.indexWhere((entry) => entry.$1 == s);
+const Map<StrategyUsed, Difficulty> difficultyMap = {
+  StrategyUsed.nakedSingle: Difficulty.trivial,
+  StrategyUsed.hiddenSingle: Difficulty.trivial,
+  StrategyUsed.nakedPair: Difficulty.easy,
+  StrategyUsed.nakedTriple: Difficulty.easy,
+  StrategyUsed.nakedQuad: Difficulty.easy,
+  StrategyUsed.pointing: Difficulty.easy,
+  StrategyUsed.claiming: Difficulty.easy,
+  StrategyUsed.hiddenPair: Difficulty.easy,
+  StrategyUsed.hiddenTriple: Difficulty.easy,
+  StrategyUsed.hiddenQuad: Difficulty.easy,
+  StrategyUsed.xWing: Difficulty.medium,
+  StrategyUsed.xyWing: Difficulty.medium,
+  StrategyUsed.coloring: Difficulty.medium,
+  StrategyUsed.swordfish: Difficulty.medium,
+  StrategyUsed.skyscraper: Difficulty.hard,
+  StrategyUsed.twoStringKite: Difficulty.hard,
+  StrategyUsed.turbotFish: Difficulty.hard,
+  StrategyUsed.xyzWing: Difficulty.hard,
+  StrategyUsed.wWing: Difficulty.hard,
+  StrategyUsed.uniqueRectangle: Difficulty.hard,
+  StrategyUsed.bug: Difficulty.hard,
+  StrategyUsed.remotePairs: Difficulty.hard,
+  StrategyUsed.xyChain: Difficulty.hard,
+  StrategyUsed.als: Difficulty.hard,
+  StrategyUsed.alsXyWing: Difficulty.hard,
+  StrategyUsed.aic: Difficulty.hard,
+};
 
 String techniqueLabel(StrategyUsed s) {
   switch (s) {

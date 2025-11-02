@@ -48,23 +48,6 @@ class Generator {
       solver = Solver(),
       policy = policy ?? const PrunePolicy();
 
-  Difficulty? _difficultyFromString(String t) {
-    switch (t) {
-      case 'trivial':
-        return Difficulty.trivial;
-      case 'easy':
-        return Difficulty.easy;
-      case 'medium':
-        return Difficulty.medium;
-      case 'hard':
-        return Difficulty.hard;
-      case 'impossible':
-        return Difficulty.impossible;
-      default:
-        return null; // treat 'any' or unknown as no specific target
-    }
-  }
-
   // Create a complete solved board by randomized backtracking
   List<int> _randomSolvedGrid() {
     final s = Sudoku(List.filled(81, 0));
@@ -99,88 +82,32 @@ class Generator {
     return s.cells;
   }
 
-  int _distanceToTarget(String target, List<int> grid) {
+  int _distanceToTarget(Difficulty targetDiff, List<int> grid) {
     // compute rating with broad logical flags enabled
     final r = solver.rateLogical(Sudoku(List<int>.from(grid)));
 
-    final hardest = r.hardestIdx;
-    int idxOf(StrategyUsed s) => strategyDifficultyIndex(s);
-
-    // Heavily penalize states that are "trivialish" for non-trivial targets
-    int nonSingles = 0;
-    r.counts.forEach((k, v) {
-      if (k != StrategyUsed.nakedSingle && k != StrategyUsed.hiddenSingle) {
-        nonSingles += v;
-      }
-    });
-    final bool trivialish = nonSingles == 0; // no steps beyond singles
-
     // penalties
-    const big = 1000; // strong veto
     var dist = 0;
-    switch (target) {
-      case 'trivial':
-        // Anything beyond singles is bad
-        final cap = idxOf(StrategyUsed.hiddenSingle);
-        if (hardest > cap) dist += big + (hardest - cap);
-        // Prefer fewer steps overall (optional): penalize count of non-singles
-        for (final e in r.counts.entries) {
-          if (e.key != StrategyUsed.nakedSingle &&
-              e.key != StrategyUsed.hiddenSingle) {
-            dist += e.value;
-          }
-        }
-        break;
-      case 'easy':
-        // Allow up to hiddenQuad (and locked), forbid fish/wings/advanced
-        final cap = idxOf(StrategyUsed.hiddenQuad);
-        if (hardest > cap) dist += big + (hardest - cap);
-        if (trivialish) dist += 200; // avoid singles-only when targeting Easy
-        // Encourage presence of at least one pair/triple/quad to avoid drifting into trivial
-        final basics =
-            (r.counts[StrategyUsed.nakedPair] ?? 0) +
-            (r.counts[StrategyUsed.hiddenPair] ?? 0) +
-            (r.counts[StrategyUsed.nakedTriple] ?? 0) +
-            (r.counts[StrategyUsed.hiddenTriple] ?? 0) +
-            (r.counts[StrategyUsed.nakedQuad] ?? 0) +
-            (r.counts[StrategyUsed.hiddenQuad] ?? 0) +
-            (r.counts[StrategyUsed.pointing] ?? 0) +
-            (r.counts[StrategyUsed.claiming] ?? 0);
-        if (basics == 0) dist += 5; // gentle nudge
-        break;
-      case 'medium':
-        // Require at least one X/XY-Wing, forbid harder than those
-        final cap = idxOf(StrategyUsed.xyWing);
-        if (hardest > cap) dist += big + (hardest - cap);
-        if (trivialish) dist += 500; // strongly avoid singles-only
-        break;
-      case 'hard':
-        // Require at least one advanced (above xyWing), forbid guessing later (handled elsewhere)
-        final cap = idxOf(StrategyUsed.xyWing);
-        if (hardest <= cap) dist += 50; // too easy if nothing beyond xyWing
-        if (trivialish) dist += 800; // absolutely avoid singles-only
-        break;
-      case 'any':
-        dist = 0;
-        break;
-      default:
-        dist = 0;
+    for (final e in r.counts.entries) {
+      if (e.key.getDifficulty() != targetDiff) {
+        dist += e.value;
+      }
     }
     return dist;
   }
 
-  int distanceToTarget(String target, List<int> grid) =>
+  int distanceToTarget(Difficulty target, List<int> grid) =>
       _distanceToTarget(target, grid);
 
   ClassifiedPuzzle generate({
-    String target = 'any',
+    Difficulty target = Difficulty.easy,
     int beamWidth = 1,
     int expansions = 8,
     int timeoutMs = 20000,
     int maxRounds = 400,
   }) {
     final full = _randomSolvedGrid();
-    final _watch = Stopwatch()..start();
+    final watch = Stopwatch()..start();
 
     bool isUnique(List<int> grid) {
       final s = Sudoku(List<int>.from(grid));
@@ -251,28 +178,6 @@ class Generator {
       _State(List<int>.from(full), _distanceToTarget(target, full)),
     ];
 
-    bool withinBackbone(List<int> grid) {
-      if (policy.backboneSteps <= 0) return true;
-      final s = Sudoku(List<int>.from(grid));
-      final res = solver.solveLogical(s);
-      final hardest = res.hardestInPrefix(policy.backboneSteps);
-      StrategyUsed cap;
-      switch (target) {
-        case 'easy':
-          cap = StrategyUsed.hiddenQuad; // ≤ quads
-          break;
-        case 'medium':
-          cap = StrategyUsed.xyWing; // ≤ x/xy-wing
-          break;
-        case 'hard':
-          cap = StrategyUsed.xyWing; // opening still gentle
-          break;
-        default:
-          cap = StrategyUsed.hiddenQuad;
-      }
-      return strategyDifficultyIndex(hardest) <= strategyDifficultyIndex(cap);
-    }
-
     // helper to try removing a symmetric group from a grid
     List<int>? tryRemove(List<int> grid, int cell) {
       if (grid[cell] == 0) return null;
@@ -283,7 +188,6 @@ class Generator {
         next[g] = 0;
       }
       if (!isUnique(next)) return null;
-      if (!withinBackbone(next)) return null;
       if (violatesQuotas(next)) return null;
       // Signature forcing via distance
       final nd = _distanceToTarget(target, next);
@@ -315,7 +219,7 @@ class Generator {
       digSteps++;
 
       // Timeout / max-rounds guard
-      if (_watch.elapsedMilliseconds > timeoutMs || digSteps >= maxRounds) {
+      if (watch.elapsedMilliseconds > timeoutMs || digSteps >= maxRounds) {
         break;
       }
 
@@ -337,9 +241,7 @@ class Generator {
       // check best for fit
       final bestClass = classify(best.grid);
       final diff = bestClass;
-      if (target == 'any'
-          ? diff != Difficulty.impossible
-          : diff == _difficultyFromString(target)) {
+      if (diff == target) {
         final sol = Sudoku(List<int>.from(best.grid));
         solver.solveBacktracking(sol);
         return ClassifiedPuzzle(best.grid, sol.cells, diff);
@@ -370,9 +272,7 @@ class Generator {
       for (final g in group) {
         greedy[g] = 0;
       }
-      if (!isUnique(greedy) ||
-          violatesQuotas(greedy) ||
-          !withinBackbone(greedy)) {
+      if (!isUnique(greedy) || violatesQuotas(greedy)) {
         for (var k = 0; k < group.length; k++) {
           greedy[group[k]] = saved[k];
         }
@@ -400,9 +300,7 @@ class Generator {
 
     Difficulty maxDifficulty = Difficulty.trivial;
     for (StrategyUsed tech in tr.steps) {
-      final difficulty = strategyDifficultyOrder
-          .firstWhere((entry) => entry.$1 == tech)
-          .$2;
+      final difficulty = tech.getDifficulty();
       maxDifficulty = Difficulty.max(difficulty, maxDifficulty);
     }
 

@@ -9,10 +9,6 @@ import 'sudoku.dart';
 import 'solver_settings.dart';
 
 class Solver {
-  // Supported logical techniques in increasing difficulty order
-  static const List<(StrategyUsed, Difficulty)> difficultyOrder =
-      strategyDifficultyOrder;
-
   Hint? nextHint(Sudoku s, {SolverSettings? settings}) {
     final effective = settings ?? SolverSettings();
     final cand = CandidateMap.fromBoard(s);
@@ -329,22 +325,26 @@ class Solver {
   }) {
     // Try Naked subset in each unit
     Hint? processUnitNaked(Iterable<int> unit, HintUnit unitType) {
-      final empties = unit
-          .where(
-            (i) =>
-                s.cells[i] == 0 && cand[i].length >= 2 && cand[i].length <= k,
-          )
+      final empties = unit.where((i) => s.cells[i] == 0).toList();
+      if (empties.length < k) return null;
+      final subsetCandidates = empties
+          .where((i) => cand[i].length >= 2 && cand[i].length <= k)
           .toList();
-      for (var a = 0; a < empties.length; a++) {
-        for (var b = a + 1; b < empties.length; b++) {
+      for (var a = 0; a < subsetCandidates.length; a++) {
+        for (var b = a + 1; b < subsetCandidates.length; b++) {
           if (k == 2) {
-            final set = {...cand[empties[a]], ...cand[empties[b]]};
+            final set = {
+              ...cand[subsetCandidates[a]],
+              ...cand[subsetCandidates[b]],
+            };
             if (set.length == 2 &&
-                cand[empties[a]].length <= 2 &&
-                cand[empties[b]].length <= 2) {
+                cand[subsetCandidates[a]].length <= 2 &&
+                cand[subsetCandidates[b]].length <= 2) {
               final others = <(int, int)>[];
               for (final i in empties) {
-                if (i == empties[a] || i == empties[b]) continue;
+                if (i == subsetCandidates[a] || i == subsetCandidates[b]) {
+                  continue;
+                }
                 for (final v in set) {
                   if (cand[i].contains(v)) others.add((i, v));
                 }
@@ -353,26 +353,28 @@ class Solver {
                 return Hint(
                   StrategyUsed.nakedPair,
                   eliminations: others,
-                  cells: [empties[a], empties[b]],
+                  cells: [subsetCandidates[a], subsetCandidates[b]],
                   digits: set.toList(),
                   unit: unitType,
                 );
               }
             }
           } else if (k == 3) {
-            for (var c = b + 1; c < empties.length; c++) {
+            for (var c = b + 1; c < subsetCandidates.length; c++) {
               final set = {
-                ...cand[empties[a]],
-                ...cand[empties[b]],
-                ...cand[empties[c]],
+                ...cand[subsetCandidates[a]],
+                ...cand[subsetCandidates[b]],
+                ...cand[subsetCandidates[c]],
               };
               if (set.length == 3 &&
-                  cand[empties[a]].length <= 3 &&
-                  cand[empties[b]].length <= 3 &&
-                  cand[empties[c]].length <= 3) {
+                  cand[subsetCandidates[a]].length <= 3 &&
+                  cand[subsetCandidates[b]].length <= 3 &&
+                  cand[subsetCandidates[c]].length <= 3) {
                 final others = <(int, int)>[];
                 for (final i in empties) {
-                  if (i == empties[a] || i == empties[b] || i == empties[c]) {
+                  if (i == subsetCandidates[a] ||
+                      i == subsetCandidates[b] ||
+                      i == subsetCandidates[c]) {
                     continue;
                   }
                   for (final v in set) {
@@ -383,7 +385,11 @@ class Solver {
                   return Hint(
                     StrategyUsed.nakedTriple,
                     eliminations: others,
-                    cells: [empties[a], empties[b], empties[c]],
+                    cells: [
+                      subsetCandidates[a],
+                      subsetCandidates[b],
+                      subsetCandidates[c],
+                    ],
                     digits: set.toList(),
                     unit: unitType,
                   );
@@ -391,25 +397,25 @@ class Solver {
               }
             }
           } else {
-            for (var c = b + 1; c < empties.length; c++) {
-              for (var d = c + 1; d < empties.length; d++) {
+            for (var c = b + 1; c < subsetCandidates.length; c++) {
+              for (var d = c + 1; d < subsetCandidates.length; d++) {
                 final set = {
-                  ...cand[empties[a]],
-                  ...cand[empties[b]],
-                  ...cand[empties[c]],
-                  ...cand[empties[d]],
+                  ...cand[subsetCandidates[a]],
+                  ...cand[subsetCandidates[b]],
+                  ...cand[subsetCandidates[c]],
+                  ...cand[subsetCandidates[d]],
                 };
                 if (set.length == 4 &&
-                    cand[empties[a]].length <= 4 &&
-                    cand[empties[b]].length <= 4 &&
-                    cand[empties[c]].length <= 4 &&
-                    cand[empties[d]].length <= 4) {
+                    cand[subsetCandidates[a]].length <= 4 &&
+                    cand[subsetCandidates[b]].length <= 4 &&
+                    cand[subsetCandidates[c]].length <= 4 &&
+                    cand[subsetCandidates[d]].length <= 4) {
                   final others = <(int, int)>[];
                   for (final i in empties) {
-                    if (i == empties[a] ||
-                        i == empties[b] ||
-                        i == empties[c] ||
-                        i == empties[d]) {
+                    if (i == subsetCandidates[a] ||
+                        i == subsetCandidates[b] ||
+                        i == subsetCandidates[c] ||
+                        i == subsetCandidates[d]) {
                       continue;
                     }
                     for (final v in set) {
@@ -420,7 +426,12 @@ class Solver {
                     return Hint(
                       StrategyUsed.nakedQuad,
                       eliminations: others,
-                      cells: [empties[a], empties[b], empties[c], empties[d]],
+                      cells: [
+                        subsetCandidates[a],
+                        subsetCandidates[b],
+                        subsetCandidates[c],
+                        subsetCandidates[d],
+                      ],
                       digits: set.toList(),
                       unit: unitType,
                     );
@@ -1427,13 +1438,10 @@ class Solver {
   }) {
     final copy = Sudoku(List<int>.from(s.cells));
     final res = solveLogical(copy, settings: settings);
-    var hardest = 0;
     final counts = <StrategyUsed, int>{};
     final first = <StrategyUsed, int>{};
     for (var i = 0; i < res.steps.length; i++) {
       final st = res.steps[i];
-      final idx = strategyDifficultyIndex(st);
-      if (idx > hardest) hardest = idx;
       counts[st] = (counts[st] ?? 0) + 1;
       first.putIfAbsent(st, () => i);
     }
@@ -1442,7 +1450,6 @@ class Solver {
           ? Difficulty.trivial
           : Difficulty
                 .impossible, // bucket is not used by distance; keep trivial placeholder
-      hardest,
       counts,
       first,
     );

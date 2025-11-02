@@ -1,3 +1,5 @@
+import 'package:auto_sudoku_solver/src/sudoku_tool.dart';
+
 import 'strategy.dart';
 
 class SolveResult {
@@ -5,16 +7,4 @@ class SolveResult {
   final bool stuck;
   final List<StrategyUsed> steps;
   SolveResult(this.solved, this.stuck, this.steps);
-
-  StrategyUsed hardestInPrefix(int k) {
-    final n = steps.length < k ? steps.length : k;
-    var hardest = StrategyUsed.nakedSingle;
-    for (var i = 0; i < n; i++) {
-      final s = steps[i];
-      if (strategyDifficultyIndex(s) > strategyDifficultyIndex(hardest)) {
-        hardest = s;
-      }
-    }
-    return hardest;
-  }
 }
