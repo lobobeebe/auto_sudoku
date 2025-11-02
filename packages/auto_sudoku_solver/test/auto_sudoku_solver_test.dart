@@ -176,6 +176,23 @@ void main() {
       expect(hint.eliminations, contains((_cell(6, 5), 1)));
     });
 
+    test('skips naked quad when only three cells cover four digits (row)', () {
+      final sudoku = _sudokuWithNotes({
+        (1, 0): {5, 9},
+        (1, 3): {2, 5, 8},
+        (1, 5): {2, 5, 8},
+        (1, 6): {4, 9},
+        (1, 8): {4, 5, 8, 9},
+      });
+      final hint = solver.Solver().nextHint(
+        sudoku,
+        settings: SolverSettings.off(allowQuads: true),
+      );
+
+      expect(hint, isNull,
+          reason: hint != null ? 'Hint is ${hint.technique.name}' : null);
+    });
+
     test('hidden quad (row)', () {
       final hint = _nextHint(
         {
@@ -300,11 +317,7 @@ void main() {
       expect(hint.digits, equals([5]));
       expect(
         hint.eliminations,
-        containsAll([
-          (_cell(0, 6), 5),
-          (_cell(1, 1), 5),
-          (_cell(1, 4), 5),
-        ]),
+        containsAll([(_cell(0, 6), 5), (_cell(1, 1), 5), (_cell(1, 4), 5)]),
       );
     });
 
@@ -351,11 +364,7 @@ void main() {
       expect(hint.digits, equals([5]));
       expect(
         hint.eliminations,
-        containsAll([
-          (_cell(1, 1), 5),
-          (_cell(2, 4), 5),
-          (_cell(4, 7), 5),
-        ]),
+        containsAll([(_cell(1, 1), 5), (_cell(2, 4), 5), (_cell(4, 7), 5)]),
       );
     });
   });

@@ -329,7 +329,12 @@ class Solver {
   }) {
     // Try Naked subset in each unit
     Hint? processUnitNaked(Iterable<int> unit, HintUnit unitType) {
-      final empties = unit.where((i) => s.cells[i] == 0).toList();
+      final empties = unit
+          .where(
+            (i) =>
+                s.cells[i] == 0 && cand[i].length >= 2 && cand[i].length <= k,
+          )
+          .toList();
       for (var a = 0; a < empties.length; a++) {
         for (var b = a + 1; b < empties.length; b++) {
           if (k == 2) {
@@ -354,17 +359,17 @@ class Solver {
                 );
               }
             }
-          } else {
+          } else if (k == 3) {
             for (var c = b + 1; c < empties.length; c++) {
               final set = {
                 ...cand[empties[a]],
                 ...cand[empties[b]],
                 ...cand[empties[c]],
               };
-              if (set.length == k &&
-                  cand[empties[a]].length <= k &&
-                  cand[empties[b]].length <= k &&
-                  cand[empties[c]].length <= k) {
+              if (set.length == 3 &&
+                  cand[empties[a]].length <= 3 &&
+                  cand[empties[b]].length <= 3 &&
+                  cand[empties[c]].length <= 3) {
                 final others = <(int, int)>[];
                 for (final i in empties) {
                   if (i == empties[a] || i == empties[b] || i == empties[c]) {
@@ -376,12 +381,50 @@ class Solver {
                 }
                 if (others.isNotEmpty) {
                   return Hint(
-                    k == 3 ? StrategyUsed.nakedTriple : StrategyUsed.nakedQuad,
+                    StrategyUsed.nakedTriple,
                     eliminations: others,
                     cells: [empties[a], empties[b], empties[c]],
                     digits: set.toList(),
                     unit: unitType,
                   );
+                }
+              }
+            }
+          } else {
+            for (var c = b + 1; c < empties.length; c++) {
+              for (var d = c + 1; d < empties.length; d++) {
+                final set = {
+                  ...cand[empties[a]],
+                  ...cand[empties[b]],
+                  ...cand[empties[c]],
+                  ...cand[empties[d]],
+                };
+                if (set.length == 4 &&
+                    cand[empties[a]].length <= 4 &&
+                    cand[empties[b]].length <= 4 &&
+                    cand[empties[c]].length <= 4 &&
+                    cand[empties[d]].length <= 4) {
+                  final others = <(int, int)>[];
+                  for (final i in empties) {
+                    if (i == empties[a] ||
+                        i == empties[b] ||
+                        i == empties[c] ||
+                        i == empties[d]) {
+                      continue;
+                    }
+                    for (final v in set) {
+                      if (cand[i].contains(v)) others.add((i, v));
+                    }
+                  }
+                  if (others.isNotEmpty) {
+                    return Hint(
+                      StrategyUsed.nakedQuad,
+                      eliminations: others,
+                      cells: [empties[a], empties[b], empties[c], empties[d]],
+                      digits: set.toList(),
+                      unit: unitType,
+                    );
+                  }
                 }
               }
             }
