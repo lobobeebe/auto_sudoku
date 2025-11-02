@@ -83,16 +83,47 @@ class Generator {
   }
 
   int _distanceToTarget(Difficulty targetDiff, List<int> grid) {
-    // compute rating with broad logical flags enabled
+    // Compute rating with broad logical flags enabled
     final r = solver.rateLogical(Sudoku(List<int>.from(grid)));
 
-    // penalties
+    int idx(Difficulty d) => Difficulty.values.indexOf(d);
+    final targetIdx = idx(targetDiff);
+
+    // Weighting constants
+    const int wEasy = 1; // penalty per step easier than target (linear)
+    const int wHard =
+        10; // penalty per step harder than target (quadratic scaled)
+    const int targetBonus =
+        6; // subtract when at least one target-level step exists
+    const int targetAbsentPenalty = 12; // add when no target-level step exists
+
     var dist = 0;
-    for (final e in r.counts.entries) {
-      if (e.key.getDifficulty() != targetDiff) {
-        dist += e.value;
+    var targetLevelSteps = 0;
+
+    // Penalize based on *distance* between technique difficulty and target
+    r.counts.forEach((tech, count) {
+      final d = tech.getDifficulty();
+      final delta = idx(d) - targetIdx; // <0 easier, 0 equal, >0 harder
+      if (delta == 0) {
+        targetLevelSteps += count;
+        // No penalty for target-level steps (bonus applied below)
+      } else if (delta < 0) {
+        // Easier than target: small linear penalty
+        dist += count * (delta.abs()) * wEasy;
+      } else {
+        // Harder than target: strong quadratic penalty
+        dist += count * (delta * delta) * wHard;
       }
+    });
+
+    // Nudge: prefer states that actually exhibit at least one target-level step
+    if (targetLevelSteps > 0) {
+      dist -= targetBonus;
+    } else {
+      dist += targetAbsentPenalty;
     }
+
+    if (dist < 0) dist = 0; // clamp
     return dist;
   }
 
@@ -179,7 +210,7 @@ class Generator {
     ];
 
     // helper to try removing a symmetric group from a grid
-    List<int>? tryRemove(List<int> grid, int cell) {
+    _State? tryRemove(List<int> grid, int cell, int parentDist, int tolerance) {
       if (grid[cell] == 0) return null;
       final group = symGroup(cell).where((g) => grid[g] != 0).toList();
       if (group.isEmpty) return null;
@@ -191,9 +222,9 @@ class Generator {
       if (violatesQuotas(next)) return null;
       // Signature forcing via distance
       final nd = _distanceToTarget(target, next);
-      // Reject if it obviously pushes outside target by a large amount
-      if (nd > 2000) return null;
-      return next;
+      // Prune children that clearly regress relative to the parent
+      if (nd > parentDist + tolerance) return null;
+      return _State(next, nd);
     }
 
     int stagnant = 0;
@@ -203,15 +234,25 @@ class Generator {
     while (true) {
       final children = <_State>[];
       for (final st in beam) {
-        // choose a few random candidates to try
-        for (var e = 0; e < expansions; e++) {
-          final i = rng.nextInt(81);
-          final next = tryRemove(st.grid, i);
-          if (next == null) continue;
-          final dist = _distanceToTarget(target, next);
-          children.add(_State(next, dist));
+        // Build and shuffle the list of filled cells once per parent state
+        final filled = <int>[];
+        for (var i = 0; i < 81; i++) {
+          if (st.grid[i] != 0) filled.add(i);
+        }
+        filled.shuffle(rng);
+
+        final take = min(expansions, filled.length);
+        // Tolerance determines how much worse than the parent we allow a child to be
+        const int tolerance = 50;
+        for (var e = 0; e < take; e++) {
+          final cell = filled[e];
+          final child = tryRemove(st.grid, cell, st.dist, tolerance);
+          if (child != null) {
+            children.add(child);
+          }
         }
       }
+
       if (children.isEmpty) break;
       // keep best beamWidth
       children.sort((a, b) => a.dist.compareTo(b.dist));
