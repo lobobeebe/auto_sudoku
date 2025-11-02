@@ -15,12 +15,15 @@ solver.Sudoku sudokuWithNotes(Map<(int, int), Set<int>> entries) {
 void main() {
   final hint = solver.Solver().nextHint(
     sudokuWithNotes({
-      (0, 1): {8, 1},
-      (2, 1): {8, 2},
-      (0, 5): {8, 3},
-      (5, 5): {8, 4},
-      (2, 5): {8, 5},
-      (5, 1): {8, 6},
+      (0, 1): {5, 7},
+      (0, 4): {5, 8},
+      (3, 1): {5, 2},
+      (3, 7): {5, 3},
+      (6, 4): {5, 4},
+      (6, 7): {5, 6},
+      (1, 1): {5, 9},
+      (2, 4): {5, 1},
+      (4, 7): {5, 2},
     }),
     settings: SolverSettings(
       allowHiddenSingles: false,
@@ -32,8 +35,8 @@ void main() {
       allowXWing: false,
       allowXYWing: false,
       allowColoring: false,
-      allowSwordfish: false,
-      allowSkyscraper: true,
+      allowSwordfish: true,
+      allowSkyscraper: false,
       allowTwoStringKite: false,
       allowTurbotFish: false,
       allowXYZWing: false,

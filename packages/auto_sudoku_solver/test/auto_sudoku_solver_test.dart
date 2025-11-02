@@ -258,6 +258,106 @@ void main() {
       expect(hint.technique, solver.StrategyUsed.xyWing);
       expect(hint.eliminations, contains((_cell(1, 1), 3)));
     });
+
+    test('Coloring', () {
+      final hint = _nextHint(
+        {
+          (0, 0): {5, 7},
+          (0, 3): {5, 8},
+          (2, 0): {5, 1},
+          (2, 3): {5, 2},
+          (0, 6): {3, 5, 9},
+          (1, 1): {5, 9},
+          (1, 4): {5, 6},
+        },
+        settings: SolverSettings(
+          allowHiddenSingles: false,
+          allowPairs: false,
+          allowTriples: false,
+          allowQuads: false,
+          allowHiddenSubsets: false,
+          allowLocked: false,
+          allowXWing: false,
+          allowXYWing: false,
+          allowColoring: true,
+          allowSwordfish: false,
+          allowSkyscraper: false,
+          allowTwoStringKite: false,
+          allowTurbotFish: false,
+          allowXYZWing: false,
+          allowWWing: false,
+          allowUR: false,
+          allowBUG: false,
+          allowRemotePairs: false,
+          allowXYChain: false,
+          allowALS: false,
+          allowALSXYWing: false,
+          allowAIC: false,
+        ),
+      );
+
+      expect(hint.technique, solver.StrategyUsed.coloring);
+      expect(hint.digits, equals([5]));
+      expect(
+        hint.eliminations,
+        containsAll([
+          (_cell(0, 6), 5),
+          (_cell(1, 1), 5),
+          (_cell(1, 4), 5),
+        ]),
+      );
+    });
+
+    test('Swordfish (rows)', () {
+      final hint = _nextHint(
+        {
+          (0, 1): {5, 7},
+          (0, 4): {5, 8},
+          (3, 1): {5, 2},
+          (3, 7): {5, 3},
+          (6, 4): {5, 4},
+          (6, 7): {5, 6},
+          (1, 1): {5, 9},
+          (2, 4): {5, 1},
+          (4, 7): {5, 2},
+        },
+        settings: SolverSettings(
+          allowHiddenSingles: false,
+          allowPairs: false,
+          allowTriples: false,
+          allowQuads: false,
+          allowHiddenSubsets: false,
+          allowLocked: false,
+          allowXWing: false,
+          allowXYWing: false,
+          allowColoring: false,
+          allowSwordfish: true,
+          allowSkyscraper: false,
+          allowTwoStringKite: false,
+          allowTurbotFish: false,
+          allowXYZWing: false,
+          allowWWing: false,
+          allowUR: false,
+          allowBUG: false,
+          allowRemotePairs: false,
+          allowXYChain: false,
+          allowALS: false,
+          allowALSXYWing: false,
+          allowAIC: false,
+        ),
+      );
+
+      expect(hint.technique, solver.StrategyUsed.swordfish);
+      expect(hint.digits, equals([5]));
+      expect(
+        hint.eliminations,
+        containsAll([
+          (_cell(1, 1), 5),
+          (_cell(2, 4), 5),
+          (_cell(4, 7), 5),
+        ]),
+      );
+    });
   });
 }
 
