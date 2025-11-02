@@ -10,7 +10,8 @@ import 'solver_settings.dart';
 
 class Solver {
   // Supported logical techniques in increasing difficulty order
-  static const List<StrategyUsed> difficultyOrder = strategyDifficultyOrder;
+  static const List<(StrategyUsed, Difficulty)> difficultyOrder =
+      strategyDifficultyOrder;
 
   Hint? nextHint(Sudoku s, {SolverSettings? settings}) {
     final effective = settings ?? SolverSettings();
@@ -548,55 +549,10 @@ class Solver {
 
   SolveResult solveLogical(
     Sudoku s, {
-    bool allowHiddenSingles = true,
-    bool allowLocked = true,
-    bool allowPairs = true,
-    bool allowTriples = true,
-    bool allowQuads = true,
-    bool allowHiddenSubsets = true,
-    bool allowXWing = true,
-    bool allowXYWing = true,
-    bool allowColoring = false,
-    bool allowSwordfish = false,
-    bool allowSkyscraper = false,
-    bool allowTwoStringKite = false,
-    bool allowTurbotFish = false,
-    bool allowXYZWing = false,
-    bool allowWWing = false,
-    bool allowUR = false,
-    bool allowBUG = false,
-    bool allowRemotePairs = false,
-    bool allowXYChain = false,
-    bool allowALS = false,
-    bool allowALSXYWing = false,
-    bool allowAIC = false,
+    SolverSettings settings = const SolverSettings(),
   }) {
     final steps = <StrategyUsed>[];
     final cand = CandidateMap.fromBoard(s);
-    final settings = SolverSettings(
-      allowHiddenSingles: allowHiddenSingles,
-      allowLocked: allowLocked,
-      allowPairs: allowPairs,
-      allowTriples: allowTriples,
-      allowQuads: allowQuads,
-      allowHiddenSubsets: allowHiddenSubsets,
-      allowXWing: allowXWing,
-      allowXYWing: allowXYWing,
-      allowColoring: allowColoring,
-      allowSwordfish: allowSwordfish,
-      allowSkyscraper: allowSkyscraper,
-      allowTwoStringKite: allowTwoStringKite,
-      allowTurbotFish: allowTurbotFish,
-      allowXYZWing: allowXYZWing,
-      allowWWing: allowWWing,
-      allowUR: allowUR,
-      allowBUG: allowBUG,
-      allowRemotePairs: allowRemotePairs,
-      allowXYChain: allowXYChain,
-      allowALS: allowALS,
-      allowALSXYWing: allowALSXYWing,
-      allowAIC: allowAIC,
-    );
 
     while (!s.isSolved) {
       if (!cand.isNotesDriven) {
@@ -1392,55 +1348,10 @@ class Solver {
 
   Rating rateLogical(
     Sudoku s, {
-    bool allowHiddenSingles = true,
-    bool allowLocked = true,
-    bool allowPairs = true,
-    bool allowTriples = true,
-    bool allowQuads = true,
-    bool allowHiddenSubsets = true,
-    bool allowXWing = true,
-    bool allowXYWing = true,
-    bool allowColoring = true,
-    bool allowSwordfish = true,
-    bool allowSkyscraper = true,
-    bool allowTwoStringKite = true,
-    bool allowTurbotFish = true,
-    bool allowXYZWing = true,
-    bool allowWWing = true,
-    bool allowUR = true,
-    bool allowBUG = true,
-    bool allowRemotePairs = true,
-    bool allowXYChain = true,
-    bool allowALS = true,
-    bool allowALSXYWing = true,
-    bool allowAIC = true,
+    SolverSettings settings = const SolverSettings(),
   }) {
     final copy = Sudoku(List<int>.from(s.cells));
-    final res = solveLogical(
-      copy,
-      allowHiddenSingles: allowHiddenSingles,
-      allowLocked: allowLocked,
-      allowPairs: allowPairs,
-      allowTriples: allowTriples,
-      allowQuads: allowQuads,
-      allowHiddenSubsets: allowHiddenSubsets,
-      allowXWing: allowXWing,
-      allowXYWing: allowXYWing,
-      allowColoring: allowColoring,
-      allowSwordfish: allowSwordfish,
-      allowSkyscraper: allowSkyscraper,
-      allowTwoStringKite: allowTwoStringKite,
-      allowTurbotFish: allowTurbotFish,
-      allowXYZWing: allowXYZWing,
-      allowWWing: allowWWing,
-      allowUR: allowUR,
-      allowBUG: allowBUG,
-      allowRemotePairs: allowRemotePairs,
-      allowXYChain: allowXYChain,
-      allowALS: allowALS,
-      allowALSXYWing: allowALSXYWing,
-      allowAIC: allowAIC,
-    );
+    final res = solveLogical(copy, settings: settings);
     var hardest = 0;
     final counts = <StrategyUsed, int>{};
     final first = <StrategyUsed, int>{};

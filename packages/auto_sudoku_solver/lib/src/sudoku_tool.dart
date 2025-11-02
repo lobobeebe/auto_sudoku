@@ -77,22 +77,6 @@ void main(List<String> args) {
   String outPath = 'sudoku_output.json';
   int timeoutMs = 20000;
   int maxRounds = 400;
-  Difficulty? _difficultyFromString(String t) {
-    switch (t) {
-      case 'trivial':
-        return Difficulty.trivial;
-      case 'easy':
-        return Difficulty.easy;
-      case 'medium':
-        return Difficulty.medium;
-      case 'hard':
-        return Difficulty.hard;
-      case 'impossible':
-        return Difficulty.impossible;
-      default:
-        return null;
-    }
-  }
 
   for (var i = 0; i < args.length; i++) {
     final a = args[i];
@@ -126,7 +110,7 @@ void main(List<String> args) {
   }
 
   final gen = Generator(seed: seed);
-  final desired = _difficultyFromString(target);
+  final desired = Difficulty.fromString(target);
   final bool showSteps = args.contains('--steps');
 
   final List<Map<String, dynamic>> outList = [];
@@ -184,7 +168,6 @@ void main(List<String> args) {
         break;
     }
     print('Difficulty: $diffLabel');
-    print('Reason: ${result.reason}');
     if (showBoard) {
       print('Puzzle:');
       print(formatGrid(result.puzzle));
@@ -195,31 +178,7 @@ void main(List<String> args) {
     if (showSteps) {
       print('Steps used to solve (excluding naked/hidden singles):');
       final s = Sudoku(List<int>.from(result.puzzle));
-      final res = gen.solver.solveLogical(
-        s,
-        allowHiddenSingles: true,
-        allowLocked: true,
-        allowPairs: true,
-        allowTriples: true,
-        allowQuads: true,
-        allowHiddenSubsets: true,
-        allowXWing: true,
-        allowXYWing: true,
-        allowColoring: true,
-        allowSwordfish: true,
-        allowSkyscraper: true,
-        allowTwoStringKite: true,
-        allowTurbotFish: true,
-        allowXYZWing: true,
-        allowWWing: true,
-        allowUR: true,
-        allowBUG: true,
-        allowRemotePairs: true,
-        allowXYChain: true,
-        allowALS: true,
-        allowALSXYWing: true,
-        allowAIC: true,
-      );
+      final res = gen.solver.solveLogical(s);
       final filtered = res.steps
           .where(
             (st) =>
@@ -260,31 +219,7 @@ void main(List<String> args) {
 
     // Compute unique techniques (including singles) for this puzzle, human-readable
     final sTech = Sudoku(List<int>.from(result.puzzle));
-    final resTech = gen.solver.solveLogical(
-      sTech,
-      allowHiddenSingles: true,
-      allowLocked: true,
-      allowPairs: true,
-      allowTriples: true,
-      allowQuads: true,
-      allowHiddenSubsets: true,
-      allowXWing: true,
-      allowXYWing: true,
-      allowColoring: true,
-      allowSwordfish: true,
-      allowSkyscraper: true,
-      allowTwoStringKite: true,
-      allowTurbotFish: true,
-      allowXYZWing: true,
-      allowWWing: true,
-      allowUR: true,
-      allowBUG: true,
-      allowRemotePairs: true,
-      allowXYChain: true,
-      allowALS: true,
-      allowALSXYWing: true,
-      allowAIC: true,
-    );
+    final resTech = gen.solver.solveLogical(sTech);
     final techSet = <StrategyUsed>{};
     for (final st in resTech.steps) {
       techSet.add(st);

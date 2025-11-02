@@ -1,28 +1,28 @@
 class SolverSettings {
-  bool allowHiddenSingles;
-  bool allowLocked;
-  bool allowPairs;
-  bool allowTriples;
-  bool allowQuads;
-  bool allowHiddenSubsets;
-  bool allowXWing;
-  bool allowXYWing;
-  bool allowColoring;
-  bool allowSwordfish;
-  bool allowSkyscraper;
-  bool allowTwoStringKite;
-  bool allowTurbotFish;
-  bool allowXYZWing;
-  bool allowWWing;
-  bool allowUR;
-  bool allowBUG;
-  bool allowRemotePairs;
-  bool allowXYChain;
-  bool allowALS;
-  bool allowALSXYWing;
-  bool allowAIC;
+  final bool allowHiddenSingles;
+  final bool allowLocked;
+  final bool allowPairs;
+  final bool allowTriples;
+  final bool allowQuads;
+  final bool allowHiddenSubsets;
+  final bool allowXWing;
+  final bool allowXYWing;
+  final bool allowColoring;
+  final bool allowSwordfish;
+  final bool allowSkyscraper;
+  final bool allowTwoStringKite;
+  final bool allowTurbotFish;
+  final bool allowXYZWing;
+  final bool allowWWing;
+  final bool allowUR;
+  final bool allowBUG;
+  final bool allowRemotePairs;
+  final bool allowXYChain;
+  final bool allowALS;
+  final bool allowALSXYWing;
+  final bool allowAIC;
 
-  SolverSettings({
+  const SolverSettings({
     this.allowHiddenSingles = true,
     this.allowLocked = true,
     this.allowPairs = true,

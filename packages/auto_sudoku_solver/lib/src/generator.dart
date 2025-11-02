@@ -42,6 +42,7 @@ class Generator {
   final Random rng;
   final Solver solver;
   final PrunePolicy policy;
+
   Generator({int? seed, PrunePolicy? policy})
     : rng = Random(seed),
       solver = Solver(),
@@ -100,40 +101,10 @@ class Generator {
 
   int _distanceToTarget(String target, List<int> grid) {
     // compute rating with broad logical flags enabled
-    final r = solver.rateLogical(
-      Sudoku(List<int>.from(grid)),
-      // Allow everything so we can measure hardest and signature uses
-      allowHiddenSingles: true,
-      allowLocked: true,
-      allowPairs: true,
-      allowTriples: true,
-      allowQuads: true,
-      allowHiddenSubsets: true,
-      allowXWing: true,
-      allowXYWing: true,
-      allowColoring: true,
-      allowSwordfish: true,
-      allowSkyscraper: true,
-      allowTwoStringKite: true,
-      allowTurbotFish: true,
-      allowXYZWing: true,
-      allowWWing: true,
-      allowUR: true,
-      allowBUG: true,
-      allowRemotePairs: true,
-      allowXYChain: true,
-      allowALS: true,
-      allowALSXYWing: true,
-      allowAIC: true,
-    );
+    final r = solver.rateLogical(Sudoku(List<int>.from(grid)));
 
     final hardest = r.hardestIdx;
     int idxOf(StrategyUsed s) => strategyDifficultyIndex(s);
-
-    // Helper: count signature uses
-    final sigX =
-        (r.counts[StrategyUsed.xWing] ?? 0) +
-        (r.counts[StrategyUsed.xyWing] ?? 0);
 
     // Heavily penalize states that are "trivialish" for non-trivial targets
     int nonSingles = 0;
@@ -180,7 +151,6 @@ class Generator {
         // Require at least one X/XY-Wing, forbid harder than those
         final cap = idxOf(StrategyUsed.xyWing);
         if (hardest > cap) dist += big + (hardest - cap);
-        if (sigX == 0) dist += 50; // encourage signature to appear
         if (trivialish) dist += 500; // strongly avoid singles-only
         break;
       case 'hard':
@@ -282,17 +252,7 @@ class Generator {
     bool withinBackbone(List<int> grid) {
       if (policy.backboneSteps <= 0) return true;
       final s = Sudoku(List<int>.from(grid));
-      final res = solver.solveLogical(
-        s,
-        allowHiddenSingles: true,
-        allowLocked: true,
-        allowPairs: true,
-        allowTriples: true,
-        allowQuads: true,
-        allowHiddenSubsets: true,
-        allowXWing: true,
-        allowXYWing: true,
-      );
+      final res = solver.solveLogical(s);
       final hardest = res.hardestInPrefix(policy.backboneSteps);
       StrategyUsed cap;
       switch (target) {
@@ -372,18 +332,13 @@ class Generator {
 
       // check best for fit
       final bestClass = classify(best.grid);
-      final diff = bestClass.$1;
+      final diff = bestClass;
       if (target == 'any'
           ? diff != Difficulty.impossible
           : diff == _difficultyFromString(target)) {
         final sol = Sudoku(List<int>.from(best.grid));
         solver.solveBacktracking(sol);
-        return ClassifiedPuzzle(
-          best.grid,
-          sol.cells,
-          diff,
-          'Found by beam (dist=${best.dist}, steps=$digSteps)',
-        );
+        return ClassifiedPuzzle(best.grid, sol.cells, diff);
       }
       // stop if puzzle is too empty
       final clues = best.grid.where((v) => v != 0).length;
@@ -393,16 +348,11 @@ class Generator {
     if (beam.isNotEmpty) {
       final best = beam.first;
       final bestClass = classify(best.grid);
-      final diff = bestClass.$1;
+      final diff = bestClass;
       // If we timed out or stagnated, return the best-so-far (if it has a valid solution)
       final sol = Sudoku(List<int>.from(best.grid));
       if (solver.solveBacktracking(sol)) {
-        return ClassifiedPuzzle(
-          best.grid,
-          sol.cells,
-          diff,
-          'Beam terminated (timeout/stagnation/maxRounds); best-so-far dist=${best.dist}, steps=$digSteps',
-        );
+        return ClassifiedPuzzle(best.grid, sol.cells, diff);
       }
     }
 
@@ -427,101 +377,27 @@ class Generator {
         greedy,
         List<int>.from(full),
         Difficulty.impossible,
-        'No solution exists (unsolvable by backtracking)',
       );
     }
-    return ClassifiedPuzzle(
-      greedy,
-      sol.cells,
-      classification.$1,
-      classification.$2,
-    );
+    return ClassifiedPuzzle(greedy, sol.cells, classification);
   }
 
-  (Difficulty, String) classify(List<int> grid) {
-    // Trivial: singles only (naked + hidden)
+  Difficulty classify(List<int> grid) {
     final t = Sudoku(List<int>.from(grid));
-    final tr = solver.solveLogical(
-      t,
-      allowHiddenSingles: true,
-      allowLocked: false,
-      allowPairs: false,
-      allowTriples: false,
-      allowQuads: false,
-      allowHiddenSubsets: false,
-      allowXWing: false,
-      allowXYWing: false,
-    );
-    if (tr.solved) return (Difficulty.trivial, 'Singles only');
+    final tr = solver.solveLogical(t);
 
-    // Easy: Locked + Naked/Hidden Pairs/Triples/Quads; no fish
-    final e = Sudoku(List<int>.from(grid));
-    final er = solver.solveLogical(
-      e,
-      allowHiddenSingles: true,
-      allowLocked: true,
-      allowPairs: true,
-      allowTriples: true,
-      allowQuads: true,
-      allowHiddenSubsets: true,
-      allowXWing: false,
-      allowXYWing: false,
-    );
-    if (er.solved)
-      return (Difficulty.easy, 'Locked + Naked/Hidden Pairs/Triples/Quads');
+    if (!tr.solved) {
+      return Difficulty.impossible;
+    }
 
-    // Medium: add X-Wing / XY-Wing
-    final m = Sudoku(List<int>.from(grid));
-    final mr = solver.solveLogical(
-      m,
-      allowHiddenSingles: true,
-      allowLocked: true,
-      allowPairs: true,
-      allowTriples: true,
-      allowQuads: true,
-      allowHiddenSubsets: true,
-      allowXWing: true,
-      allowXYWing: true,
-    );
-    if (mr.solved) return (Difficulty.medium, 'X-Wing / XY-Wing');
+    Difficulty maxDifficulty = Difficulty.trivial;
+    for (StrategyUsed tech in tr.steps) {
+      final difficulty = strategyDifficultyOrder
+          .firstWhere((entry) => entry.$1 == tech)
+          .$2;
+      maxDifficulty = Difficulty.max(difficulty, maxDifficulty);
+    }
 
-    // Hard: enable advanced human techniques (no guessing)
-    final h = Sudoku(List<int>.from(grid));
-    final hr = solver.solveLogical(
-      h,
-      allowHiddenSingles: true,
-      allowLocked: true,
-      allowPairs: true,
-      allowTriples: true,
-      allowQuads: true,
-      allowHiddenSubsets: true,
-      allowXWing: true,
-      allowXYWing: true,
-      allowColoring: true,
-      allowSwordfish: true,
-      allowSkyscraper: true,
-      allowTwoStringKite: true,
-      allowTurbotFish: true,
-      allowXYZWing: true,
-      allowWWing: true,
-      allowUR: true,
-      allowBUG: true,
-      allowRemotePairs: true,
-      allowXYChain: true,
-      allowALS: true,
-      allowALSXYWing: true,
-      allowAIC: true,
-    );
-    if (hr.solved) return (Difficulty.hard, 'Advanced human techniques');
-
-    // If it needs guessing, treat as Impossible (invalid puzzle)
-    final bt = Sudoku(List<int>.from(grid));
-    final solvable = solver.solveBacktracking(bt);
-    if (solvable)
-      return (
-        Difficulty.impossible,
-        'Requires guessing/backtracking — invalid',
-      );
-    return (Difficulty.impossible, 'No solution exists');
+    return maxDifficulty;
   }
 }
