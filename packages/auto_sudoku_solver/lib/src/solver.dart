@@ -1214,28 +1214,20 @@ class Solver {
       // MRV among remaining
       var bestIdx = -1;
       var bestCount = 10;
-      var bestMask = 0;
-      var bestR = 0, bestC = 0, bestB = 0;
       for (var t = k; t < empties.length; t++) {
         final i = empties[t];
         final r = i ~/ 9, c = i % 9, b = (r ~/ 3) * 3 + (c ~/ 3);
         final used = row[r] | col[c] | box[b];
         var count = 0;
-        var mask = 0;
         for (var d = 1; d <= 9; d++) {
           final bit = 1 << d;
           if ((used & bit) == 0) {
             count++;
-            mask |= bit;
           }
         }
         if (count < bestCount) {
           bestCount = count;
           bestIdx = t;
-          bestMask = mask;
-          bestR = r;
-          bestC = c;
-          bestB = b;
           if (count == 1) break;
         }
       }

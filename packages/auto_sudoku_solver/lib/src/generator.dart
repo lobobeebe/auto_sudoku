@@ -126,8 +126,9 @@ class Generator {
         // Prefer fewer steps overall (optional): penalize count of non-singles
         for (final e in r.counts.entries) {
           if (e.key != StrategyUsed.nakedSingle &&
-              e.key != StrategyUsed.hiddenSingle)
+              e.key != StrategyUsed.hiddenSingle) {
             dist += e.value;
+          }
         }
         break;
       case 'easy':
@@ -227,15 +228,16 @@ class Generator {
         if (perCol[i] < policy.minPerCol) return true;
         if (perBox[i] < policy.minPerBox) return true;
       }
-      for (var d = 1; d <= 9; d++)
+      for (var d = 1; d <= 9; d++) {
         if (perDigit[d] < policy.minPerDigit) return true;
+      }
       return false;
     }
 
     // (Local _State class removed; now using top-level _State)
 
     // Helper: compare two grids for equality
-    bool _gridsEqual(List<int> a, List<int> b) {
+    bool gridsEqual(List<int> a, List<int> b) {
       if (identical(a, b)) return true;
       if (a.length != b.length) return false;
       for (var i = 0; i < a.length; i++) {
@@ -277,7 +279,9 @@ class Generator {
       final group = symGroup(cell).where((g) => grid[g] != 0).toList();
       if (group.isEmpty) return null;
       final next = List<int>.from(grid);
-      for (final g in group) next[g] = 0;
+      for (final g in group) {
+        next[g] = 0;
+      }
       if (!isUnique(next)) return null;
       if (!withinBackbone(next)) return null;
       if (violatesQuotas(next)) return null;
@@ -319,7 +323,7 @@ class Generator {
       final best = beam.first;
       if (lastBestGrid != null &&
           best.dist == lastBestDist &&
-          _gridsEqual(best.grid, lastBestGrid!)) {
+          gridsEqual(best.grid, lastBestGrid)) {
         stagnant++;
       } else {
         stagnant = 0;
@@ -363,11 +367,15 @@ class Generator {
       final group = symGroup(i).where((g) => greedy[g] != 0).toList();
       if (group.isEmpty) continue;
       final saved = [for (final g in group) greedy[g]];
-      for (final g in group) greedy[g] = 0;
+      for (final g in group) {
+        greedy[g] = 0;
+      }
       if (!isUnique(greedy) ||
           violatesQuotas(greedy) ||
           !withinBackbone(greedy)) {
-        for (var k = 0; k < group.length; k++) greedy[group[k]] = saved[k];
+        for (var k = 0; k < group.length; k++) {
+          greedy[group[k]] = saved[k];
+        }
       }
     }
     final classification = classify(greedy);
