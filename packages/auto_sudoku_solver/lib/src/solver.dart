@@ -394,43 +394,69 @@ class Solver {
     // Try Hidden subset in each unit
     Hint? processUnitHidden(Iterable<int> unit, HintUnit unitType) {
       final empties = unit.where((i) => s.cells[i] == 0).toList();
+      if (empties.isEmpty) return null;
       final locs = List.generate(10, (_) => <int>[]);
       for (final i in empties) {
         for (final d in cand[i]) {
           locs[d].add(i);
         }
       }
+
+      final digits = <int>[];
       for (var d = 1; d <= 9; d++) {
-        final pos = locs[d];
-        if (pos.length >= 2 && pos.length <= k) {
-          final union = <int>{};
-          for (final i in pos) {
-            union.addAll(cand[i]);
-          }
-          if (union.length == k) {
-            final toTrim = <(int, int)>[]; // (cell, digit)
-            for (final i in pos) {
-              for (final x in cand[i]) {
-                if (!union.contains(x)) toTrim.add((i, x));
-              }
-            }
-            if (toTrim.isNotEmpty) {
-              return Hint(
-                k == 2
-                    ? StrategyUsed.hiddenPair
-                    : k == 3
-                    ? StrategyUsed.hiddenTriple
-                    : StrategyUsed.hiddenQuad,
-                eliminations: toTrim,
-                cells: pos,
-                digits: union.toList(),
-                unit: unitType,
-              );
-            }
-          }
+        final positions = locs[d];
+        if (positions.length >= 2 && positions.length <= k) {
+          digits.add(d);
         }
       }
-      return null;
+      if (digits.length < k) return null;
+
+      Hint? result;
+      final current = <int>[];
+      void choose(int start) {
+        if (result != null) return;
+        if (current.length == k) {
+          final positions = <int>{};
+          for (final d in current) {
+            positions.addAll(locs[d]);
+          }
+          if (positions.length != k) return;
+
+          final subset = current.toSet();
+          final toTrim = <(int, int)>[];
+          for (final cell in positions) {
+            for (final candidate in cand[cell]) {
+              if (!subset.contains(candidate)) {
+                toTrim.add((cell, candidate));
+              }
+            }
+          }
+          if (toTrim.isEmpty) return;
+
+          result = Hint(
+            switch (k) {
+              2 => StrategyUsed.hiddenPair,
+              3 => StrategyUsed.hiddenTriple,
+              _ => StrategyUsed.hiddenQuad,
+            },
+            eliminations: toTrim,
+            cells: positions.toList()..sort(),
+            digits: subset.toList()..sort(),
+            unit: unitType,
+          );
+          return;
+        }
+
+        for (var i = start; i < digits.length; i++) {
+          current.add(digits[i]);
+          choose(i + 1);
+          current.removeLast();
+          if (result != null) return;
+        }
+      }
+
+      choose(0);
+      return result;
     }
 
     for (var r = 0; r < 9; r++) {
