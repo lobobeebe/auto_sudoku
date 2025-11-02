@@ -87,23 +87,6 @@ class _SudokuHomePageState extends State<SudokuHomePage> {
       );
     }
 
-    final bottomChild = board.hint != null
-        ? HintStepsPanel(
-            key: const ValueKey('hintPanel'),
-            hint: board.hint!,
-            onSkip: _handleHintSkip,
-            onApply: _handleHintApply,
-          )
-        : Column(
-            key: const ValueKey('controls'),
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              ActionBar(onHintRequested: _handleHintRequest),
-              const SizedBox(height: 12),
-              NumberPad(),
-            ],
-          );
-
     return Padding(
       padding: EdgeInsets.symmetric(
         horizontal: horizontalPadding,
@@ -114,7 +97,37 @@ class _SudokuHomePageState extends State<SudokuHomePage> {
         children: [
           Expanded(child: const SudokuGrid()),
           const SizedBox(height: 24),
-          bottomChild,
+          Stack(
+            alignment: Alignment.bottomCenter,
+            children: [
+              // Controls (base layer)
+              Column(
+                key: const ValueKey('controls'),
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  ActionBar(onHintRequested: _handleHintRequest),
+                  const SizedBox(height: 12),
+                  NumberPad(),
+                ],
+              ),
+
+              // Rounded-rect scrim over controls when a hint is visible
+              if (board.hint != null)
+                Container(
+                  // Use surfaceVariant with alpha for a subtle veil
+                  color: Colors.black.withOpacity(0.85),
+                ),
+
+              // Hint panel (top layer)
+              if (board.hint != null)
+                HintStepsPanel(
+                  key: const ValueKey('hintPanel'),
+                  hint: board.hint!,
+                  onSkip: _handleHintSkip,
+                  onApply: _handleHintApply,
+                ),
+            ],
+          ),
         ],
       ),
     );
