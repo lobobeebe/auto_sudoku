@@ -74,24 +74,64 @@ class ActionBar extends StatelessWidget {
       notes: board.toNotesList(),
     );
     final hint = _solver.nextHint(sudoku, allowTriples: true, allowXWing: true);
-    final messenger = ScaffoldMessenger.of(context);
 
     if (hint == null) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('No logical hint available.')),
+      board.clearHint();
+      _showHintSheet(
+        context,
+        title: 'No Hint Available',
+        body: 'No logical hint available.',
       );
       return;
     }
 
-    final applied = board.applyHint(hint);
-    if (!applied) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Solver could not apply a move.')),
-      );
-      return;
-    }
+    board.setHint(hint);
+    _showHintSheet(context, title: 'Hint Ready', body: hint.description);
+  }
 
-    messenger.showSnackBar(SnackBar(content: Text(hint.description)));
+  void _showHintSheet(
+    BuildContext context, {
+    required String title,
+    required String body,
+  }) {
+    showModalBottomSheet<void>(
+      context: context,
+      enableDrag: false,
+      builder: (sheetContext) {
+        final theme = Theme.of(sheetContext);
+        final colorScheme = theme.colorScheme;
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                body,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Align(
+                alignment: Alignment.centerRight,
+                child: FilledButton(
+                  onPressed: () => Navigator.of(sheetContext).pop(),
+                  child: const Text('Got it'),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 }
 

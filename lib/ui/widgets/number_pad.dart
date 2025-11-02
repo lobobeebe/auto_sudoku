@@ -39,9 +39,8 @@ class NumberPad extends StatelessWidget {
                   (digit) => _PadButton(
                     label: '$digit',
                     width: buttonWidth,
-                    isEnabled: isEnabled &&
-                        !board.isDigitSolved(digit) &&
-                        board.canPlaceDigit(digit),
+                    isEnabled: isEnabled && board.canPlaceDigit(digit),
+                    isComplete: board.isDigitSolved(digit),
                     sudokuTheme: sudokuTheme,
                     noteMode: board.noteMode,
                     onPressed: () => _handleDigit(context, digit),
@@ -71,6 +70,7 @@ class _PadButton extends StatelessWidget {
   final String label;
   final VoidCallback onPressed;
   final bool isEnabled;
+  final bool isComplete;
   final SudokuTheme sudokuTheme;
   final bool noteMode;
   final double width;
@@ -79,6 +79,7 @@ class _PadButton extends StatelessWidget {
     required this.label,
     required this.onPressed,
     this.isEnabled = true,
+    required this.isComplete,
     required this.sudokuTheme,
     required this.noteMode,
     required this.width,
@@ -90,9 +91,10 @@ class _PadButton extends StatelessWidget {
     return SizedBox(
       width: width,
       child: FilledButton(
-        onPressed: isEnabled ? onPressed : null,
+        onPressed: (isEnabled && !isComplete) ? onPressed : null,
         style: FilledButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 16),
+          disabledBackgroundColor: isComplete ? Colors.transparent : null,
           backgroundColor: noteMode
               ? colorScheme.primary
               : sudokuTheme.numberPadBackground,

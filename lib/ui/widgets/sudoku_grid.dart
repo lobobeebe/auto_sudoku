@@ -1,3 +1,4 @@
+import 'package:auto_sudoku/ui/widgets/cell_notes.dart';
 import 'package:flutter/material.dart';
 
 import 'package:auto_sudoku/state/sudoku_board_state.dart';
@@ -54,7 +55,6 @@ class SudokuGrid extends StatelessWidget {
                 cell.value != null &&
                 cell.value == selectedValue;
             final isHighlighted = board.autoFillHighlightIndex == index;
-
             Color background = sudokuTheme.boardSurface;
             if (isPeer) {
               background = sudokuTheme.peerCellBackground;
@@ -104,6 +104,7 @@ class SudokuGrid extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.all(2),
                   child: SudokuCellContents(
+                    index: index,
                     cell: cell,
                     isSelected: isSelected,
                     isHighlighted: isHighlighted,
@@ -122,6 +123,7 @@ class SudokuGrid extends StatelessWidget {
 }
 
 class SudokuCellContents extends StatelessWidget {
+  final int index;
   final SudokuCell cell;
   final bool isSelected;
   final bool isHighlighted;
@@ -131,6 +133,7 @@ class SudokuCellContents extends StatelessWidget {
 
   const SudokuCellContents({
     super.key,
+    required this.index,
     required this.cell,
     required this.isSelected,
     required this.isHighlighted,
@@ -177,47 +180,10 @@ class SudokuCellContents extends StatelessWidget {
           return const SizedBox.shrink();
         }
 
-        final digits = List<int>.generate(9, (index) => index + 1);
-        final noteFontSize = constraints.maxHeight * 0.22;
-        final cellWidth = constraints.maxWidth / 3;
-        final cellHeight = constraints.maxHeight / 3;
-
-        return Wrap(
-          spacing: 0,
-          runSpacing: 0,
-          children: digits.map((digit) {
-            final hasNote = cell.notes.contains(digit);
-            final isHighlightedNote =
-                selectedValue != null && digit == selectedValue;
-            return SizedBox(
-              width: cellWidth,
-              height: cellHeight,
-              child: hasNote
-                  ? DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: isHighlightedNote
-                            ? sudokuTheme.noteHighlightBackground
-                            : Colors.transparent,
-                        borderRadius: sudokuTheme.noteHighlightRadius,
-                      ),
-                      child: Center(
-                        child: Text(
-                          '$digit',
-                          style: TextStyle(
-                            fontSize: noteFontSize,
-                            fontWeight: isHighlightedNote
-                                ? FontWeight.w700
-                                : FontWeight.w500,
-                            color: isHighlightedNote
-                                ? sudokuTheme.noteHighlightTextColor
-                                : sudokuTheme.noteDefaultColor,
-                          ),
-                        ),
-                      ),
-                    )
-                  : const SizedBox.shrink(),
-            );
-          }).toList(),
+        return CellNotes(
+          activeNotes: cell.notes,
+          sudokuTheme: sudokuTheme,
+          index: index,
         );
       },
     );

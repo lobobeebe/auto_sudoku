@@ -14,6 +14,7 @@ class SudokuHomePage extends StatefulWidget {
 }
 
 class _SudokuHomePageState extends State<SudokuHomePage> {
+  final GlobalKey _boardKey = GlobalKey();
   GameStatus? _lastGameStatus;
   String? _lastError;
 
@@ -93,13 +94,17 @@ class _SudokuHomePageState extends State<SudokuHomePage> {
         children: [
           Expanded(
             child: Center(
-              child: AspectRatio(aspectRatio: 1, child: SudokuGrid()),
+              child: AspectRatio(
+                key: _boardKey,
+                aspectRatio: 1,
+                child: const SudokuGrid(),
+              ),
             ),
           ),
           const SizedBox(height: 24),
-          ActionBar(),
+          const ActionBar(),
           const SizedBox(height: 12),
-          NumberPad(),
+          const NumberPad(),
         ],
       ),
     );
@@ -111,9 +116,11 @@ class _SudokuHomePageState extends State<SudokuHomePage> {
     if (_lastGameStatus != status) {
       _lastGameStatus = status;
 
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _showResultDialog(status);
-      });
+      if (status != GameStatus.playing) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _showResultDialog(status);
+        });
+      }
     }
   }
 
