@@ -6,7 +6,7 @@ import 'package:auto_sudoku/ui/widgets/action_bar.dart';
 import 'package:auto_sudoku/ui/widgets/hint_steps_panel.dart';
 import 'package:auto_sudoku/ui/widgets/number_pad.dart';
 import 'package:auto_sudoku/ui/widgets/sudoku_grid.dart';
-import 'package:auto_sudoku_solver/auto_sudoku_solver.dart' as solver;
+import 'package:auto_sudoku_solver/auto_sudoku_solver.dart';
 import 'package:provider/provider.dart';
 
 class SudokuHomePage extends StatefulWidget {
@@ -17,8 +17,7 @@ class SudokuHomePage extends StatefulWidget {
 }
 
 class _SudokuHomePageState extends State<SudokuHomePage> {
-  final GlobalKey _boardKey = GlobalKey();
-  final solver.Solver _solver = solver.Solver();
+  final Solver _solver = Solver();
   GameStatus? _lastGameStatus;
   String? _lastError;
 
@@ -113,35 +112,9 @@ class _SudokuHomePageState extends State<SudokuHomePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(
-            child: Center(
-              child: AspectRatio(
-                key: _boardKey,
-                aspectRatio: 1,
-                child: const SudokuGrid(),
-              ),
-            ),
-          ),
+          Expanded(child: const SudokuGrid()),
           const SizedBox(height: 24),
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 320),
-            transitionBuilder: (child, animation) {
-              final curved = CurvedAnimation(
-                parent: animation,
-                curve: Curves.easeOut,
-                reverseCurve: Curves.easeIn,
-              );
-              final slide = Tween<Offset>(
-                begin: const Offset(0, 1),
-                end: Offset.zero,
-              ).animate(curved);
-              return SlideTransition(
-                position: slide,
-                child: FadeTransition(opacity: curved, child: child),
-              );
-            },
-            child: bottomChild,
-          ),
+          bottomChild,
         ],
       ),
     );
@@ -214,10 +187,7 @@ class _SudokuHomePageState extends State<SudokuHomePage> {
 
   Future<void> _handleHintRequest() async {
     final board = context.read<SudokuBoardState>();
-    final sudoku = solver.Sudoku(
-      board.toValueList(),
-      notes: board.toNotesList(),
-    );
+    final sudoku = Sudoku(board.toValueList(), notes: board.toNotesList());
     final hint = _solver.nextHint(sudoku);
 
     if (hint == null) {
@@ -225,6 +195,7 @@ class _SudokuHomePageState extends State<SudokuHomePage> {
       return;
     }
 
+    board.deselectCell();
     board.setHint(hint);
   }
 

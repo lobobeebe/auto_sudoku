@@ -1,7 +1,6 @@
 import 'package:auto_sudoku_solver/src/sudoku_tool.dart';
 
 enum StrategyUsed {
-  none,
   nakedSingle,
   hiddenSingle,
   // Pairs
@@ -176,7 +175,5 @@ String techniqueLabel(StrategyUsed s) {
       return 'ALS XY-Wing';
     case StrategyUsed.aic:
       return 'AIC (Alternating Inference Chain)';
-    case StrategyUsed.none:
-      return 'None';
   }
 }

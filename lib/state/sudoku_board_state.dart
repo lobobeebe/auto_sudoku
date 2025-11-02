@@ -212,6 +212,11 @@ class SudokuBoardState extends ChangeNotifier {
     _emitChange();
   }
 
+  void deselectCell() {
+    _selectedIndex = null;
+    _emitChange();
+  }
+
   void selectCell(int row, int col) {
     if (_isAnimatingSingles) {
       return;
