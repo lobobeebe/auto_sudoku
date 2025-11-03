@@ -70,7 +70,8 @@ class SudokuBoardState extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
   solver.Hint? get hint => _hint;
-  String get difficulty => _currentPuzzle?.difficulty ?? 'Unknown';
+  String get difficulty =>
+      _currentPuzzle?.difficulty.toString() ?? 'Unknown';
   List<String> get techniques => _currentPuzzle?.techniques ?? const [];
 
   /// Returns the current board values as a flat list with zero for blanks.
