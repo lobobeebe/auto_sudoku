@@ -50,11 +50,16 @@ class _HintStepsPanelState extends State<HintStepsPanel> {
               Row(
                 spacing: 10,
                 children: [
-                  Text(
-                    _explanation.title,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  Flexible(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        _explanation.title,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ),
                   ),
-                  const Expanded(child: SizedBox()),
                   TextButton(
                     onPressed: widget.onSkip,
                     child: const Text('Skip'),

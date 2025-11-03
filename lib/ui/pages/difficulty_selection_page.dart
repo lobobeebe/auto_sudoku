@@ -78,10 +78,7 @@ class _DifficultySelectionPageState extends State<DifficultySelectionPage>
           Positioned(
             bottom: -60,
             left: -20,
-            child: _BlurOrb(
-              color: colorScheme.secondaryContainer,
-              size: 180,
-            ),
+            child: _BlurOrb(color: colorScheme.tertiary, size: 180),
           ),
           SafeArea(
             child: Padding(
@@ -161,15 +158,16 @@ class _DifficultySelectionPageState extends State<DifficultySelectionPage>
           return FadeTransition(
             opacity: animation,
             child: SlideTransition(
-              position: Tween<Offset>(
-                begin: const Offset(0, 0.04),
-                end: Offset.zero,
-              ).animate(
-                CurvedAnimation(
-                  parent: animation,
-                  curve: Curves.easeOutCubic,
-                ),
-              ),
+              position:
+                  Tween<Offset>(
+                    begin: const Offset(0, 0.04),
+                    end: Offset.zero,
+                  ).animate(
+                    CurvedAnimation(
+                      parent: animation,
+                      curve: Curves.easeOutCubic,
+                    ),
+                  ),
               child: ChangeNotifierProvider<SudokuBoardState>(
                 create: (_) =>
                     SudokuBoardState(repo: repo)..init(difficulty: difficulty),

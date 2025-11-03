@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import 'package:auto_sudoku/state/sudoku_board_state.dart';
@@ -17,111 +19,284 @@ class SudokuHomePage extends StatefulWidget {
 }
 
 class _SudokuHomePageState extends State<SudokuHomePage> {
+  static const double _toolbarHeight = 72;
+
   final Solver _solver = Solver();
   GameStatus? _lastGameStatus;
-  String? _lastError;
 
   @override
   Widget build(BuildContext context) {
     final board = context.watch<SudokuBoardState>();
-    final shortestSide = MediaQuery.of(context).size.shortestSide;
-    final horizontalPadding = shortestSide < 600 ? 16.0 : 32.0;
-    final isLoading = board.isLoading;
+    final theme = Theme.of(context);
 
     _maybeShowEndDialog(board);
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        titleSpacing: 16,
-        title: Column(children: [const Text('Auto Sudoku')]),
-
+        toolbarHeight: _toolbarHeight,
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        titleSpacing: 24,
+        title: const Text('Auto Sudoku'),
         actions: [
-          IconButton(
-            tooltip: 'Reset Board',
-            icon: const Icon(Icons.refresh),
-            onPressed: isLoading ? null : board.resetBoard,
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: IconButton.filledTonal(
+              icon: const Icon(Icons.refresh_rounded),
+              onPressed: board.isLoading ? null : board.resetBoard,
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 12,
+                ),
+                textStyle: theme.textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
           ),
         ],
       ),
-      body: SafeArea(child: _buildBody(context, board, horizontalPadding)),
+      body: _buildBody(context, board),
     );
   }
 
-  Widget _buildBody(
-    BuildContext context,
-    SudokuBoardState board,
-    double horizontalPadding,
-  ) {
+  Widget _buildBody(BuildContext context, SudokuBoardState board) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final topInset = _toolbarHeight + 16;
+
+    Widget content;
     if (board.isLoading) {
-      return const Center(child: CircularProgressIndicator.adaptive());
+      content = const Center(
+        key: ValueKey('loading'),
+        child: CircularProgressIndicator.adaptive(),
+      );
+    } else if (board.error != null) {
+      content = _ErrorPanel(
+        key: const ValueKey('error'),
+        message: board.error!,
+        onReturn: () => Navigator.pop(context),
+      );
+    } else {
+      content = _buildPuzzleContent(context, board);
     }
 
-    final error = board.error;
-    if (error != _lastError) {
-      _lastError = error;
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'We hit a snag while loading puzzles.',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              error ?? "Null Error",
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.error,
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  colorScheme.surface,
+                  colorScheme.surfaceContainerHighest.withValues(alpha: 0.85),
+                ],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
               ),
             ),
-            const SizedBox(height: 16),
-            FilledButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Return'),
-            ),
-          ],
+          ),
         ),
-      );
-    }
+        Positioned(
+          top: -72,
+          right: -20,
+          child: _BackgroundOrb(color: colorScheme.primary, size: 220),
+        ),
+        Positioned(
+          bottom: -80,
+          left: -60,
+          child: _BackgroundOrb(
+            color: colorScheme.secondaryContainer,
+            size: 260,
+          ),
+        ),
+        SafeArea(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(24, topInset, 24, 24),
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 360),
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeInOutCubic,
+              child: content,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 
-    return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: horizontalPadding,
-        vertical: 16,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(child: const SudokuGrid()),
-          SizedBox(height: 12),
-          ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 120),
-            child: Stack(
-              alignment: Alignment.center,
+  Widget _buildPuzzleContent(BuildContext context, SudokuBoardState board) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth > 900;
+
+        return Align(
+          key: const ValueKey('puzzle'),
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1120),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Controls (base layer)
-                Column(
-                  key: const ValueKey('controls'),
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    ActionBar(onHintRequested: _handleHintRequest),
-                    const SizedBox(height: 12),
-                    NumberPad(),
-                  ],
+                Expanded(
+                  child: isWide
+                      ? Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(child: _buildBoardCard(context)),
+                            const SizedBox(width: 28),
+                            SizedBox(
+                              width: 360,
+                              child: _buildControlsCard(context, board),
+                            ),
+                          ],
+                        )
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Expanded(flex: 5, child: _buildBoardCard(context)),
+                            const SizedBox(height: 24),
+                            Flexible(
+                              flex: 3,
+                              fit: FlexFit.loose,
+                              child: _buildControlsCard(context, board),
+                            ),
+                          ],
+                        ),
                 ),
-
-                // Hint panel (top layer)
-                if (board.hint != null)
-                  Positioned.fill(
-                    child: HintStepsPanel(
-                      key: const ValueKey('hintPanel'),
-                      hint: board.hint!,
-                      onSkip: _handleHintSkip,
-                      onApply: _handleHintApply,
-                    ),
-                  ),
               ],
             ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildBoardCard(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxWidth = constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : MediaQuery.of(context).size.width;
+        final maxHeight = constraints.maxHeight.isFinite
+            ? constraints.maxHeight
+            : MediaQuery.of(context).size.height;
+        final shortestSide = math.min(maxWidth, maxHeight);
+        final padding = shortestSide > 520
+            ? 32.0
+            : shortestSide > 420
+            ? 24.0
+            : 18.0;
+
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 320),
+          curve: Curves.easeOutCubic,
+          padding: EdgeInsets.all(padding),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(32),
+            gradient: LinearGradient(
+              colors: [colorScheme.surfaceContainerLow, colorScheme.surface],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.12),
+                blurRadius: 32,
+                offset: const Offset(0, 18),
+              ),
+            ],
+            border: Border.all(
+              color: colorScheme.outlineVariant.withValues(alpha: 0.25),
+              width: 1.2,
+            ),
+          ),
+          child: Center(
+            child: AspectRatio(
+              aspectRatio: 1,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: const SudokuGrid(),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildControlsCard(BuildContext context, SudokuBoardState board) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final hint = board.hint;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOutCubic,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28),
+        color: colorScheme.surface.withValues(alpha: 0.94),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 26,
+            offset: const Offset(0, 16),
+          ),
+        ],
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.18),
+        ),
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          AnimatedOpacity(
+            duration: const Duration(milliseconds: 200),
+            opacity: hint == null ? 1 : 0.2,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                ActionBar(onHintRequested: _handleHintRequest),
+                const SizedBox(height: 20),
+                const NumberPad(),
+              ],
+            ),
+          ),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 240),
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeInCubic,
+            transitionBuilder: (child, animation) {
+              return FadeTransition(
+                opacity: animation,
+                child: ScaleTransition(
+                  scale: CurvedAnimation(
+                    parent: animation,
+                    curve: Curves.easeOutBack,
+                  ),
+                  child: child,
+                ),
+              );
+            },
+            child: hint == null
+                ? const SizedBox.shrink()
+                : SizedBox.expand(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: HintStepsPanel(
+                        key: const ValueKey('hintPanel'),
+                        hint: hint,
+                        onSkip: _handleHintSkip,
+                        onApply: _handleHintApply,
+                      ),
+                    ),
+                  ),
           ),
         ],
       ),
@@ -220,5 +395,87 @@ class _SudokuHomePageState extends State<SudokuHomePage> {
       board.clearHint();
       showFeedback(context, 'Unable to apply hint.');
     }
+  }
+}
+
+class _ErrorPanel extends StatelessWidget {
+  final String message;
+  final VoidCallback onReturn;
+
+  const _ErrorPanel({super.key, required this.message, required this.onReturn});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: Card(
+          elevation: 12,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.sentiment_dissatisfied_rounded,
+                  size: 48,
+                  color: colorScheme.error,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'We hit a snag while loading puzzles.',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  message,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.error,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                FilledButton(onPressed: onReturn, child: const Text('Return')),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BackgroundOrb extends StatelessWidget {
+  final Color color;
+  final double size;
+
+  const _BackgroundOrb({required this.color, required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: color.withValues(alpha: 0.22),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.25),
+            blurRadius: size * 0.6,
+            spreadRadius: size * 0.18,
+          ),
+        ],
+      ),
+    );
   }
 }

@@ -44,8 +44,6 @@ class ActionBar extends StatelessWidget {
             icon: const Icon(Icons.question_mark),
           ),
           Expanded(child: SizedBox()),
-          _DifficultyInfo(difficulty: board.difficulty),
-          Expanded(child: SizedBox()),
           Tooltip(
             message: board.noteMode ? 'Disable Notes' : 'Enable Notes',
             child: Switch(
@@ -67,47 +65,6 @@ class ActionBar extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _DifficultyInfo extends StatelessWidget {
-  final String difficulty;
-
-  const _DifficultyInfo({required this.difficulty});
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Container(
-          width: 26,
-          height: 26,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: colorScheme.primaryContainer.withValues(alpha: 0.28),
-          ),
-          child: Icon(
-            Icons.speed_rounded,
-            size: 26,
-            color: colorScheme.primary,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          difficulty,
-          style: textTheme.bodyLarge?.copyWith(
-            color: colorScheme.onSurfaceVariant,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.2,
-          ),
-          overflow: TextOverflow.ellipsis,
-        ),
-      ],
     );
   }
 }
