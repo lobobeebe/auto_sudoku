@@ -14,24 +14,27 @@ class CellNotes extends StatelessWidget {
       builder: (context, constraints) {
         final cellWidth = constraints.maxWidth / 3;
         final cellHeight = constraints.maxHeight / 3;
-        return GridView(
-          physics: const NeverScrollableScrollPhysics(),
-          padding: EdgeInsets.zero,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-          ),
-          children: [
-            ...digits.map((digit) {
-              return _CellNote(
-                index: index,
-                width: cellWidth,
-                height: cellHeight,
-                isActive: activeNotes.contains(digit),
-                state: board,
-                digit: digit,
-              );
-            }),
-          ],
+        return Column(
+          mainAxisSize: MainAxisSize.max,
+          children: List.generate(3, (row) {
+            return SizedBox(
+              height: cellHeight,
+              child: Row(
+                mainAxisSize: MainAxisSize.max,
+                children: List.generate(3, (col) {
+                  final digit = digits[row * 3 + col];
+                  return _CellNote(
+                    index: index,
+                    width: cellWidth,
+                    height: cellHeight,
+                    isActive: activeNotes.contains(digit),
+                    state: board,
+                    digit: digit,
+                  );
+                }),
+              ),
+            );
+          }),
         );
       },
     );
