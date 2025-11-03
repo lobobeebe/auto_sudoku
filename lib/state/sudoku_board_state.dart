@@ -7,19 +7,46 @@ import 'package:flutter/foundation.dart';
 
 enum GameStatus { playing, won, lost }
 
+enum CellColoring { none, colorA, colorB }
+
+enum ColoringBrush { colorA, colorB, eraser }
+
 class SudokuCell {
   final int? value;
   final Set<int> notes;
   final bool isGiven;
+  final CellColoring coloring;
 
-  SudokuCell({this.value, Set<int>? notes, this.isGiven = false})
-    : notes = notes != null ? Set<int>.from(notes) : <int>{};
+  SudokuCell({
+    this.value,
+    Set<int>? notes,
+    this.isGiven = false,
+    this.coloring = CellColoring.none,
+  }) : notes = notes != null ? Set<int>.from(notes) : <int>{};
 
   SudokuCell withValue(int? newValue) =>
-      SudokuCell(value: newValue, notes: const <int>{}, isGiven: isGiven);
+      SudokuCell(
+        value: newValue,
+        notes: const <int>{},
+        isGiven: isGiven,
+        coloring: coloring,
+      );
 
   SudokuCell withNotes(Set<int> newNotes) =>
-      SudokuCell(value: value, notes: newNotes, isGiven: isGiven);
+      SudokuCell(
+        value: value,
+        notes: newNotes,
+        isGiven: isGiven,
+        coloring: coloring,
+      );
+
+  SudokuCell withColoring(CellColoring newColoring) =>
+      SudokuCell(
+        value: value,
+        notes: notes,
+        isGiven: isGiven,
+        coloring: newColoring,
+      );
 }
 
 class SudokuBoardState extends ChangeNotifier {
@@ -32,6 +59,10 @@ class SudokuBoardState extends ChangeNotifier {
   SudokuPuzzle? _currentPuzzle;
   int? _selectedIndex;
   bool _noteMode = false;
+  bool _colorMode = false;
+  ColoringBrush _coloringBrush = ColoringBrush.colorA;
+  Set<int>? _colorAPeersCache;
+  Set<int>? _colorBPeersCache;
 
   bool _isAnimatingSingles = false;
   bool _pendingAutoSingles = false;
@@ -63,6 +94,25 @@ class SudokuBoardState extends ChangeNotifier {
   int? get selectedValue =>
       _selectedIndex != null ? _cells[_selectedIndex!].value : null;
   bool get noteMode => _noteMode;
+  bool get coloringMode => _colorMode;
+  ColoringBrush get coloringBrush => _coloringBrush;
+  bool get hasColoringMarks =>
+      _cells.any((cell) => cell.coloring != CellColoring.none);
+  Set<int> get colorAPeerIndices =>
+      _colorAPeersCache ??= _collectColorPeers(CellColoring.colorA);
+  Set<int> get colorBPeerIndices =>
+      _colorBPeersCache ??= _collectColorPeers(CellColoring.colorB);
+  Set<int> get colorMixedPeerIndices {
+    final mixed = <int>{};
+    final aPeers = colorAPeerIndices;
+    final bPeers = colorBPeerIndices;
+    for (final index in aPeers) {
+      if (bPeers.contains(index)) {
+        mixed.add(index);
+      }
+    }
+    return mixed;
+  }
   bool get isAnimatingSingles => _isAnimatingSingles;
   int? get autoFillHighlightIndex => _autoFillHighlightIndex;
   bool get canUndo => _history.isNotEmpty;
@@ -186,6 +236,8 @@ class SudokuBoardState extends ChangeNotifier {
     _currentPuzzle = puzzle;
     _selectedIndex = null;
     _noteMode = false;
+    _colorMode = false;
+    _coloringBrush = ColoringBrush.colorA;
     _isAnimatingSingles = false;
     _pendingAutoSingles = false;
     _autoFillHighlightIndex = null;
@@ -201,6 +253,7 @@ class SudokuBoardState extends ChangeNotifier {
           : SudokuCell();
     }
 
+    _invalidateColoringCaches();
     fillAllNotes(notify: false);
     _emitChange();
     _scheduleAutoSingles();
@@ -212,7 +265,62 @@ class SudokuBoardState extends ChangeNotifier {
     }
 
     _noteMode = !_noteMode;
+    if (_noteMode && _colorMode) {
+      _colorMode = false;
+    }
     _emitChange();
+  }
+
+  void toggleColorMode() {
+    if (_isAnimatingSingles) {
+      return;
+    }
+    _colorMode = !_colorMode;
+    if (_colorMode && _noteMode) {
+      _noteMode = false;
+    }
+    _emitChange();
+  }
+
+  bool isColorPeer(CellColoring color, int index) {
+    switch (color) {
+      case CellColoring.colorA:
+        return colorAPeerIndices.contains(index);
+      case CellColoring.colorB:
+        return colorBPeerIndices.contains(index);
+      case CellColoring.none:
+        return false;
+    }
+  }
+
+  void setColoringBrush(ColoringBrush brush) {
+    if (_coloringBrush == brush) {
+      return;
+    }
+    _coloringBrush = brush;
+    _emitChange();
+  }
+
+  void clearColoringMarks() {
+    if (_isAnimatingSingles) {
+      return;
+    }
+    var hasChange = false;
+    for (var i = 0; i < _cells.length; i++) {
+      final cell = _cells[i];
+      if (cell.coloring == CellColoring.none) {
+        continue;
+      }
+      if (!hasChange) {
+        _pushSnapshot();
+        hasChange = true;
+      }
+      _cells[i] = cell.withColoring(CellColoring.none);
+    }
+    if (hasChange) {
+      _invalidateColoringCaches();
+      _emitChange();
+    }
   }
 
   void deselectCell() {
@@ -225,6 +333,39 @@ class SudokuBoardState extends ChangeNotifier {
       return;
     }
     final index = _index(row, col);
+
+    if (_colorMode) {
+      final cell = _cells[index];
+      final currentColoring = cell.coloring;
+      final targetColoring = switch (_coloringBrush) {
+        ColoringBrush.colorA => CellColoring.colorA,
+        ColoringBrush.colorB => CellColoring.colorB,
+        ColoringBrush.eraser => CellColoring.none,
+      };
+
+      CellColoring nextColoring;
+      if (_coloringBrush == ColoringBrush.eraser) {
+        if (currentColoring == CellColoring.none) {
+          _selectedIndex = index;
+          _emitChange();
+          return;
+        }
+        nextColoring = CellColoring.none;
+      } else if (currentColoring == targetColoring) {
+        nextColoring = CellColoring.none;
+      } else {
+        nextColoring = targetColoring;
+      }
+
+      if (nextColoring != currentColoring) {
+        _pushSnapshot();
+        _cells[index] = cell.withColoring(nextColoring);
+        _invalidateColoringCaches();
+      }
+      _selectedIndex = index;
+      _emitChange();
+      return;
+    }
 
     if (_selectedIndex == index) {
       _selectedIndex = null;
@@ -277,6 +418,7 @@ class SudokuBoardState extends ChangeNotifier {
         value: null,
         notes: const <int>{},
         isGiven: cell.isGiven,
+        coloring: cell.coloring,
       );
       _restoreNotesAround(idx, digit);
       final row = idx ~/ size;
@@ -484,6 +626,45 @@ class SudokuBoardState extends ChangeNotifier {
     return hiddenBest;
   }
 
+  void _invalidateColoringCaches() {
+    _colorAPeersCache = null;
+    _colorBPeersCache = null;
+  }
+
+  Set<int> _collectColorPeers(CellColoring color) {
+    final peers = <int>{};
+    for (var index = 0; index < _cells.length; index++) {
+      if (_cells[index].coloring != color) {
+        continue;
+      }
+      final row = index ~/ size;
+      final col = index % size;
+      for (var c = 0; c < size; c++) {
+        final peer = _index(row, c);
+        if (peer != index) {
+          peers.add(peer);
+        }
+      }
+      for (var r = 0; r < size; r++) {
+        final peer = _index(r, col);
+        if (peer != index) {
+          peers.add(peer);
+        }
+      }
+      final startRow = (row ~/ 3) * 3;
+      final startCol = (col ~/ 3) * 3;
+      for (var r = startRow; r < startRow + 3; r++) {
+        for (var c = startCol; c < startCol + 3; c++) {
+          final peer = _index(r, c);
+          if (peer != index) {
+            peers.add(peer);
+          }
+        }
+      }
+    }
+    return peers;
+  }
+
   int _index(int row, int col) => row * size + col;
 
   Set<int> _candidatesFor(int row, int col) {
@@ -641,6 +822,7 @@ class SudokuBoardState extends ChangeNotifier {
     for (var i = 0; i < _cells.length; i++) {
       _cells[i] = snapshot.cells[i];
     }
+    _invalidateColoringCaches();
     _selectedIndex = snapshot.selectedIndex;
     _status = snapshot.status;
     _pendingAutoSingles = false;
@@ -684,6 +866,7 @@ class SudokuBoardState extends ChangeNotifier {
         value: cell.value,
         notes: cell.notes,
         isGiven: cell.isGiven,
+        coloring: cell.coloring,
       );
     });
     return _BoardSnapshot(

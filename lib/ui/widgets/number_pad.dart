@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:auto_sudoku/state/sudoku_board_state.dart';
 import 'package:auto_sudoku/ui/theme/sudoku_theme.dart';
+import 'package:auto_sudoku/ui/widgets/color_pad.dart';
 import 'package:auto_sudoku/ui/utils/feedback.dart';
 import 'package:provider/provider.dart';
 
@@ -12,6 +13,7 @@ class NumberPad extends StatelessWidget {
   Widget build(BuildContext context) {
     final sudokuTheme = SudokuTheme.of(context);
     final board = context.watch<SudokuBoardState>();
+    final colorScheme = Theme.of(context).colorScheme;
     final digits = List.generate(9, (index) => index + 1);
     final isEnabled = !board.isAnimatingSingles && board.hint == null;
 
@@ -43,6 +45,17 @@ class NumberPad extends StatelessWidget {
 
         final verticalPadding = 16.0 * scale.clamp(0.6, 1.0);
         final fontSize = 24.0 * scale.clamp(0.7, 1.0);
+
+        if (board.coloringMode) {
+          return ColorPad(
+            maxWidth: maxWidth,
+            spacing: spacing,
+            board: board,
+            sudokuTheme: sudokuTheme,
+            colorScheme: colorScheme,
+            isEnabled: isEnabled,
+          );
+        }
 
         return SizedBox(
           width: maxWidth,

@@ -19,6 +19,19 @@ class SudokuTheme {
       selectedCellBackground = colorScheme.primaryContainer,
       selectedCellTextColor = colorScheme.onPrimaryContainer,
 
+      // Coloring mode
+      coloringPrimary = Colors.green.shade400.withValues(alpha: 0.85),
+      coloringPrimaryTextColor = Colors.black,
+      coloringSecondary = Colors.red.shade400.withValues(alpha: 0.85),
+      coloringSecondaryTextColor = Colors.white,
+      coloringPrimaryPeerBackground =
+          Colors.green.shade100.withValues(alpha: 0.6),
+      coloringSecondaryPeerBackground =
+          Colors.red.shade100.withValues(alpha: 0.6),
+      coloringMixedPeerBackground =
+          Color.lerp(Colors.green.shade100, Colors.red.shade100, 0.5)!
+              .withValues(alpha: 0.62),
+
       // Peers
       peerCellBackground = Color.alphaBlend(
         colorScheme.primary.withValues(alpha: 0.08),
@@ -55,6 +68,13 @@ class SudokuTheme {
   final Color matchingValueBackground;
   final Color autoFillHighlightBackground;
   final Color valueHighlightColor;
+  final Color coloringPrimary;
+  final Color coloringSecondary;
+  final Color coloringPrimaryTextColor;
+  final Color coloringSecondaryTextColor;
+  final Color coloringPrimaryPeerBackground;
+  final Color coloringSecondaryPeerBackground;
+  final Color coloringMixedPeerBackground;
 
   final Color noteDefaultColor;
   final Color noteHighlightTextColor;
