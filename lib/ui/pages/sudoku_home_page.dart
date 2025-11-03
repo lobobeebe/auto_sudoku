@@ -28,7 +28,7 @@ class _SudokuHomePageState extends State<SudokuHomePage> {
     final horizontalPadding = shortestSide < 600 ? 16.0 : 32.0;
     final isLoading = board.isLoading;
 
-    _maybeShowEndDialog(board.status);
+    _maybeShowEndDialog(board);
 
     return Scaffold(
       appBar: AppBar(
@@ -128,7 +128,8 @@ class _SudokuHomePageState extends State<SudokuHomePage> {
     );
   }
 
-  void _maybeShowEndDialog(GameStatus status) {
+  void _maybeShowEndDialog(SudokuBoardState board) {
+    final status = board.status;
     _lastGameStatus ??= status;
 
     if (_lastGameStatus != status) {
@@ -136,14 +137,14 @@ class _SudokuHomePageState extends State<SudokuHomePage> {
 
       if (status != GameStatus.playing) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          _showResultDialog(status);
+          _showResultDialog(board);
         });
       }
     }
   }
 
-  Future<void> _showResultDialog(GameStatus status) async {
-    final isWin = status == GameStatus.won;
+  Future<void> _showResultDialog(SudokuBoardState board) async {
+    final isWin = board.status == GameStatus.won;
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
@@ -170,7 +171,7 @@ class _SudokuHomePageState extends State<SudokuHomePage> {
           content: Text(
             isWin
                 ? 'Great job! You solved the puzzle.'
-                : 'That entry conflicts with the solution. Try again or exit to the menu.',
+                : 'That entry conflicts with the solution. Undo the move or exit to the menu.',
             style: textTheme.bodyMedium,
           ),
           actions: [

@@ -218,7 +218,11 @@ class SudokuCellContents extends StatelessWidget {
           return const SizedBox.shrink();
         }
 
-        return CellNotes(index: index, activeNotes: cell.notes);
+        return CellNotes(
+          index: index,
+          activeNotes: cell.notes,
+          sudokuTheme: sudokuTheme,
+        );
       },
     );
   }

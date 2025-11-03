@@ -1,11 +1,18 @@
 import 'package:auto_sudoku/state/sudoku_board_state.dart';
+import 'package:auto_sudoku/ui/theme/sudoku_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class CellNotes extends StatelessWidget {
   final int index;
   final Set<int> activeNotes;
-  const CellNotes({super.key, required this.index, required this.activeNotes});
+  final SudokuTheme sudokuTheme;
+  const CellNotes({
+    super.key,
+    required this.index,
+    required this.activeNotes,
+    required this.sudokuTheme,
+  });
   @override
   Widget build(BuildContext context) {
     final board = Provider.of<SudokuBoardState>(context);
@@ -30,6 +37,7 @@ class CellNotes extends StatelessWidget {
                     isActive: activeNotes.contains(digit),
                     state: board,
                     digit: digit,
+                    sudokuTheme: sudokuTheme,
                   );
                 }),
               ),
@@ -48,6 +56,7 @@ class _CellNote extends StatelessWidget {
   final SudokuBoardState state;
   final double width;
   final double height;
+  final SudokuTheme sudokuTheme;
   const _CellNote({
     required this.index,
     required this.digit,
@@ -55,6 +64,7 @@ class _CellNote extends StatelessWidget {
     required this.state,
     required this.width,
     required this.height,
+    required this.sudokuTheme,
   });
   @override
   Widget build(BuildContext context) {
@@ -72,8 +82,12 @@ class _CellNote extends StatelessWidget {
     final fontSize = height * (isBig ? .825 : .66);
     final fontWeight = isBig ? FontWeight.w700 : FontWeight.w500;
     final fontColor = isElimination
-        ? Colors.red
-        : (isClue ? Colors.blue : null);
+        ? sudokuTheme.noteEliminationTextColor
+        : (isClue
+              ? sudokuTheme.noteClueTextColor
+              : (isMatching
+                    ? sudokuTheme.noteHighlightTextColor
+                    : sudokuTheme.noteDefaultColor));
     return SizedBox(
       width: width,
       height: height,

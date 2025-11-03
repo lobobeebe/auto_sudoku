@@ -29,12 +29,9 @@ class SudokuTheme {
       noteDefaultColor = colorScheme.onSurfaceVariant,
 
       // Notes (Highlight)
-      noteHighlightBackground = Color.alphaBlend(
-        colorScheme.primary.withValues(alpha: 0.08),
-        colorScheme.surface,
-      ),
+      noteClueTextColor = Colors.blue,
+      noteEliminationTextColor = Colors.red,
       noteHighlightTextColor = colorScheme.onPrimaryContainer,
-      noteHighlightRadius = BorderRadius.circular(4),
 
       // Auto-Fill Animations
       autoFillHighlightBackground = Color.alphaBlend(
@@ -56,17 +53,19 @@ class SudokuTheme {
   final Color selectedCellBackground;
   final Color selectedCellTextColor;
   final Color matchingValueBackground;
-  final Color noteHighlightBackground;
   final Color autoFillHighlightBackground;
   final Color valueHighlightColor;
-  final Color noteHighlightTextColor;
+
   final Color noteDefaultColor;
+  final Color noteHighlightTextColor;
+  final Color noteClueTextColor;
+  final Color noteEliminationTextColor;
+
   final Color valueRegularTextColor;
   final Color givenCellTextColor;
   final Color numberPadBackground;
   final Color numberPadForeground;
   final TextStyle numberPadTextStyle;
-  final BorderRadius noteHighlightRadius;
 
   static SudokuTheme of(BuildContext context) {
     final theme = Theme.of(context);
