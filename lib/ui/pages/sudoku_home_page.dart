@@ -25,11 +25,6 @@ class _SudokuHomePageState extends State<SudokuHomePage> {
   Widget build(BuildContext context) {
     final board = context.watch<SudokuBoardState>();
     final theme = Theme.of(context);
-    final bool fabDisabled =
-        board.isLoading ||
-        board.isAnimatingSingles ||
-        board.isInteractiveModeActive ||
-        board.hint != null;
 
     _maybeShowEndDialog(board);
 
@@ -177,20 +172,6 @@ class _SudokuHomePageState extends State<SudokuHomePage> {
     );
   }
 
-  void _handleApplyInteractive() {
-    final board = context.read<SudokuBoardState>();
-    final sudoku = Sudoku(board.toValueList(), notes: board.toNotesList());
-    final hint = _solver.getHintByClues(sudoku, board.interactiveSelection);
-
-    if (hint == null) {
-      _showNoTechniqueDialog(board.interactiveMode?.name ?? "Technique");
-      return;
-    }
-
-    board.cancelInteractiveMode();
-    board.setHint(hint);
-  }
-
   Widget _buildControlsCard(BuildContext context, SudokuBoardState board) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -278,43 +259,6 @@ class _SudokuHomePageState extends State<SudokuHomePage> {
         );
       },
       child: child,
-    );
-  }
-
-  void _handleTechniqueCancel() {
-    context.read<SudokuBoardState>().cancelInteractiveMode();
-  }
-
-  Future<void> _showNoTechniqueDialog(String techniqueName) async {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
-    await showDialog<void>(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-          ),
-          title: Row(
-            children: [
-              Icon(Icons.info_outline_rounded, color: colorScheme.primary),
-              const SizedBox(width: 12),
-              Text('No $techniqueName Found', style: textTheme.titleMedium),
-            ],
-          ),
-          content: Text(
-            'Those cells do not form a valid $techniqueName or no candidates can be removed. Try selecting a different combination.',
-            style: textTheme.bodyMedium,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('OK'),
-            ),
-          ],
-        );
-      },
     );
   }
 
