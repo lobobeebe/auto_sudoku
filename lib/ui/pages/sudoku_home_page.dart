@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 
 import 'package:auto_sudoku/state/sudoku_board_state.dart';
@@ -19,8 +17,6 @@ class SudokuHomePage extends StatefulWidget {
 }
 
 class _SudokuHomePageState extends State<SudokuHomePage> {
-  static const double _toolbarHeight = 72;
-
   final Solver _solver = Solver();
   GameStatus? _lastGameStatus;
 
@@ -34,7 +30,6 @@ class _SudokuHomePageState extends State<SudokuHomePage> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        toolbarHeight: _toolbarHeight,
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
@@ -66,7 +61,6 @@ class _SudokuHomePageState extends State<SudokuHomePage> {
 
   Widget _buildBody(BuildContext context, SudokuBoardState board) {
     final colorScheme = Theme.of(context).colorScheme;
-    final topInset = _toolbarHeight + 16;
 
     Widget content;
     if (board.isLoading) {
@@ -115,7 +109,7 @@ class _SudokuHomePageState extends State<SudokuHomePage> {
         ),
         SafeArea(
           child: Padding(
-            padding: EdgeInsets.fromLTRB(24, topInset, 24, 24),
+            padding: EdgeInsets.all(24),
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 360),
               switchInCurve: Curves.easeOutCubic,
@@ -131,44 +125,17 @@ class _SudokuHomePageState extends State<SudokuHomePage> {
   Widget _buildPuzzleContent(BuildContext context, SudokuBoardState board) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isWide = constraints.maxWidth > 900;
-
-        return Align(
+        return ConstrainedBox(
           key: const ValueKey('puzzle'),
-          alignment: Alignment.topCenter,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1120),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(
-                  child: isWide
-                      ? Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(child: _buildBoardCard(context)),
-                            const SizedBox(width: 28),
-                            SizedBox(
-                              width: 360,
-                              child: _buildControlsCard(context, board),
-                            ),
-                          ],
-                        )
-                      : Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Expanded(flex: 5, child: _buildBoardCard(context)),
-                            const SizedBox(height: 24),
-                            Flexible(
-                              flex: 3,
-                              fit: FlexFit.loose,
-                              child: _buildControlsCard(context, board),
-                            ),
-                          ],
-                        ),
-                ),
-              ],
-            ),
+          constraints: const BoxConstraints(maxWidth: 1120),
+          child: Column(
+            mainAxisSize: MainAxisSize.max,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: _buildBoardCard(context)),
+              const SizedBox(height: 24),
+              _buildControlsCard(context, board),
+            ],
           ),
         );
       },
@@ -176,57 +143,19 @@ class _SudokuHomePageState extends State<SudokuHomePage> {
   }
 
   Widget _buildBoardCard(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final maxWidth = constraints.maxWidth.isFinite
-            ? constraints.maxWidth
-            : MediaQuery.of(context).size.width;
-        final maxHeight = constraints.maxHeight.isFinite
-            ? constraints.maxHeight
-            : MediaQuery.of(context).size.height;
-        final shortestSide = math.min(maxWidth, maxHeight);
-        final padding = shortestSide > 520
-            ? 32.0
-            : shortestSide > 420
-            ? 24.0
-            : 18.0;
-
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 320),
-          curve: Curves.easeOutCubic,
-          padding: EdgeInsets.all(padding),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(32),
-            gradient: LinearGradient(
-              colors: [colorScheme.surfaceContainerLow, colorScheme.surface],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.12),
-                blurRadius: 32,
-                offset: const Offset(0, 18),
-              ),
-            ],
-            border: Border.all(
-              color: colorScheme.outlineVariant.withValues(alpha: 0.25),
-              width: 1.2,
-            ),
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 320),
+      curve: Curves.easeOutCubic,
+      decoration: BoxDecoration(
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.12),
+            blurRadius: 32,
+            offset: const Offset(0, 18),
           ),
-          child: Center(
-            child: AspectRatio(
-              aspectRatio: 1,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: const SudokuGrid(),
-              ),
-            ),
-          ),
-        );
-      },
+        ],
+      ),
+      child: const SudokuGrid(),
     );
   }
 
@@ -286,16 +215,11 @@ class _SudokuHomePageState extends State<SudokuHomePage> {
             },
             child: hint == null
                 ? const SizedBox.shrink()
-                : SizedBox.expand(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(20),
-                      child: HintStepsPanel(
-                        key: const ValueKey('hintPanel'),
-                        hint: hint,
-                        onSkip: _handleHintSkip,
-                        onApply: _handleHintApply,
-                      ),
-                    ),
+                : HintStepsPanel(
+                    key: const ValueKey('hintPanel'),
+                    hint: hint,
+                    onSkip: _handleHintSkip,
+                    onApply: _handleHintApply,
                   ),
           ),
         ],
