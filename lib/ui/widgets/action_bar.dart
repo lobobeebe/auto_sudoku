@@ -13,7 +13,7 @@ class ActionBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final board = context.watch<SudokuBoardState>();
-    final isEnabled = !board.isAnimatingSingles;
+    final isEnabled = !board.isAnimatingSingles && board.hint == null;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,

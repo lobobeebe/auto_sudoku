@@ -13,7 +13,7 @@ class NumberPad extends StatelessWidget {
     final sudokuTheme = SudokuTheme.of(context);
     final board = context.watch<SudokuBoardState>();
     final digits = List.generate(9, (index) => index + 1);
-    final isEnabled = !board.isAnimatingSingles;
+    final isEnabled = !board.isAnimatingSingles && board.hint == null;
 
     return LayoutBuilder(
       builder: (context, constraints) {

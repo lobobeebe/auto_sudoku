@@ -93,48 +93,32 @@ class _SudokuHomePageState extends State<SudokuHomePage> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Expanded(child: const SudokuGrid()),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
+          SizedBox(height: 12),
+          ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 120),
             child: Stack(
               alignment: Alignment.center,
               children: [
                 // Controls (base layer)
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Column(
-                    key: const ValueKey('controls'),
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      ActionBar(onHintRequested: _handleHintRequest),
-                      const SizedBox(height: 12),
-                      NumberPad(),
-                    ],
-                  ),
+                Column(
+                  key: const ValueKey('controls'),
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    ActionBar(onHintRequested: _handleHintRequest),
+                    const SizedBox(height: 12),
+                    NumberPad(),
+                  ],
                 ),
-
-                // Rounded-rect scrim over controls when a hint is visible
-                if (board.hint != null)
-                  Positioned.fill(
-                    child: IgnorePointer(
-                      ignoring: true,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.scrim.withOpacity(0.32),
-                        ),
-                      ),
-                    ),
-                  ),
 
                 // Hint panel (top layer)
                 if (board.hint != null)
-                  HintStepsPanel(
-                    key: const ValueKey('hintPanel'),
-                    hint: board.hint!,
-                    onSkip: _handleHintSkip,
-                    onApply: _handleHintApply,
+                  Positioned.fill(
+                    child: HintStepsPanel(
+                      key: const ValueKey('hintPanel'),
+                      hint: board.hint!,
+                      onSkip: _handleHintSkip,
+                      onApply: _handleHintApply,
+                    ),
                   ),
               ],
             ),

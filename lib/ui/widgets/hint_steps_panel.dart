@@ -46,7 +46,6 @@ class _HintStepsPanelState extends State<HintStepsPanel> {
         child: Padding(
           padding: const EdgeInsets.all(12.0),
           child: Column(
-            mainAxisSize: MainAxisSize.max,
             children: [
               Row(
                 spacing: 10,
@@ -55,7 +54,7 @@ class _HintStepsPanelState extends State<HintStepsPanel> {
                     _explanation.title,
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
-                  Expanded(child: SizedBox()),
+                  const Expanded(child: SizedBox()),
                   TextButton(
                     onPressed: widget.onSkip,
                     child: const Text('Skip'),
@@ -66,9 +65,13 @@ class _HintStepsPanelState extends State<HintStepsPanel> {
                   ),
                 ],
               ),
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(_explanation.overview),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: SingleChildScrollView(
+                    child: Text(_explanation.overview),
+                  ),
+                ),
               ),
             ],
           ),
