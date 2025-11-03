@@ -3,7 +3,7 @@ import 'dart:math';
 import 'classified_puzzle.dart';
 import 'difficulty.dart';
 import 'solver.dart';
-import 'strategy.dart';
+import 'strategy/strategy.dart';
 import 'sudoku.dart';
 
 // Helper class for generator beam state (used in Generator.generate)
@@ -340,7 +340,7 @@ class Generator {
     }
 
     Difficulty maxDifficulty = Difficulty.trivial;
-    for (StrategyUsed tech in tr.steps) {
+    for (StrategyType tech in tr.steps) {
       final difficulty = tech.getDifficulty();
       maxDifficulty = Difficulty.max(difficulty, maxDifficulty);
     }

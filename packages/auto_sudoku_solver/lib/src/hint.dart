@@ -1,9 +1,9 @@
-import 'strategy.dart';
+import 'strategy/strategy.dart';
 
 enum HintUnit { row, column, box }
 
 class Hint {
-  final StrategyUsed technique;
+  final StrategyType strategy;
   final List<(int, int)> placements; // (cellIndex, digit) to place immediately
   final List<(int, int)> eliminations; // (cellIndex, digit) to remove
   final List<int> cells; // indices of pattern cells
@@ -11,7 +11,7 @@ class Hint {
   final HintUnit? unit; // primary unit that triggered the technique
 
   Hint(
-    this.technique, {
+    this.strategy, {
     List<(int, int)>? placements,
     List<(int, int)>? eliminations,
     List<int>? cells,

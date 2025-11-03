@@ -34,10 +34,10 @@ TechniqueExplanation explainTechnique(Hint hint) {
   final number = join(hint.digits);
 
   try {
-    switch (hint.technique) {
+    switch (hint.strategy) {
       // ------------------------ NAKED ------------------------
 
-      case StrategyUsed.nakedPair:
+      case StrategyType.nakedPair:
         switch (hint.unit) {
           case HintUnit.row:
             return TechniqueExplanation(
@@ -79,7 +79,7 @@ TechniqueExplanation explainTechnique(Hint hint) {
             throw ArgumentError("Naked Pair require a 'HintUnit'");
         }
 
-      case StrategyUsed.nakedTriple:
+      case StrategyType.nakedTriple:
         switch (hint.unit) {
           case HintUnit.row:
             return TechniqueExplanation(
@@ -121,7 +121,7 @@ TechniqueExplanation explainTechnique(Hint hint) {
             throw ArgumentError("Naked Triples require a 'HintUnit'");
         }
 
-      case StrategyUsed.nakedQuad:
+      case StrategyType.nakedQuad:
         switch (hint.unit) {
           case HintUnit.row:
             return TechniqueExplanation(
@@ -165,7 +165,7 @@ TechniqueExplanation explainTechnique(Hint hint) {
 
       // ------------------------ HIDDEN ------------------------
 
-      case StrategyUsed.hiddenPair:
+      case StrategyType.hiddenPair:
         switch (hint.unit) {
           case HintUnit.row:
             return TechniqueExplanation(
@@ -207,7 +207,7 @@ TechniqueExplanation explainTechnique(Hint hint) {
             throw ArgumentError("Hidden Pairs require a 'HintUnit'");
         }
 
-      case StrategyUsed.hiddenTriple:
+      case StrategyType.hiddenTriple:
         switch (hint.unit) {
           case HintUnit.row:
             return TechniqueExplanation(
@@ -249,7 +249,7 @@ TechniqueExplanation explainTechnique(Hint hint) {
             throw ArgumentError("Hidden Triples require a 'HintUnit'");
         }
 
-      case StrategyUsed.hiddenQuad:
+      case StrategyType.hiddenQuad:
         switch (hint.unit) {
           case HintUnit.row:
             return TechniqueExplanation(
@@ -293,7 +293,7 @@ TechniqueExplanation explainTechnique(Hint hint) {
 
       // ------------------------ LOCKED ------------------------
 
-      case StrategyUsed.pointing:
+      case StrategyType.pointing:
         switch (hint.unit) {
           case HintUnit.row:
             return TechniqueExplanation(
@@ -323,7 +323,7 @@ TechniqueExplanation explainTechnique(Hint hint) {
             throw ArgumentError("Pointing requires a HintUnit Row/Column");
         }
 
-      case StrategyUsed.claiming:
+      case StrategyType.claiming:
         switch (hint.unit) {
           case HintUnit.row:
             return TechniqueExplanation(
@@ -355,7 +355,7 @@ TechniqueExplanation explainTechnique(Hint hint) {
 
       // ------------------------ MEDIUM ------------------------
 
-      case StrategyUsed.xWing:
+      case StrategyType.xWing:
         switch (hint.unit) {
           case HintUnit.row:
             return TechniqueExplanation(
@@ -385,7 +385,7 @@ TechniqueExplanation explainTechnique(Hint hint) {
             throw ArgumentError("X-Wing requires a HintUnit Row/Column");
         }
 
-      case StrategyUsed.xyWing:
+      case StrategyType.xyWing:
         return TechniqueExplanation(
           title: 'XY-Wing',
           overview:
@@ -398,7 +398,7 @@ TechniqueExplanation explainTechnique(Hint hint) {
             'Identify cells that see both wings and remove Z from those cells.',
           ],
         );
-      case StrategyUsed.swordfish:
+      case StrategyType.swordfish:
         switch (hint.unit) {
           case HintUnit.row:
             return TechniqueExplanation(
@@ -428,7 +428,7 @@ TechniqueExplanation explainTechnique(Hint hint) {
             throw ArgumentError("Swordfish requires a HintUnit Row/Column");
         }
 
-      case StrategyUsed.xyzWing:
+      case StrategyType.xyzWing:
         return TechniqueExplanation(
           title: 'XYZ-Wing',
           overview:
@@ -442,7 +442,7 @@ TechniqueExplanation explainTechnique(Hint hint) {
           ],
         );
 
-      case StrategyUsed.wWing:
+      case StrategyType.wWing:
         return TechniqueExplanation(
           title: 'W-Wing',
           overview:
@@ -456,7 +456,7 @@ TechniqueExplanation explainTechnique(Hint hint) {
           ],
         );
 
-      case StrategyUsed.coloring:
+      case StrategyType.coloring:
         return TechniqueExplanation(
           title: 'Simple Coloring',
           overview:
@@ -469,7 +469,7 @@ TechniqueExplanation explainTechnique(Hint hint) {
           ],
         );
 
-      case StrategyUsed.skyscraper:
+      case StrategyType.skyscraper:
         return TechniqueExplanation(
           title: 'Skyscraper',
           overview:
@@ -482,7 +482,7 @@ TechniqueExplanation explainTechnique(Hint hint) {
           ],
         );
 
-      case StrategyUsed.twoStringKite:
+      case StrategyType.twoStringKite:
         return TechniqueExplanation(
           title: 'Two-String Kite',
           overview:
@@ -495,7 +495,7 @@ TechniqueExplanation explainTechnique(Hint hint) {
           ],
         );
 
-      case StrategyUsed.turbotFish:
+      case StrategyType.turbotFish:
         return TechniqueExplanation(
           title: 'Turbot Fish',
           overview:
@@ -508,7 +508,7 @@ TechniqueExplanation explainTechnique(Hint hint) {
           ],
         );
 
-      case StrategyUsed.uniqueRectangle:
+      case StrategyType.uniqueRectangle:
         return TechniqueExplanation(
           title: 'Unique Rectangle',
           overview:
@@ -521,7 +521,7 @@ TechniqueExplanation explainTechnique(Hint hint) {
           ],
         );
 
-      case StrategyUsed.bug:
+      case StrategyType.bug:
         return TechniqueExplanation(
           title: 'BUG (Bivalue Universal Grave)',
           overview:
@@ -534,7 +534,7 @@ TechniqueExplanation explainTechnique(Hint hint) {
           ],
         );
 
-      case StrategyUsed.remotePairs:
+      case StrategyType.remotePairs:
         return TechniqueExplanation(
           title: 'Remote Pairs',
           overview:
@@ -547,7 +547,7 @@ TechniqueExplanation explainTechnique(Hint hint) {
           ],
         );
 
-      case StrategyUsed.xyChain:
+      case StrategyType.xyChain:
         return TechniqueExplanation(
           title: 'XY-Chain',
           overview:
@@ -560,7 +560,7 @@ TechniqueExplanation explainTechnique(Hint hint) {
           ],
         );
 
-      case StrategyUsed.als:
+      case StrategyType.als:
         return TechniqueExplanation(
           title: 'Almost Locked Set (ALS)',
           overview:
@@ -573,7 +573,7 @@ TechniqueExplanation explainTechnique(Hint hint) {
           ],
         );
 
-      case StrategyUsed.alsXyWing:
+      case StrategyType.alsXyWing:
         return TechniqueExplanation(
           title: 'ALS XY-Wing',
           overview:
@@ -586,7 +586,7 @@ TechniqueExplanation explainTechnique(Hint hint) {
           ],
         );
 
-      case StrategyUsed.aic:
+      case StrategyType.aic:
         return TechniqueExplanation(
           title: 'Alternating Inference Chain (AIC)',
           overview:
@@ -606,7 +606,7 @@ TechniqueExplanation explainTechnique(Hint hint) {
   }
 
   return TechniqueExplanation(
-    title: hint.technique.toString(),
+    title: hint.strategy.toString(),
     overview: 'Technique explanation unavailable.',
     steps: const ['No steps available.'],
   );

@@ -24,7 +24,7 @@ class SudokuGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final sudokuTheme = SudokuTheme.of(context);
-    final board = context.read<SudokuBoardState>();
+    final board = Provider.of<SudokuBoardState>(context, listen: false);
 
     return Center(
       child: AspectRatio(
@@ -105,25 +105,27 @@ class SudokuGrid extends StatelessWidget {
                             });
 
                         Color background = sudokuTheme.boardSurface;
-
-                        if (cellData.isPeer) {
-                          background = sudokuTheme.peerCellBackground;
-                        }
-                        if (cellData.matchesSelectedValue) {
-                          background = sudokuTheme.matchingValueBackground;
-                        }
-                        if (cellData.isSelected) {
-                          background = sudokuTheme.selectedCellBackground;
-                        }
-                        if (cellData.isHighlighted) {
-                          background = sudokuTheme.autoFillHighlightBackground;
-                        }
-
-                        if (cellData.isTechniqueSelected) {
-                          background = Color.alphaBlend(
-                            colorScheme.primary.withValues(alpha: 0.24),
-                            background,
-                          );
+                        if (board.isInteractiveModeActive) {
+                          if (cellData.isTechniqueSelected) {
+                            background = Color.alphaBlend(
+                              colorScheme.primary.withValues(alpha: 0.24),
+                              background,
+                            );
+                          }
+                        } else {
+                          if (cellData.isPeer) {
+                            background = sudokuTheme.peerCellBackground;
+                          }
+                          if (cellData.matchesSelectedValue) {
+                            background = sudokuTheme.matchingValueBackground;
+                          }
+                          if (cellData.isSelected) {
+                            background = sudokuTheme.selectedCellBackground;
+                          }
+                          if (cellData.isHighlighted) {
+                            background =
+                                sudokuTheme.autoFillHighlightBackground;
+                          }
                         }
 
                         final borderColor = colorScheme.outlineVariant;

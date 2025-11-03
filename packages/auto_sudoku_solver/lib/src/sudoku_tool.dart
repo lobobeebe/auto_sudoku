@@ -37,7 +37,7 @@ import 'dart:io';
 import 'classified_puzzle.dart';
 import 'difficulty.dart';
 import 'generator.dart';
-import 'strategy.dart';
+import 'strategy/strategy.dart';
 import 'sudoku.dart';
 
 export 'candidate_map.dart';
@@ -48,7 +48,7 @@ export 'hint.dart';
 export 'rating.dart';
 export 'solve_result.dart';
 export 'solver.dart';
-export 'strategy.dart';
+export 'strategy/strategy.dart';
 export 'sudoku.dart';
 
 String formatGrid(List<int> g) {
@@ -162,8 +162,8 @@ void main(List<String> args) {
       final filtered = res.steps
           .where(
             (st) =>
-                st != StrategyUsed.nakedSingle &&
-                st != StrategyUsed.hiddenSingle,
+                st != StrategyType.nakedSingle &&
+                st != StrategyType.hiddenSingle,
           )
           .toList();
       if (filtered.isEmpty) {
@@ -183,7 +183,7 @@ void main(List<String> args) {
     // Compute unique techniques (including singles) for this puzzle, human-readable
     final sTech = Sudoku(List<int>.from(result.puzzle));
     final resTech = gen.solver.solveLogical(sTech);
-    final techSet = <StrategyUsed>{};
+    final techSet = <StrategyType>{};
     for (final st in resTech.steps) {
       techSet.add(st);
     }

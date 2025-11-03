@@ -1,16 +1,87 @@
+import 'package:auto_sudoku_solver/src/strategy/hidden_strategy.dart';
+import 'package:auto_sudoku_solver/src/strategy/locked_strategy.dart';
+import 'package:auto_sudoku_solver/src/strategy/naked_strategy.dart';
+
 import 'candidate_map.dart';
 import 'difficulty.dart';
 import 'hint.dart';
 import 'rating.dart';
 import 'solve_result.dart';
-import 'strategy.dart';
+import 'strategy/strategy.dart';
 import 'sudoku.dart';
 
 import 'solver_settings.dart';
 
 class Solver {
+  final strategyOrder = [
+    // Trivial Singles
+    NakedSingleStrategy(),
+    HiddenSingleStrategy(),
+
+    // Naked Sets
+    NakedPairStrategy(),
+    NakedTripleStrategy(),
+    NakedQuadStrategy(),
+
+    // Locked Candidates
+    ClaimingStrategy(),
+    PointingStrategy(),
+
+    // Hidden Sets
+    HiddenPairStrategy(),
+    HiddenTripleStrategy(),
+    HiddenQuadStrategy(),
+
+    // // Fish & Wings
+    // StrategyType.xWing,
+    // StrategyType.xyWing,
+    // StrategyType.wWing,
+    // StrategyType.xyzWing,
+    // StrategyType.swordfish,
+    // // Chain/Graph & Uniqueness
+    // StrategyType.coloring,
+    // StrategyType.skyscraper,
+    // StrategyType.twoStringKite,
+    // StrategyType.turbotFish,
+    // StrategyType.uniqueRectangle,
+    // StrategyType.bug,
+    // StrategyType.remotePairs,
+    // StrategyType.xyChain,
+    // // ALS & AIC
+    // StrategyType.als,
+    // StrategyType.alsXyWing,
+    // StrategyType.aic,
+  ];
+
+  Hint? getHintByClues(
+    Sudoku s,
+    List<int> clueIndices, {
+    SolverSettings? settings,
+  }) {
+    final effective = settings ?? SolverSettings.all();
+    final cand = CandidateMap.fromBoard(s);
+    return _getHintByClues(s, cand, effective, clueIndices);
+  }
+
+  Hint? _getHintByClues(
+    Sudoku s,
+    CandidateMap cand,
+    SolverSettings settings,
+    List<int> clueIndices,
+  ) {
+    for (final strat in strategyOrder) {
+      if (!settings.allows(strat.type)) {
+        continue;
+      }
+      final hint = strat.getHintFromClues(s, cand, clueIndices);
+      if (hint != null) return hint;
+    }
+
+    return null;
+  }
+
   Hint? nextHint(Sudoku s, {SolverSettings? settings}) {
-    final effective = settings ?? SolverSettings();
+    final effective = settings ?? SolverSettings.all();
     final cand = CandidateMap.fromBoard(s);
     return _nextHintInternal(s, cand, effective);
   }
@@ -20,176 +91,72 @@ class Solver {
     CandidateMap cand,
     SolverSettings settings,
   ) {
-    final naked = _findNakedSingleHint(s, cand);
-    if (naked != null) return naked;
-
-    if (settings.allowHiddenSingles) {
-      final hidden = _findHiddenSingleHint(s, cand);
-      if (hidden != null) return hidden;
-    }
-
-    if (settings.allowPairs) {
-      final pair = _findNakedHint(s, cand, 2);
-      if (pair != null) return pair;
-    }
-
-    if (settings.allowTriples) {
-      final triple = _findNakedHint(s, cand, 3);
-      if (triple != null) return triple;
-    }
-
-    if (settings.allowQuads) {
-      final quad = _findNakedHint(s, cand, 4);
-      if (quad != null) return quad;
-    }
-
-    if (settings.allowLocked) {
-      final locked = _findLockedHint(s, cand);
-      if (locked != null) return locked;
-    }
-
-    if (settings.allowHiddenSubsets) {
-      final hidden = _findHiddenHint(s, cand);
-      if (hidden != null) return hidden;
-    }
-
-    if (settings.allowXWing) {
-      final x = _findXWingHint(s, cand);
-      if (x != null) return x;
-    }
-
-    if (settings.allowXYWing) {
-      final xy = _findXYWingHint(s, cand);
-      if (xy != null) return xy;
-    }
-
-    if (settings.allowColoring) {
-      final coloring = _findColoringHint(s, cand);
-      if (coloring != null) return coloring;
-    }
-
-    if (settings.allowSwordfish) {
-      final swordfish = _findSwordfishHint(s, cand);
-      if (swordfish != null) return swordfish;
-    }
-
-    if (settings.allowSkyscraper) {
-      final sky = _findSkyscraperHint(s, cand);
-      if (sky != null) return sky;
-    }
-
-    if (settings.allowTwoStringKite) {
-      final kite = _findTwoStringKiteHint(s, cand);
-      if (kite != null) return kite;
-    }
-
-    if (settings.allowTurbotFish) {
-      final turbot = _findTurbotFishHint(s, cand);
-      if (turbot != null) return turbot;
-    }
-
-    if (settings.allowXYZWing) {
-      final xyz = _findXYZWingHint(s, cand);
-      if (xyz != null) return xyz;
-    }
-
-    if (settings.allowWWing) {
-      final w = _findWWingHint(s, cand);
-      if (w != null) return w;
-    }
-
-    if (settings.allowUR) {
-      final ur = _findUniqueRectangleHint(s, cand);
-      if (ur != null) return ur;
-    }
-
-    if (settings.allowBUG) {
-      final bug = _findBugHint(s, cand);
-      if (bug != null) return bug;
-    }
-
-    if (settings.allowRemotePairs) {
-      final rp = _findRemotePairsHint(s, cand);
-      if (rp != null) return rp;
-    }
-
-    if (settings.allowXYChain) {
-      final chain = _findXYChainHint(s, cand);
-      if (chain != null) return chain;
-    }
-
-    if (settings.allowALS) {
-      final als = _findALSHint(s, cand);
-      if (als != null) return als;
-    }
-
-    if (settings.allowALSXYWing) {
-      final alsXy = _findALSXyWingHint(s, cand);
-      if (alsXy != null) return alsXy;
-    }
-
-    if (settings.allowAIC) {
-      final aic = _findAICHint(s, cand);
-      if (aic != null) return aic;
-    }
-
-    return null;
-  }
-
-  Hint? _findNakedSingleHint(Sudoku s, CandidateMap cand) {
-    for (var i = 0; i < 81; i++) {
-      if (s.cells[i] != 0) continue;
-      if (cand[i].length != 1) continue;
-      final value = cand[i].first;
-      return Hint(
-        StrategyUsed.nakedSingle,
-        placements: [(i, value)],
-        cells: [i],
-        digits: [value],
-      );
-    }
-    return null;
-  }
-
-  Hint? _findHiddenSingleHint(Sudoku s, CandidateMap cand) {
-    Hint? checkUnit(Iterable<int> unit, HintUnit unitType) {
-      final spots = List.generate(10, (_) => <int>[]);
-      for (final cell in unit) {
-        if (s.cells[cell] != 0) continue;
-        for (final digit in cand[cell]) {
-          spots[digit].add(cell);
-        }
+    for (final strat in strategyOrder) {
+      if (!settings.allows(strat.type)) {
+        print("Not allowed");
+        continue;
       }
-      for (var digit = 1; digit <= 9; digit++) {
-        final positions = spots[digit];
-        if (positions.length == 1) {
-          final cell = positions.first;
-          return Hint(
-            StrategyUsed.hiddenSingle,
-            placements: [(cell, digit)],
-            cells: [cell],
-            digits: [digit],
-            unit: unitType,
-          );
-        }
-      }
-      return null;
+      final hint = strat.findHint(s, cand);
+      if (hint != null) return hint;
     }
 
-    for (var r = 0; r < 9; r++) {
-      final hint = checkUnit(s.rowIndices(r), HintUnit.row);
-      if (hint != null) return hint;
-    }
-    for (var c = 0; c < 9; c++) {
-      final hint = checkUnit(s.colIndices(c), HintUnit.column);
-      if (hint != null) return hint;
-    }
-    for (var b = 0; b < 9; b++) {
-      final hint = checkUnit(s.boxIndices(b), HintUnit.box);
-      if (hint != null) return hint;
-    }
     return null;
   }
+
+  // Hint? _findNakedSingleHint(Sudoku s, CandidateMap cand) {
+  //   for (var i = 0; i < 81; i++) {
+  //     if (s.cells[i] != 0) continue;
+  //     if (cand[i].length != 1) continue;
+  //     final value = cand[i].first;
+  //     return Hint(
+  //       StrategyType.nakedSingle,
+  //       placements: [(i, value)],
+  //       cells: [i],
+  //       digits: [value],
+  //     );
+  //   }
+  //   return null;
+  // }
+
+  // Hint? _findHiddenSingleHint(Sudoku s, CandidateMap cand) {
+  //   Hint? checkUnit(Iterable<int> unit, HintUnit unitType) {
+  //     final spots = List.generate(10, (_) => <int>[]);
+  //     for (final cell in unit) {
+  //       if (s.cells[cell] != 0) continue;
+  //       for (final digit in cand[cell]) {
+  //         spots[digit].add(cell);
+  //       }
+  //     }
+  //     for (var digit = 1; digit <= 9; digit++) {
+  //       final positions = spots[digit];
+  //       if (positions.length == 1) {
+  //         final cell = positions.first;
+  //         return Hint(
+  //           StrategyType.hiddenSingle,
+  //           placements: [(cell, digit)],
+  //           cells: [cell],
+  //           digits: [digit],
+  //           unit: unitType,
+  //         );
+  //       }
+  //     }
+  //     return null;
+  //   }
+
+  //   for (var r = 0; r < 9; r++) {
+  //     final hint = checkUnit(s.rowIndices(r), HintUnit.row);
+  //     if (hint != null) return hint;
+  //   }
+  //   for (var c = 0; c < 9; c++) {
+  //     final hint = checkUnit(s.colIndices(c), HintUnit.column);
+  //     if (hint != null) return hint;
+  //   }
+  //   for (var b = 0; b < 9; b++) {
+  //     final hint = checkUnit(s.boxIndices(b), HintUnit.box);
+  //     if (hint != null) return hint;
+  //   }
+  //   return null;
+  // }
 
   /// Returns a Locked Candidates (Pointing/Claiming) hint, with evidence, if any.
   Hint? _findLockedHint(Sudoku s, CandidateMap cand) {
@@ -214,7 +181,7 @@ class Solver {
           }
           if (elim.isNotEmpty) {
             return Hint(
-              StrategyUsed.pointing,
+              StrategyType.pointing,
               eliminations: elim,
               cells: inBox,
               digits: [d],
@@ -235,7 +202,7 @@ class Solver {
           }
           if (elim.isNotEmpty) {
             return Hint(
-              StrategyUsed.pointing,
+              StrategyType.pointing,
               eliminations: elim,
               cells: inBox,
               digits: [d],
@@ -265,7 +232,7 @@ class Solver {
           }
           if (elim.isNotEmpty) {
             return Hint(
-              StrategyUsed.claiming,
+              StrategyType.claiming,
               eliminations: elim,
               cells: rowCells,
               digits: [d],
@@ -293,7 +260,7 @@ class Solver {
           }
           if (elim.isNotEmpty) {
             return Hint(
-              StrategyUsed.claiming,
+              StrategyType.claiming,
               eliminations: elim,
               cells: colCells,
               digits: [d],
@@ -336,7 +303,7 @@ class Solver {
               }
               if (others.isNotEmpty) {
                 return Hint(
-                  StrategyUsed.nakedPair,
+                  StrategyType.nakedPair,
                   eliminations: others,
                   cells: [subsetCandidates[a], subsetCandidates[b]],
                   digits: set.toList(),
@@ -368,7 +335,7 @@ class Solver {
                 }
                 if (others.isNotEmpty) {
                   return Hint(
-                    StrategyUsed.nakedTriple,
+                    StrategyType.nakedTriple,
                     eliminations: others,
                     cells: [
                       subsetCandidates[a],
@@ -409,7 +376,7 @@ class Solver {
                   }
                   if (others.isNotEmpty) {
                     return Hint(
-                      StrategyUsed.nakedQuad,
+                      StrategyType.nakedQuad,
                       eliminations: others,
                       cells: [
                         subsetCandidates[a],
@@ -518,9 +485,9 @@ class Solver {
 
         result = Hint(
           switch (k) {
-            2 => StrategyUsed.hiddenPair,
-            3 => StrategyUsed.hiddenTriple,
-            _ => StrategyUsed.hiddenQuad,
+            2 => StrategyType.hiddenPair,
+            3 => StrategyType.hiddenTriple,
+            _ => StrategyType.hiddenQuad,
           },
           eliminations: toTrim,
           cells: positions.toList()..sort(),
@@ -582,7 +549,7 @@ class Solver {
             ];
             if (eliminations.isNotEmpty) {
               return Hint(
-                StrategyUsed.xWing,
+                StrategyType.xWing,
                 eliminations: eliminations,
                 cells: evidCells,
                 digits: [d],
@@ -630,7 +597,7 @@ class Solver {
             ];
             if (eliminations.isNotEmpty) {
               return Hint(
-                StrategyUsed.xWing,
+                StrategyType.xWing,
                 eliminations: eliminations,
                 cells: evidCells,
                 digits: [d],
@@ -643,11 +610,10 @@ class Solver {
     return null;
   }
 
-  SolveResult solveLogical(
-    Sudoku s, {
-    SolverSettings settings = const SolverSettings(),
-  }) {
-    final steps = <StrategyUsed>[];
+  SolveResult solveLogical(Sudoku s, {SolverSettings? settings}) {
+    settings ??= SolverSettings.all();
+
+    final steps = <StrategyType>[];
     final cand = CandidateMap.fromBoard(s);
 
     while (!s.isSolved) {
@@ -669,7 +635,7 @@ class Solver {
       if (!mutated) {
         break;
       }
-      steps.add(hint.technique);
+      steps.add(hint.strategy);
     }
 
     return SolveResult(s.isSolved, !s.isSolved, steps);
@@ -738,7 +704,7 @@ class Solver {
           final cells = <int>{pivot, cellA, cellB}.toList()..sort();
           final digitsSet = <int>{a, b, z}.toList()..sort();
           return Hint(
-            StrategyUsed.xyWing,
+            StrategyType.xyWing,
             eliminations: eliminations,
             cells: cells,
             digits: digitsSet,
@@ -825,7 +791,7 @@ class Solver {
         if (eliminations.isNotEmpty) {
           final cells = coloredSet.toList()..sort();
           return Hint(
-            StrategyUsed.coloring,
+            StrategyType.coloring,
             eliminations: eliminations,
             cells: cells,
             digits: [digit],
@@ -878,7 +844,7 @@ class Solver {
             }
             final cells = pattern.toList()..sort();
             return Hint(
-              StrategyUsed.swordfish,
+              StrategyType.swordfish,
               eliminations: eliminations,
               cells: cells,
               digits: [digit],
@@ -930,7 +896,7 @@ class Solver {
             }
             final cells = pattern.toList()..sort();
             return Hint(
-              StrategyUsed.swordfish,
+              StrategyType.swordfish,
               eliminations: eliminations,
               cells: cells,
               digits: [digit],
@@ -989,7 +955,7 @@ class Solver {
           if (eliminations.isEmpty) continue;
           final cells = <int>{base1, base2, end1, end2}.toList()..sort();
           return Hint(
-            StrategyUsed.skyscraper,
+            StrategyType.skyscraper,
             eliminations: eliminations,
             cells: cells,
             digits: [digit],
@@ -1031,7 +997,7 @@ class Solver {
           if (eliminations.isEmpty) continue;
           final cells = <int>{base1, base2, end1, end2}.toList()..sort();
           return Hint(
-            StrategyUsed.skyscraper,
+            StrategyType.skyscraper,
             eliminations: eliminations,
             cells: cells,
             digits: [digit],
@@ -1094,7 +1060,7 @@ class Solver {
           }
           final cells = <int>{p1, p2, q1, q2}.toList()..sort();
           return Hint(
-            StrategyUsed.twoStringKite,
+            StrategyType.twoStringKite,
             eliminations: [(elimCell, digit)],
             cells: cells,
             digits: [digit],
@@ -1192,7 +1158,7 @@ class Solver {
             final cells = <int>{i1, i2, cellA, cellB}.toList()..sort();
             final digits = [x, y];
             return Hint(
-              StrategyUsed.wWing,
+              StrategyType.wWing,
               eliminations: eliminations,
               cells: cells,
               digits: digits,
@@ -1251,7 +1217,7 @@ class Solver {
                   final cells = corners.toSet().toList()..sort();
                   final digits = [a, b];
                   return Hint(
-                    StrategyUsed.uniqueRectangle,
+                    StrategyType.uniqueRectangle,
                     eliminations: eliminations,
                     cells: cells,
                     digits: digits,
@@ -1440,8 +1406,8 @@ class Solver {
   }) {
     final copy = Sudoku(List<int>.from(s.cells));
     final res = solveLogical(copy, settings: settings);
-    final counts = <StrategyUsed, int>{};
-    final first = <StrategyUsed, int>{};
+    final counts = <StrategyType, int>{};
+    final first = <StrategyType, int>{};
     for (var i = 0; i < res.steps.length; i++) {
       final st = res.steps[i];
       counts[st] = (counts[st] ?? 0) + 1;

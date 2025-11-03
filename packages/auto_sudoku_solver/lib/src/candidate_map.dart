@@ -4,7 +4,7 @@ class CandidateMap {
   final List<Set<int>> candidates;
   final bool usesProvidedNotes;
 
-  CandidateMap._(this.candidates, this.usesProvidedNotes);
+  CandidateMap(this.candidates, this.usesProvidedNotes);
   bool get isNotesDriven => usesProvidedNotes;
 
   factory CandidateMap.fromBoard(Sudoku s) {
@@ -21,7 +21,7 @@ class CandidateMap {
         }
         cand[i] = filtered;
       }
-      return CandidateMap._(cand, true);
+      return CandidateMap(cand, true);
     }
     for (var i = 0; i < 81; i++) {
       if (s.cells[i] == 0) {
@@ -32,7 +32,7 @@ class CandidateMap {
         cand[i] = ps;
       }
     }
-    return CandidateMap._(cand, false);
+    return CandidateMap(cand, false);
   }
   Set<int> operator [](int i) => candidates[i];
   void removeFromPeers(Sudoku s, int i, int val) {

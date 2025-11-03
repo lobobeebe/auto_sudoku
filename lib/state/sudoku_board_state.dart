@@ -2,12 +2,10 @@ import 'dart:async';
 
 import 'package:auto_sudoku/data/puzzle_repository.dart';
 import 'package:auto_sudoku/data/sudoku_puzzle.dart';
-import 'package:auto_sudoku_solver/auto_sudoku_solver.dart' as solver;
+import 'package:auto_sudoku_solver/auto_sudoku_solver.dart';
 import 'package:flutter/foundation.dart';
 
 enum GameStatus { playing, won, lost }
-
-enum InteractiveSolveMode { none, nakedPair }
 
 class SudokuCell {
   final int? value;
@@ -44,13 +42,12 @@ class SudokuBoardState extends ChangeNotifier {
 
   bool _isLoading = true;
   String? _error;
-  solver.Hint? _hint;
+  Hint? _hint;
   GameStatus _status = GameStatus.playing;
   PuzzleRepository repo;
 
-  InteractiveSolveMode _interactiveMode = InteractiveSolveMode.none;
+  StrategyType? _interactiveMode;
   final List<int> _interactiveSelection = <int>[];
-  int _interactiveTargetCount = 0;
 
   SudokuBoardState({required this.repo});
 
@@ -76,18 +73,13 @@ class SudokuBoardState extends ChangeNotifier {
   GameStatus get status => _status;
   bool get isLoading => _isLoading;
   String? get error => _error;
-  solver.Hint? get hint => _hint;
+  Hint? get hint => _hint;
   String get difficulty => _currentPuzzle?.difficulty.toString() ?? 'Unknown';
   List<String> get techniques => _currentPuzzle?.techniques ?? const [];
-  InteractiveSolveMode get interactiveMode => _interactiveMode;
+  StrategyType? get interactiveMode => _interactiveMode;
   List<int> get interactiveSelection =>
       List<int>.unmodifiable(_interactiveSelection);
-  int get interactiveTargetCount => _interactiveTargetCount;
-  bool get isInteractiveSelectionComplete =>
-      _interactiveTargetCount > 0 &&
-      _interactiveSelection.length >= _interactiveTargetCount;
-  bool get isInteractiveModeActive =>
-      _interactiveMode != InteractiveSolveMode.none;
+  bool get isInteractiveModeActive => _interactiveMode != null;
 
   /// Returns the current board values as a flat list with zero for blanks.
   List<int> toValueList() =>
@@ -99,7 +91,8 @@ class SudokuBoardState extends ChangeNotifier {
     (index) => Set<int>.from(_cells[index].notes),
   );
 
-  void setHint(solver.Hint? hint) {
+  void setHint(Hint? hint) {
+    _resetInteractiveMode(notify: false);
     _hint = hint;
     _emitChange();
   }
@@ -178,7 +171,7 @@ class SudokuBoardState extends ChangeNotifier {
 
   SudokuCell cellAt(int row, int col) => _cells[_index(row, col)];
 
-  Future<void> init({solver.Difficulty? difficulty}) async {
+  Future<void> init({Difficulty? difficulty}) async {
     _isLoading = true;
     _error = null;
     _emitChange();
@@ -206,8 +199,7 @@ class SudokuBoardState extends ChangeNotifier {
     _autoFillHighlightIndex = null;
     _history.clear();
     _status = GameStatus.playing;
-    _interactiveMode = InteractiveSolveMode.none;
-    _interactiveTargetCount = 0;
+    _interactiveMode = null;
     _interactiveSelection.clear();
 
     for (var index = 0; index < _cells.length; index++) {
@@ -257,6 +249,8 @@ class SudokuBoardState extends ChangeNotifier {
     _emitChange();
   }
 
+  void getHintByClues() {}
+
   void _handleInteractiveSelectionTap(int index) {
     final cell = _cells[index];
     if (cell.isGiven || cell.value != null) {
@@ -272,20 +266,13 @@ class SudokuBoardState extends ChangeNotifier {
       return;
     }
 
-    if (_interactiveTargetCount == 0) {
-      return;
-    }
-
-    if (_interactiveSelection.length >= _interactiveTargetCount) {
-      _interactiveSelection.removeAt(0);
-    }
-
     _interactiveSelection.add(index);
     _selectedIndex = index;
+
     _emitChange();
   }
 
-  void beginNakedPairSelection() {
+  void beginInteractiveMode(StrategyType mode) {
     if (_isAnimatingSingles) {
       return;
     }
@@ -293,156 +280,24 @@ class SudokuBoardState extends ChangeNotifier {
     clearHint();
 
     _resetInteractiveMode(notify: false);
-    _interactiveMode = InteractiveSolveMode.nakedPair;
-    _interactiveTargetCount = 2;
+    _interactiveMode = mode;
     _emitChange();
   }
 
   void cancelInteractiveMode() {
-    if (_interactiveMode == InteractiveSolveMode.none) {
+    if (_interactiveMode == null) {
       return;
     }
     _resetInteractiveMode();
   }
 
   void _resetInteractiveMode({bool notify = true}) {
-    _interactiveMode = InteractiveSolveMode.none;
-    _interactiveTargetCount = 0;
+    _interactiveMode = null;
     _interactiveSelection.clear();
     _selectedIndex = null;
     if (notify) {
       _emitChange();
     }
-  }
-
-  ({bool success, int eliminations, List<int> digits})
-  applyNakedPairSelection() {
-    if (_interactiveMode != InteractiveSolveMode.nakedPair ||
-        _interactiveSelection.length != 2) {
-      return (success: false, eliminations: 0, digits: const <int>[]);
-    }
-
-    final selection = List<int>.from(_interactiveSelection);
-    final first = selection[0];
-    final second = selection[1];
-
-    final firstCell = _cells[first];
-    final secondCell = _cells[second];
-    if (firstCell.value != null || secondCell.value != null) {
-      return (success: false, eliminations: 0, digits: const <int>[]);
-    }
-
-    final sudoku = solver.Sudoku(toValueList());
-    final candidateMap = solver.CandidateMap.fromBoard(sudoku);
-    final setA = Set<int>.from(candidateMap[first]);
-    final setB = Set<int>.from(candidateMap[second]);
-
-    if (setA.length != 2 || setB.length != 2) {
-      return (success: false, eliminations: 0, digits: const <int>[]);
-    }
-
-    if (!setA.containsAll(setB) || !setB.containsAll(setA)) {
-      return (success: false, eliminations: 0, digits: const <int>[]);
-    }
-
-    final digits = List<int>.from(setA)..sort();
-
-    final rowA = first ~/ size;
-    final colA = first % size;
-    final rowB = second ~/ size;
-    final colB = second % size;
-
-    final sameRow = rowA == rowB;
-    final sameCol = colA == colB;
-    final sameBox = (rowA ~/ 3 == rowB ~/ 3) && (colA ~/ 3 == colB ~/ 3);
-
-    if (!(sameRow || sameCol || sameBox)) {
-      return (success: false, eliminations: 0, digits: const <int>[]);
-    }
-
-    final eliminationsMap = <int, Set<int>>{};
-    solver.HintUnit? unit;
-
-    bool collectUnit(Iterable<int> indices, solver.HintUnit targetUnit) {
-      var added = false;
-      for (final index in indices) {
-        if (selection.contains(index)) {
-          continue;
-        }
-        if (_cells[index].value != null) {
-          continue;
-        }
-        for (final digit in digits) {
-          if (candidateMap[index].contains(digit)) {
-            eliminationsMap.putIfAbsent(index, () => <int>{}).add(digit);
-            added = true;
-          }
-        }
-      }
-      if (added && unit == null) {
-        unit = targetUnit;
-      }
-      return added;
-    }
-
-    if (sameRow) {
-      collectUnit([
-        for (var c = 0; c < size; c++) _index(rowA, c),
-      ], solver.HintUnit.row);
-    }
-    if (sameCol) {
-      collectUnit([
-        for (var r = 0; r < size; r++) _index(r, colA),
-      ], solver.HintUnit.column);
-    }
-    if (sameBox) {
-      final startRow = (rowA ~/ 3) * 3;
-      final startCol = (colA ~/ 3) * 3;
-      final indices = <int>[];
-      for (var r = startRow; r < startRow + 3; r++) {
-        for (var c = startCol; c < startCol + 3; c++) {
-          indices.add(_index(r, c));
-        }
-      }
-      collectUnit(indices, solver.HintUnit.box);
-    }
-
-    final eliminations = <(int, int)>[];
-    for (final entry in eliminationsMap.entries) {
-      for (final digit in entry.value) {
-        eliminations.add((entry.key, digit));
-      }
-    }
-
-    if (eliminations.isEmpty) {
-      return (success: false, eliminations: 0, digits: const <int>[]);
-    }
-
-    _pushSnapshot();
-    final hint = solver.Hint(
-      solver.StrategyUsed.nakedPair,
-      eliminations: eliminations,
-      cells: selection,
-      digits: digits,
-      unit: unit,
-    );
-
-    final mutated = _applyHintToBoard(
-      hint,
-      triggerAutomation: true,
-      emitChange: false,
-    );
-
-    if (!mutated) {
-      if (_history.isNotEmpty) {
-        _history.removeLast();
-      }
-      return (success: false, eliminations: 0, digits: const <int>[]);
-    }
-
-    _resetInteractiveMode(notify: false);
-    _emitChange();
-    return (success: true, eliminations: eliminations.length, digits: digits);
   }
 
   bool enterDigit(int digit) {
@@ -905,7 +760,7 @@ class SudokuBoardState extends ChangeNotifier {
   }
 
   bool _applyHintToBoard(
-    solver.Hint hint, {
+    Hint hint, {
     required bool triggerAutomation,
     required bool emitChange,
   }) {

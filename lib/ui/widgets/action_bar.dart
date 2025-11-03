@@ -1,3 +1,4 @@
+import 'package:auto_sudoku_solver/auto_sudoku_solver.dart';
 import 'package:flutter/material.dart';
 
 import 'package:auto_sudoku/state/sudoku_board_state.dart';
@@ -5,7 +6,7 @@ import 'package:auto_sudoku/ui/utils/feedback.dart';
 import 'package:provider/provider.dart';
 
 class ActionBar extends StatelessWidget {
-  const ActionBar({super.key, this.onHintRequested});
+  const ActionBar({super.key, required this.onHintRequested});
 
   final Future<void> Function()? onHintRequested;
 
@@ -76,6 +77,35 @@ class ActionBar extends StatelessWidget {
           onPressed: isEnabled ? board.toggleNoteMode : null,
           icon: const Icon(Icons.edit_outlined),
           selectedIcon: const Icon(Icons.edit),
+        ),
+        PopupMenuButton(
+          itemBuilder: (BuildContext context) => <PopupMenuEntry<StrategyType>>[
+            const PopupMenuItem<StrategyType>(
+              value: StrategyType.nakedPair,
+              child: Row(
+                spacing: 12,
+                children: [
+                  Icon(Icons.auto_awesome_motion_rounded),
+                  Text("Naked"),
+                ],
+              ),
+            ),
+            const PopupMenuItem<StrategyType>(
+              value: StrategyType.pointing,
+              child: Row(
+                spacing: 12,
+                children: [Icon(Icons.arrow_forward), Text("Pointing")],
+              ),
+            ),
+            // Add more PopupMenuItem widgets for other options if needed
+          ],
+          enabled: !board.isAnimatingSingles && !board.isLoading,
+          tooltip: 'Technique',
+          style: toolStyle,
+          icon: const Icon(Icons.auto_fix_high_outlined),
+          onSelected: (strategy) {
+            board.beginInteractiveMode(strategy);
+          },
         ),
       ],
     );

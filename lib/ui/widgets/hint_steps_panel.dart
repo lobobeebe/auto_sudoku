@@ -48,16 +48,20 @@ class _HintStepsPanelState extends State<HintStepsPanel> {
           Row(
             spacing: 10,
             children: [
+              Icon(Icons.auto_awesome_motion_rounded),
               Expanded(
                 child: Text(
                   _explanation.title,
                   style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
               ),
-              TextButton(onPressed: widget.onSkip, child: const Text('Skip')),
-              FilledButton(
+              IconButton.filledTonal(
+                onPressed: widget.onSkip,
+                icon: const Icon(Icons.close),
+              ),
+              IconButton.filled(
                 onPressed: widget.onApply,
-                child: const Text('Apply'),
+                icon: const Icon(Icons.check),
               ),
             ],
           ),
