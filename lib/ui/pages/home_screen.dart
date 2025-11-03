@@ -1,6 +1,5 @@
 import 'package:auto_sudoku/data/puzzle_repository.dart';
-import 'package:auto_sudoku/state/sudoku_board_state.dart';
-import 'package:auto_sudoku/ui/pages/sudoku_home_page.dart';
+import 'package:auto_sudoku/ui/pages/difficulty_selection_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -120,22 +119,7 @@ class HomeScreen extends StatelessWidget {
                           ),
                         ),
                         onPressed: repository.isLoaded
-                            ? () {
-                                final repo = context.read<PuzzleRepository>();
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (_) =>
-                                        ChangeNotifierProvider<
-                                          SudokuBoardState
-                                        >(
-                                          create: (_) =>
-                                              SudokuBoardState(repo: repo)
-                                                ..init(),
-                                          child: const SudokuHomePage(),
-                                        ),
-                                  ),
-                                );
-                              }
+                            ? () => _openDifficultySelection(context)
                             : null,
                       ),
                     ],
@@ -148,4 +132,28 @@ class HomeScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+void _openDifficultySelection(BuildContext context) {
+  Navigator.of(context).push(
+    PageRouteBuilder<void>(
+      transitionDuration: const Duration(milliseconds: 420),
+      pageBuilder: (context, animation, secondaryAnimation) {
+        final curved = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+        );
+        return FadeTransition(
+          opacity: curved,
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0, 0.06),
+              end: Offset.zero,
+            ).animate(curved),
+            child: const DifficultySelectionPage(),
+          ),
+        );
+      },
+    ),
+  );
 }

@@ -163,13 +163,15 @@ class SudokuBoardState extends ChangeNotifier {
 
   SudokuCell cellAt(int row, int col) => _cells[_index(row, col)];
 
-  Future<void> init() async {
+  Future<void> init({solver.Difficulty? difficulty}) async {
     _isLoading = true;
     _error = null;
     _emitChange();
 
     try {
-      final puzzle = await repo.loadRandomPuzzle();
+      final puzzle = difficulty == null
+          ? await repo.loadRandomPuzzle()
+          : await repo.loadRandomPuzzleByDifficulty(difficulty);
       _initFromPuzzle(puzzle);
     } catch (e) {
       _error = e.toString();
