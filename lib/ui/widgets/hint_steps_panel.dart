@@ -43,30 +43,35 @@ class _HintStepsPanelState extends State<HintStepsPanel> {
         dividerColor: Colors.transparent, // Removes the outline divider
       ),
       child: Card(
-        child: ExpansionTile(
-          title: Text(
-            _explanation.title,
-            style: const TextStyle(fontWeight: FontWeight.w600),
-          ),
-          showTrailingIcon: false,
-          subtitle: Row(
-            spacing: 10,
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.end,
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.max,
             children: [
-              TextButton(onPressed: widget.onSkip, child: const Text('Skip')),
-              FilledButton(
-                onPressed: widget.onApply,
-                child: const Text('Apply'),
+              Row(
+                spacing: 10,
+                children: [
+                  Text(
+                    _explanation.title,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  Expanded(child: SizedBox()),
+                  TextButton(
+                    onPressed: widget.onSkip,
+                    child: const Text('Skip'),
+                  ),
+                  FilledButton(
+                    onPressed: widget.onApply,
+                    child: const Text('Apply'),
+                  ),
+                ],
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(_explanation.overview),
               ),
             ],
           ),
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(_explanation.overview),
-            ),
-          ],
         ),
       ),
     );

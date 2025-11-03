@@ -1,4 +1,4 @@
-import 'package:auto_sudoku_solver/auto_sudoku_solver.dart' as solver;
+import 'package:auto_sudoku_solver/auto_sudoku_solver.dart';
 import 'package:auto_sudoku_solver/src/solver_settings.dart';
 import 'package:test/test.dart';
 
@@ -10,7 +10,7 @@ void main() {
         (0, 1): {1, 2},
       });
 
-      expect(hint.technique, solver.StrategyUsed.nakedSingle);
+      expect(hint.technique, StrategyUsed.nakedSingle);
       expect(hint.placements, contains((_cell(0, 0), 5)));
       expect(hint.unit, isNull);
     });
@@ -23,9 +23,9 @@ void main() {
         (1, 0): {6, 9},
       });
 
-      expect(hint.technique, solver.StrategyUsed.hiddenSingle);
+      expect(hint.technique, StrategyUsed.hiddenSingle);
       expect(hint.placements, contains((_cell(0, 0), 4)));
-      expect(hint.unit, solver.HintUnit.row);
+      expect(hint.unit, HintUnit.row);
     });
 
     test('pointing (row)', () {
@@ -46,8 +46,8 @@ void main() {
         ),
       );
 
-      expect(hint.technique, solver.StrategyUsed.pointing);
-      expect(hint.unit, solver.HintUnit.row);
+      expect(hint.technique, StrategyUsed.pointing);
+      expect(hint.unit, HintUnit.row);
       expect(hint.eliminations, contains((_cell(0, 3), 5)));
     });
 
@@ -68,8 +68,8 @@ void main() {
         ),
       );
 
-      expect(hint.technique, solver.StrategyUsed.claiming);
-      expect(hint.unit, solver.HintUnit.row);
+      expect(hint.technique, StrategyUsed.claiming);
+      expect(hint.unit, HintUnit.row);
       expect(hint.eliminations, contains((_cell(2, 4), 4)));
     });
 
@@ -81,8 +81,8 @@ void main() {
         (3, 3): {4, 5},
       }, settings: SolverSettings(allowHiddenSingles: false));
 
-      expect(hint.technique, solver.StrategyUsed.nakedPair);
-      expect(hint.unit, solver.HintUnit.row);
+      expect(hint.technique, StrategyUsed.nakedPair);
+      expect(hint.unit, HintUnit.row);
       expect(hint.eliminations, contains((_cell(2, 4), 1)));
     });
 
@@ -96,14 +96,11 @@ void main() {
         (8, 4): {1, 3}, // Irrelavent - Added for noise
       }, settings: SolverSettings(allowHiddenSingles: false));
 
-      expect(hint.technique, solver.StrategyUsed.nakedPair);
-      expect(hint.unit, solver.HintUnit.column);
+      expect(hint.technique, StrategyUsed.nakedPair);
+      expect(hint.unit, HintUnit.column);
       expect(
         hint.eliminations,
-        containsAll([
-          (_cell(3, 3), 4),
-          (_cell(3, 3), 5),
-        ]),
+        containsAll([(_cell(3, 3), 4), (_cell(3, 3), 5)]),
       );
     });
 
@@ -118,12 +115,13 @@ void main() {
         settings: SolverSettings(
           allowHiddenSingles: false,
           allowPairs: true,
+          allowLocked: false,
           allowHiddenSubsets: true,
         ),
       );
 
-      expect(hint.technique, solver.StrategyUsed.hiddenPair);
-      expect(hint.unit, solver.HintUnit.row);
+      expect(hint.technique, StrategyUsed.hiddenPair);
+      expect(hint.unit, HintUnit.row);
       expect(
         hint.eliminations,
         containsAll([(_cell(3, 0), 7), (_cell(3, 1), 8)]),
@@ -145,9 +143,31 @@ void main() {
         ),
       );
 
-      expect(hint.technique, solver.StrategyUsed.nakedTriple);
-      expect(hint.unit, solver.HintUnit.row);
+      expect(hint.technique, StrategyUsed.nakedTriple);
+      expect(hint.unit, HintUnit.row);
       expect(hint.eliminations, contains((_cell(4, 5), 1)));
+    });
+
+    test('naked triple (col)', () {
+      final hint = _nextHint(
+        {
+          (0, 8): {1, 5, 3},
+          (1, 8): {1, 5, 3},
+          (3, 8): {1, 4, 2},
+          (5, 8): {1, 4, 2},
+          (8, 8): {4, 2},
+        },
+        settings: SolverSettings(
+          allowHiddenSingles: false,
+          allowPairs: false,
+          allowTriples: true,
+        ),
+      );
+
+      expect(hint.technique, StrategyUsed.nakedTriple);
+      expect(hint.unit, HintUnit.column);
+      expect(hint.eliminations, contains((_cell(0, 8), 1)));
+      expect(hint.eliminations, contains((_cell(1, 8), 1)));
     });
 
     test('hidden triple (row)', () {
@@ -158,17 +178,11 @@ void main() {
           (5, 2): {4, 5, 6, 9},
           (5, 4): {1, 2},
         },
-        settings: SolverSettings(
-          allowHiddenSingles: false,
-          allowPairs: true,
-          allowTriples: true,
-          allowHiddenSubsets: true,
-          allowQuads: false,
-        ),
+        settings: SolverSettings(allowHiddenSingles: false, allowLocked: false),
       );
 
-      expect(hint.technique, solver.StrategyUsed.hiddenTriple);
-      expect(hint.unit, solver.HintUnit.row);
+      expect(hint.technique, StrategyUsed.hiddenTriple);
+      expect(hint.unit, HintUnit.row);
       expect(
         hint.eliminations,
         containsAll([(_cell(5, 0), 7), (_cell(5, 1), 8), (_cell(5, 2), 9)]),
@@ -192,8 +206,8 @@ void main() {
         ),
       );
 
-      expect(hint.technique, solver.StrategyUsed.nakedQuad);
-      expect(hint.unit, solver.HintUnit.row);
+      expect(hint.technique, StrategyUsed.nakedQuad);
+      expect(hint.unit, HintUnit.row);
       expect(hint.eliminations, contains((_cell(6, 5), 1)));
     });
 
@@ -205,7 +219,7 @@ void main() {
         (1, 6): {4, 9},
         (1, 8): {4, 5, 8, 9},
       });
-      final hint = solver.Solver().nextHint(
+      final hint = Solver().nextHint(
         sudoku,
         settings: SolverSettings.off(allowQuads: true),
       );
@@ -226,18 +240,11 @@ void main() {
           (7, 3): {5, 6, 7, 8, 4},
           (7, 5): {1, 2},
         },
-        settings: SolverSettings(
-          allowHiddenSingles: false,
-          allowPairs: false,
-          allowTriples: false,
-          allowQuads: true,
-          allowHiddenSubsets: true,
-          allowXWing: false,
-        ),
+        settings: SolverSettings(allowHiddenSingles: false, allowLocked: false),
       );
 
-      expect(hint.technique, solver.StrategyUsed.hiddenQuad);
-      expect(hint.unit, solver.HintUnit.row);
+      expect(hint.technique, StrategyUsed.hiddenQuad);
+      expect(hint.unit, HintUnit.row);
       expect(
         hint.eliminations,
         containsAll([
@@ -269,7 +276,7 @@ void main() {
         ),
       );
 
-      expect(hint.technique, solver.StrategyUsed.xWing);
+      expect(hint.technique, StrategyUsed.xWing);
       expect(hint.digits, equals([5]));
       expect(
         hint.eliminations,
@@ -296,7 +303,7 @@ void main() {
         ),
       );
 
-      expect(hint.technique, solver.StrategyUsed.xyWing);
+      expect(hint.technique, StrategyUsed.xyWing);
       expect(hint.eliminations, contains((_cell(1, 1), 3)));
     });
 
@@ -337,7 +344,7 @@ void main() {
         ),
       );
 
-      expect(hint.technique, solver.StrategyUsed.coloring);
+      expect(hint.technique, StrategyUsed.coloring);
       expect(hint.digits, equals([5]));
       expect(
         hint.eliminations,
@@ -384,7 +391,7 @@ void main() {
         ),
       );
 
-      expect(hint.technique, solver.StrategyUsed.swordfish);
+      expect(hint.technique, StrategyUsed.swordfish);
       expect(hint.digits, equals([5]));
       expect(
         hint.eliminations,
@@ -394,25 +401,22 @@ void main() {
   });
 }
 
-solver.Hint _nextHint(
-  Map<(int, int), Set<int>> notes, {
-  SolverSettings? settings,
-}) {
+Hint _nextHint(Map<(int, int), Set<int>> notes, {SolverSettings? settings}) {
   final sudoku = _sudokuWithNotes(notes);
-  final hint = solver.Solver().nextHint(sudoku, settings: settings);
+  final hint = Solver().nextHint(sudoku, settings: settings);
   if (hint == null) {
     throw StateError('Expected a hint but received null');
   }
   return hint;
 }
 
-solver.Sudoku _sudokuWithNotes(Map<(int, int), Set<int>> entries) {
+Sudoku _sudokuWithNotes(Map<(int, int), Set<int>> entries) {
   final noteList = List.generate(81, (_) => <int>{});
   for (final entry in entries.entries) {
     final (row, col) = entry.key;
     noteList[_cell(row, col)] = {...entry.value};
   }
-  return solver.Sudoku(List.filled(81, 0), notes: noteList);
+  return Sudoku(List.filled(81, 0), notes: noteList);
 }
 
 int _cell(int row, int col) => row * 9 + col;

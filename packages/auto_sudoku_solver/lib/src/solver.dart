@@ -29,38 +29,28 @@ class Solver {
     }
 
     if (settings.allowPairs) {
-      final pair = _findSubsetHint(
-        s,
-        cand,
-        2,
-        allowHidden: settings.allowHiddenSubsets,
-      );
+      final pair = _findNakedHint(s, cand, 2);
       if (pair != null) return pair;
     }
 
     if (settings.allowTriples) {
-      final triple = _findSubsetHint(
-        s,
-        cand,
-        3,
-        allowHidden: settings.allowHiddenSubsets,
-      );
+      final triple = _findNakedHint(s, cand, 3);
       if (triple != null) return triple;
     }
 
     if (settings.allowQuads) {
-      final quad = _findSubsetHint(
-        s,
-        cand,
-        4,
-        allowHidden: settings.allowHiddenSubsets,
-      );
+      final quad = _findNakedHint(s, cand, 4);
       if (quad != null) return quad;
     }
 
     if (settings.allowLocked) {
       final locked = _findLockedHint(s, cand);
       if (locked != null) return locked;
+    }
+
+    if (settings.allowHiddenSubsets) {
+      final hidden = _findHiddenHint(s, cand);
+      if (hidden != null) return hidden;
     }
 
     if (settings.allowXWing) {
@@ -317,12 +307,7 @@ class Solver {
   }
 
   // Helper to find a subset hint (naked/hidden, k in {2,3,4})
-  Hint? _findSubsetHint(
-    Sudoku s,
-    CandidateMap cand,
-    int k, {
-    required bool allowHidden,
-  }) {
+  Hint? _findNakedHint(Sudoku s, CandidateMap cand, int k) {
     // Try Naked subset in each unit
     Hint? processUnitNaked(Iterable<int> unit, HintUnit unitType) {
       final empties = unit.where((i) => s.cells[i] == 0).toList();
@@ -445,99 +430,116 @@ class Solver {
       return null;
     }
 
-    // Try Hidden subset in each unit
-    Hint? processUnitHidden(Iterable<int> unit, HintUnit unitType) {
-      final empties = unit.where((i) => s.cells[i] == 0).toList();
-      if (empties.isEmpty) return null;
-      final locs = List.generate(10, (_) => <int>[]);
-      for (final i in empties) {
-        for (final d in cand[i]) {
-          locs[d].add(i);
-        }
-      }
-
-      final digits = <int>[];
-      for (var d = 1; d <= 9; d++) {
-        final positions = locs[d];
-        if (positions.length >= 2 && positions.length <= k) {
-          digits.add(d);
-        }
-      }
-      if (digits.length < k) return null;
-
-      Hint? result;
-      final current = <int>[];
-      void choose(int start) {
-        if (result != null) return;
-        if (current.length == k) {
-          final positions = <int>{};
-          for (final d in current) {
-            positions.addAll(locs[d]);
-          }
-          if (positions.length != k) return;
-
-          final subset = current.toSet();
-          final toTrim = <(int, int)>[];
-          for (final cell in positions) {
-            for (final candidate in cand[cell]) {
-              if (!subset.contains(candidate)) {
-                toTrim.add((cell, candidate));
-              }
-            }
-          }
-          if (toTrim.isEmpty) return;
-
-          result = Hint(
-            switch (k) {
-              2 => StrategyUsed.hiddenPair,
-              3 => StrategyUsed.hiddenTriple,
-              _ => StrategyUsed.hiddenQuad,
-            },
-            eliminations: toTrim,
-            cells: positions.toList()..sort(),
-            digits: subset.toList()..sort(),
-            unit: unitType,
-          );
-          return;
-        }
-
-        for (var i = start; i < digits.length; i++) {
-          current.add(digits[i]);
-          choose(i + 1);
-          current.removeLast();
-          if (result != null) return;
-        }
-      }
-
-      choose(0);
-      return result;
-    }
-
     for (var r = 0; r < 9; r++) {
-      final h =
-          processUnitNaked(s.rowIndices(r), HintUnit.row) ??
-          (allowHidden
-              ? processUnitHidden(s.rowIndices(r), HintUnit.row)
-              : null);
+      final h = processUnitNaked(s.rowIndices(r), HintUnit.row);
       if (h != null) return h;
     }
     for (var c = 0; c < 9; c++) {
-      final h =
-          processUnitNaked(s.colIndices(c), HintUnit.column) ??
-          (allowHidden
-              ? processUnitHidden(s.colIndices(c), HintUnit.column)
-              : null);
+      final h = processUnitNaked(s.colIndices(c), HintUnit.column);
       if (h != null) return h;
     }
     for (var b = 0; b < 9; b++) {
-      final h =
-          processUnitNaked(s.boxIndices(b), HintUnit.box) ??
-          (allowHidden
-              ? processUnitHidden(s.boxIndices(b), HintUnit.box)
-              : null);
+      final h = processUnitNaked(s.boxIndices(b), HintUnit.box);
       if (h != null) return h;
     }
     return null;
+  }
+
+  Hint? _findHiddenHint(Sudoku s, CandidateMap cand) {
+    Hint? processUnit(Iterable<int> unit, HintUnit unitType) {
+      for (final k in [2, 3, 4]) {
+        final hint = _findHiddenSubsetInUnit(s, cand, unit, unitType, k);
+        if (hint != null) return hint;
+      }
+      return null;
+    }
+
+    for (var r = 0; r < 9; r++) {
+      final h = processUnit(s.rowIndices(r), HintUnit.row);
+      if (h != null) return h;
+    }
+    for (var c = 0; c < 9; c++) {
+      final h = processUnit(s.colIndices(c), HintUnit.column);
+      if (h != null) return h;
+    }
+    for (var b = 0; b < 9; b++) {
+      final h = processUnit(s.boxIndices(b), HintUnit.box);
+      if (h != null) return h;
+    }
+    return null;
+  }
+
+  Hint? _findHiddenSubsetInUnit(
+    Sudoku s,
+    CandidateMap cand,
+    Iterable<int> unit,
+    HintUnit unitType,
+    int k,
+  ) {
+    final empties = unit.where((i) => s.cells[i] == 0).toList();
+    if (empties.isEmpty) return null;
+    final locs = List.generate(10, (_) => <int>[]);
+    for (final i in empties) {
+      for (final d in cand[i]) {
+        locs[d].add(i);
+      }
+    }
+
+    final digits = <int>[];
+    for (var d = 1; d <= 9; d++) {
+      final positions = locs[d];
+      if (positions.length >= 2 && positions.length <= k) {
+        digits.add(d);
+      }
+    }
+    if (digits.length < k) return null;
+
+    Hint? result;
+    final current = <int>[];
+    void choose(int start) {
+      if (result != null) return;
+      if (current.length == k) {
+        final positions = <int>{};
+        for (final digit in current) {
+          positions.addAll(locs[digit]);
+        }
+        if (positions.length != k) return;
+
+        final subset = current.toSet();
+        final toTrim = <(int, int)>[];
+        for (final cell in positions) {
+          for (final candidate in cand[cell]) {
+            if (!subset.contains(candidate)) {
+              toTrim.add((cell, candidate));
+            }
+          }
+        }
+        if (toTrim.isEmpty) return;
+
+        result = Hint(
+          switch (k) {
+            2 => StrategyUsed.hiddenPair,
+            3 => StrategyUsed.hiddenTriple,
+            _ => StrategyUsed.hiddenQuad,
+          },
+          eliminations: toTrim,
+          cells: positions.toList()..sort(),
+          digits: subset.toList()..sort(),
+          unit: unitType,
+        );
+        return;
+      }
+
+      for (var i = start; i < digits.length; i++) {
+        current.add(digits[i]);
+        choose(i + 1);
+        current.removeLast();
+        if (result != null) return;
+      }
+    }
+
+    choose(0);
+    return result;
   }
 
   Hint? _findXWingHint(Sudoku s, CandidateMap cand) {

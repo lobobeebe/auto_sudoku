@@ -60,29 +60,26 @@ class _SudokuHomePageState extends State<SudokuHomePage> {
     if (error != _lastError) {
       _lastError = error;
       return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'We hit a snag while loading puzzles.',
-                style: Theme.of(context).textTheme.titleMedium,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'We hit a snag while loading puzzles.',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              error ?? "Null Error",
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.error,
               ),
-              const SizedBox(height: 8),
-              Text(
-                error ?? "Null Error",
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.error,
-                ),
-              ),
-              const SizedBox(height: 16),
-              FilledButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Return'),
-              ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 16),
+            FilledButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Return'),
+            ),
+          ],
         ),
       );
     }
@@ -96,37 +93,51 @@ class _SudokuHomePageState extends State<SudokuHomePage> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Expanded(child: const SudokuGrid()),
-          const SizedBox(height: 24),
-          Stack(
-            alignment: Alignment.bottomCenter,
-            children: [
-              // Controls (base layer)
-              Column(
-                key: const ValueKey('controls'),
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  ActionBar(onHintRequested: _handleHintRequest),
-                  const SizedBox(height: 12),
-                  NumberPad(),
-                ],
-              ),
-
-              // Rounded-rect scrim over controls when a hint is visible
-              if (board.hint != null)
-                Container(
-                  // Use surfaceVariant with alpha for a subtle veil
-                  color: Colors.black.withOpacity(0.85),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // Controls (base layer)
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Column(
+                    key: const ValueKey('controls'),
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      ActionBar(onHintRequested: _handleHintRequest),
+                      const SizedBox(height: 12),
+                      NumberPad(),
+                    ],
+                  ),
                 ),
 
-              // Hint panel (top layer)
-              if (board.hint != null)
-                HintStepsPanel(
-                  key: const ValueKey('hintPanel'),
-                  hint: board.hint!,
-                  onSkip: _handleHintSkip,
-                  onApply: _handleHintApply,
-                ),
-            ],
+                // Rounded-rect scrim over controls when a hint is visible
+                if (board.hint != null)
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      ignoring: true,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.scrim.withOpacity(0.32),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                // Hint panel (top layer)
+                if (board.hint != null)
+                  HintStepsPanel(
+                    key: const ValueKey('hintPanel'),
+                    hint: board.hint!,
+                    onSkip: _handleHintSkip,
+                    onApply: _handleHintApply,
+                  ),
+              ],
+            ),
           ),
         ],
       ),
