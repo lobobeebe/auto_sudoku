@@ -35,7 +35,19 @@ class _SudokuHomePageState extends State<SudokuHomePage> {
         elevation: 0,
         scrolledUnderElevation: 0,
         titleSpacing: 24,
-        title: const Text('Auto Sudoku'),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Auto Sudoku'),
+            Text(
+              board.difficulty,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16),
@@ -163,9 +175,8 @@ class _SudokuHomePageState extends State<SudokuHomePage> {
     final colorScheme = Theme.of(context).colorScheme;
     final hint = board.hint;
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 280),
-      curve: Curves.easeOutCubic,
+    final hintCard = Container(
+      key: const ValueKey('hintPanel'),
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(28),
@@ -181,49 +192,63 @@ class _SudokuHomePageState extends State<SudokuHomePage> {
           color: colorScheme.outlineVariant.withValues(alpha: 0.18),
         ),
       ),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          AnimatedOpacity(
-            duration: const Duration(milliseconds: 200),
-            opacity: hint == null ? 1 : 0.2,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                ActionBar(onHintRequested: _handleHintRequest),
-                const SizedBox(height: 20),
-                const NumberPad(),
-              ],
+      child: hint != null
+          ? HintStepsPanel(
+              hint: hint,
+              onSkip: _handleHintSkip,
+              onApply: _handleHintApply,
+            )
+          : const SizedBox.shrink(),
+    );
+
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 260),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeInCubic,
+      transitionBuilder: (child, animation) {
+        return FadeTransition(
+          opacity: animation,
+          child: SizeTransition(
+            sizeFactor: CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeOutCubic,
             ),
+            axisAlignment: -1,
+            child: child,
           ),
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 240),
-            switchInCurve: Curves.easeOutCubic,
-            switchOutCurve: Curves.easeInCubic,
-            transitionBuilder: (child, animation) {
-              return FadeTransition(
-                opacity: animation,
-                child: ScaleTransition(
-                  scale: CurvedAnimation(
-                    parent: animation,
-                    curve: Curves.easeOutBack,
+        );
+      },
+      child: hint == null
+          ? SizedBox(
+              key: const ValueKey('controls'),
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(28),
+                  color: colorScheme.surface.withValues(alpha: 0.94),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.08),
+                      blurRadius: 26,
+                      offset: const Offset(0, 16),
+                    ),
+                  ],
+                  border: Border.all(
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.18),
                   ),
-                  child: child,
                 ),
-              );
-            },
-            child: hint == null
-                ? const SizedBox.shrink()
-                : HintStepsPanel(
-                    key: const ValueKey('hintPanel'),
-                    hint: hint,
-                    onSkip: _handleHintSkip,
-                    onApply: _handleHintApply,
-                  ),
-          ),
-        ],
-      ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    ActionBar(onHintRequested: _handleHintRequest),
+                    const SizedBox(height: 20),
+                    const NumberPad(),
+                  ],
+                ),
+              ),
+            )
+          : hintCard,
     );
   }
 

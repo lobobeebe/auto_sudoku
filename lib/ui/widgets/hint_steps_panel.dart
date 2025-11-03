@@ -42,45 +42,33 @@ class _HintStepsPanelState extends State<HintStepsPanel> {
       data: Theme.of(context).copyWith(
         dividerColor: Colors.transparent, // Removes the outline divider
       ),
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: Column(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            spacing: 10,
             children: [
-              Row(
-                spacing: 10,
-                children: [
-                  Flexible(
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        _explanation.title,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: widget.onSkip,
-                    child: const Text('Skip'),
-                  ),
-                  FilledButton(
-                    onPressed: widget.onApply,
-                    child: const Text('Apply'),
-                  ),
-                ],
-              ),
               Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: SingleChildScrollView(
-                    child: Text(_explanation.overview),
-                  ),
+                child: Text(
+                  _explanation.title,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
+              ),
+              TextButton(onPressed: widget.onSkip, child: const Text('Skip')),
+              FilledButton(
+                onPressed: widget.onApply,
+                child: const Text('Apply'),
               ),
             ],
           ),
-        ),
+          Flexible(
+            fit: FlexFit.loose,
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: SingleChildScrollView(child: Text(_explanation.overview)),
+            ),
+          ),
+        ],
       ),
     );
   }
