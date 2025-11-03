@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import 'package:auto_sudoku/state/sudoku_board_state.dart';
 import 'package:auto_sudoku/ui/theme/sudoku_theme.dart';
-import 'package:auto_sudoku/ui/widgets/color_pad.dart';
 import 'package:auto_sudoku/ui/widgets/pad_button.dart';
 import 'package:auto_sudoku/ui/utils/feedback.dart';
 import 'package:provider/provider.dart';
@@ -47,55 +46,21 @@ class NumberPad extends StatelessWidget {
         final verticalPadding = 16.0 * scale.clamp(0.6, 1.0);
         final fontSize = 24.0 * scale.clamp(0.7, 1.0);
 
-        if (board.coloringMode) {
-          return ColorPad(
-            maxWidth: maxWidth,
-            spacing: spacing,
-            board: board,
-            sudokuTheme: sudokuTheme,
-            colorScheme: colorScheme,
-            isEnabled: isEnabled,
-          );
-        }
-
-        final linksCandidateDigits = board.linksMode
-            ? board.digitsAvailableForLinks()
-            : null;
-
         return SizedBox(
           width: maxWidth,
           child: Row(
             spacing: spacing,
             children: digits.map((digit) {
               final isComplete = board.isDigitSolved(digit);
-              final isLinkSelected =
-                  board.linksMode && board.linksDigit == digit;
-              final hasCandidates =
-                  linksCandidateDigits?.contains(digit) ?? false;
-              final buttonEnabled = board.linksMode
-                  ? isEnabled && !isComplete && hasCandidates
-                  : isEnabled && !isComplete && board.canPlaceDigit(digit);
-              final background = board.linksMode
-                  ? (isComplete || !hasCandidates
-                        ? Colors.transparent
-                        : (isLinkSelected
-                              ? colorScheme.primary
-                              : colorScheme.surfaceContainerHighest))
-                  : (board.noteMode
-                        ? colorScheme.primary
-                        : sudokuTheme.numberPadBackground);
-              final foreground = board.linksMode
-                  ? (isLinkSelected
-                        ? colorScheme.onPrimary
-                        : (hasCandidates
-                              ? colorScheme.onSurfaceVariant
-                              : colorScheme.onSurface.withValues(alpha: 0.38)))
-                  : (board.noteMode
-                        ? colorScheme.onPrimary
-                        : sudokuTheme.numberPadForeground);
-              final disabledBackground = board.linksMode
-                  ? Colors.transparent
-                  : (isComplete ? Colors.transparent : null);
+              final buttonEnabled =
+                  isEnabled && !isComplete && board.canPlaceDigit(digit);
+              final background = board.noteMode
+                  ? colorScheme.primary
+                  : sudokuTheme.numberPadBackground;
+              final foreground = board.noteMode
+                  ? colorScheme.onPrimary
+                  : sudokuTheme.numberPadForeground;
+              final disabledBackground = isComplete ? Colors.transparent : null;
               final padding = EdgeInsets.symmetric(
                 vertical: verticalPadding.clamp(8.0, 16.0),
               );
@@ -112,9 +77,7 @@ class NumberPad extends StatelessWidget {
                     fontSize: fontSize,
                   ),
                   isEnabled: buttonEnabled,
-                  onPressed: () => board.linksMode
-                      ? board.setLinksDigit(digit)
-                      : _handleDigit(context, digit),
+                  onPressed: () => _handleDigit(context, digit),
                 ),
               );
             }).toList(),

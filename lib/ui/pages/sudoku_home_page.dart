@@ -19,11 +19,25 @@ class SudokuHomePage extends StatefulWidget {
 class _SudokuHomePageState extends State<SudokuHomePage> {
   final Solver _solver = Solver();
   GameStatus? _lastGameStatus;
+  bool _fabExpanded = false;
 
   @override
   Widget build(BuildContext context) {
     final board = context.watch<SudokuBoardState>();
     final theme = Theme.of(context);
+    final bool fabDisabled =
+        board.isLoading ||
+        board.isAnimatingSingles ||
+        board.isInteractiveModeActive;
+
+    if (fabDisabled && _fabExpanded) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        setState(() {
+          _fabExpanded = false;
+        });
+      });
+    }
 
     _maybeShowEndDialog(board);
 
@@ -68,6 +82,13 @@ class _SudokuHomePageState extends State<SudokuHomePage> {
         ],
       ),
       body: _buildBody(context, board),
+      floatingActionButton: _TechniqueFabMenu(
+        expanded: _fabExpanded,
+        disabled: fabDisabled,
+        onToggle: fabDisabled ? null : _toggleFabMenu,
+        onSelectNakedPair: fabDisabled ? null : _startNakedPairSelection,
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
@@ -172,34 +193,69 @@ class _SudokuHomePageState extends State<SudokuHomePage> {
   }
 
   Widget _buildControlsCard(BuildContext context, SudokuBoardState board) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final hint = board.hint;
+    final isTechniqueActive =
+        board.interactiveMode != InteractiveSolveMode.none;
 
-    final hintCard = Container(
-      key: const ValueKey('hintPanel'),
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(28),
-        color: colorScheme.surface.withValues(alpha: 0.94),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 26,
-            offset: const Offset(0, 16),
+    Widget wrapCard({required Key key, required Widget child}) {
+      return Container(
+        key: key,
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(28),
+          color: colorScheme.surface.withValues(alpha: 0.94),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 26,
+              offset: const Offset(0, 16),
+            ),
+          ],
+          border: Border.all(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.18),
           ),
-        ],
-        border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.18),
         ),
-      ),
-      child: hint != null
-          ? HintStepsPanel(
-              hint: hint,
-              onSkip: _handleHintSkip,
-              onApply: _handleHintApply,
-            )
-          : const SizedBox.shrink(),
-    );
+        child: child,
+      );
+    }
+
+    late final Widget child;
+    if (isTechniqueActive) {
+      child = wrapCard(
+        key: const ValueKey('technique'),
+        child: _NakedPairSelectionCard(
+          selectedIndices: board.interactiveSelection,
+          targetCount: board.interactiveTargetCount,
+          canConfirm: board.isInteractiveSelectionComplete,
+          onCancel: _handleTechniqueCancel,
+          onConfirm: _handleNakedPairConfirm,
+        ),
+      );
+    } else if (hint != null) {
+      child = wrapCard(
+        key: const ValueKey('hintPanel'),
+        child: HintStepsPanel(
+          hint: hint,
+          onSkip: _handleHintSkip,
+          onApply: _handleHintApply,
+        ),
+      );
+    } else {
+      child = wrapCard(
+        key: const ValueKey('controls'),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ActionBar(onHintRequested: _handleHintRequest),
+            const SizedBox(height: 20),
+            const NumberPad(),
+          ],
+        ),
+      );
+    }
 
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 260),
@@ -218,37 +274,77 @@ class _SudokuHomePageState extends State<SudokuHomePage> {
           ),
         );
       },
-      child: hint == null
-          ? SizedBox(
-              key: const ValueKey('controls'),
-              child: Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(28),
-                  color: colorScheme.surface.withValues(alpha: 0.94),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.08),
-                      blurRadius: 26,
-                      offset: const Offset(0, 16),
-                    ),
-                  ],
-                  border: Border.all(
-                    color: colorScheme.outlineVariant.withValues(alpha: 0.18),
-                  ),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    ActionBar(onHintRequested: _handleHintRequest),
-                    const SizedBox(height: 20),
-                    const NumberPad(),
-                  ],
-                ),
-              ),
-            )
-          : hintCard,
+      child: child,
+    );
+  }
+
+  void _toggleFabMenu() {
+    setState(() {
+      _fabExpanded = !_fabExpanded;
+    });
+  }
+
+  void _startNakedPairSelection() {
+    setState(() {
+      _fabExpanded = false;
+    });
+    final board = context.read<SudokuBoardState>();
+    board.beginNakedPairSelection();
+  }
+
+  void _handleTechniqueCancel() {
+    context.read<SudokuBoardState>().cancelInteractiveMode();
+  }
+
+  Future<void> _handleNakedPairConfirm() async {
+    final board = context.read<SudokuBoardState>();
+    final result = board.applyNakedPairSelection();
+    if (!result.success) {
+      await _showNoNakedPairDialog();
+      return;
+    }
+
+    final digits = result.digits;
+    final techniqueLabel = digits.isEmpty
+        ? 'Naked Pair'
+        : 'Naked Pair ${digits.join(' & ')}';
+    final removed = result.eliminations;
+    final removalText = removed == 1
+        ? 'Removed 1 candidate using $techniqueLabel.'
+        : 'Removed $removed candidates using $techniqueLabel.';
+    showFeedback(context, removalText);
+  }
+
+  Future<void> _showNoNakedPairDialog() async {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          title: Row(
+            children: [
+              Icon(Icons.info_outline_rounded, color: colorScheme.primary),
+              const SizedBox(width: 12),
+              Text('No Naked Pair Found', style: textTheme.titleMedium),
+            ],
+          ),
+          content: Text(
+            'Those cells do not form a valid Naked Pair or no candidates can be removed. Try selecting a different combination.',
+            style: textTheme.bodyMedium,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -399,6 +495,158 @@ class _ErrorPanel extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _TechniqueFabMenu extends StatelessWidget {
+  final bool expanded;
+  final bool disabled;
+  final VoidCallback? onToggle;
+  final VoidCallback? onSelectNakedPair;
+
+  const _TechniqueFabMenu({
+    required this.expanded,
+    required this.disabled,
+    required this.onToggle,
+    required this.onSelectNakedPair,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        expanded
+            ? Padding(
+                key: const ValueKey('technique-menu'),
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _TechniqueMenuCard(onSelectNakedPair: onSelectNakedPair),
+              )
+            : const SizedBox.shrink(key: ValueKey('technique-menu-gap')),
+        FloatingActionButton(
+          heroTag: 'technique-fab',
+          onPressed: (disabled || onToggle == null) ? null : onToggle,
+          child: Icon(expanded ? Icons.close : Icons.add),
+        ),
+      ],
+    );
+  }
+}
+
+class _TechniqueMenuCard extends StatelessWidget {
+  final VoidCallback? onSelectNakedPair;
+
+  const _TechniqueMenuCard({required this.onSelectNakedPair});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Card(
+      elevation: 8,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      clipBehavior: Clip.hardEdge,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 220),
+        child: ListTile(
+          leading: Icon(
+            Icons.auto_awesome_motion_rounded,
+            color: colorScheme.primary,
+          ),
+          title: const Text('Naked Pair'),
+          onTap: onSelectNakedPair,
+          enabled: onSelectNakedPair != null,
+        ),
+      ),
+    );
+  }
+}
+
+class _NakedPairSelectionCard extends StatelessWidget {
+  final List<int> selectedIndices;
+  final int targetCount;
+  final bool canConfirm;
+  final VoidCallback onCancel;
+  final VoidCallback onConfirm;
+
+  const _NakedPairSelectionCard({
+    required this.selectedIndices,
+    required this.targetCount,
+    required this.canConfirm,
+    required this.onCancel,
+    required this.onConfirm,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+    final count = selectedIndices.length;
+    final statusText = targetCount > 0
+        ? '$count of $targetCount cells selected'
+        : '$count cells selected';
+
+    final chips = selectedIndices.take(targetCount).map((index) {
+      final row = index ~/ SudokuBoardState.size + 1;
+      final col = index % SudokuBoardState.size + 1;
+      return Chip(
+        label: Text('R$row C$col'),
+        backgroundColor: colorScheme.primaryContainer.withValues(alpha: 0.3),
+      );
+    }).toList();
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.auto_awesome_motion_rounded, color: colorScheme.primary),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Naked Pair',
+                style: textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            Text(
+              statusText,
+              style: textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        if (chips.isNotEmpty)
+          Wrap(spacing: 8, runSpacing: 8, children: chips)
+        else
+          Text(
+            'Waiting for two cells...',
+            style: textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            TextButton(onPressed: onCancel, child: const Text('Cancel')),
+            const Spacer(),
+            FilledButton(
+              onPressed: canConfirm ? onConfirm : null,
+              child: const Text('Confirm'),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }

@@ -3,22 +3,18 @@ import 'package:flutter/material.dart';
 
 import 'package:auto_sudoku/state/sudoku_board_state.dart';
 import 'package:auto_sudoku/ui/theme/sudoku_theme.dart';
-import 'package:auto_sudoku/ui/widgets/link_painter.dart';
 import 'package:provider/provider.dart';
 
 typedef _CellViewData = ({
   SudokuCell cell,
-  CellColoring coloring,
-  bool coloringMode,
   bool isSelected,
   bool isPeer,
   bool matchesSelectedValue,
   bool isHighlighted,
-  bool isColorAPeer,
-  bool isColorBPeer,
-  bool isColorMixedPeer,
   int? selectedValue,
   bool isAnimatingSingles,
+  bool techniqueModeActive,
+  bool isTechniqueSelected,
 });
 
 class SudokuGrid extends StatelessWidget {
@@ -46,22 +42,6 @@ class SudokuGrid extends StatelessWidget {
           ),
           child: LayoutBuilder(
             builder: (context, constraints) {
-              final linkOverlay = context
-                  .select<
-                    SudokuBoardState,
-                    ({
-                      bool enabled,
-                      List<LinkSegment> segments,
-                      int? startIndex,
-                    })
-                  >(
-                    (state) => (
-                      enabled: state.linksMode,
-                      segments: state.linkSegments,
-                      startIndex: state.linkStartIndex,
-                    ),
-                  );
-
               final grid = SizedBox(
                 width: constraints.maxWidth,
                 height: constraints.maxHeight,
@@ -86,7 +66,6 @@ class SudokuGrid extends StatelessWidget {
                               final selectedRow = state.selectedRow;
                               final selectedCol = state.selectedCol;
                               final selectedValue = state.selectedValue;
-                              final coloringMode = state.coloringMode;
                               final isSameRow =
                                   selectedRow != null && selectedRow == row;
                               final isSameCol =
@@ -98,7 +77,6 @@ class SudokuGrid extends StatelessWidget {
                                   (selectedCol ~/ 3 == col ~/ 3);
                               final isPeer =
                                   !isSelected &&
-                                  !coloringMode &&
                                   (isSameRow || isSameCol || isSameBox);
                               final matchesSelectedValue =
                                   !isSelected &&
@@ -107,80 +85,45 @@ class SudokuGrid extends StatelessWidget {
                                   cell.value == selectedValue;
                               final isHighlighted =
                                   state.autoFillHighlightIndex == index;
-                              final isColorAPeer =
-                                  coloringMode &&
-                                  state.isColorPeer(CellColoring.colorA, index);
-                              final isColorBPeer =
-                                  coloringMode &&
-                                  state.isColorPeer(CellColoring.colorB, index);
-                              final isColorMixedPeer =
-                                  coloringMode &&
-                                  state.colorMixedPeerIndices.contains(index);
+                              final techniqueModeActive =
+                                  state.isInteractiveModeActive;
+                              final isTechniqueSelected =
+                                  techniqueModeActive &&
+                                  state.interactiveSelection.contains(index);
 
                               return (
                                 cell: cell,
-                                coloring: cell.coloring,
-                                coloringMode: coloringMode,
                                 isSelected: isSelected,
                                 isPeer: isPeer,
                                 matchesSelectedValue: matchesSelectedValue,
                                 isHighlighted: isHighlighted,
-                                isColorAPeer: isColorAPeer,
-                                isColorBPeer: isColorBPeer,
-                                isColorMixedPeer: isColorMixedPeer,
                                 selectedValue: selectedValue,
                                 isAnimatingSingles: state.isAnimatingSingles,
+                                techniqueModeActive: techniqueModeActive,
+                                isTechniqueSelected: isTechniqueSelected,
                               );
                             });
 
                         Color background = sudokuTheme.boardSurface;
 
-                        if (cellData.coloringMode) {
-                          final hasColoring =
-                              cellData.coloring != CellColoring.none;
+                        if (cellData.isPeer) {
+                          background = sudokuTheme.peerCellBackground;
+                        }
+                        if (cellData.matchesSelectedValue) {
+                          background = sudokuTheme.matchingValueBackground;
+                        }
+                        if (cellData.isSelected) {
+                          background = sudokuTheme.selectedCellBackground;
+                        }
+                        if (cellData.isHighlighted) {
+                          background = sudokuTheme.autoFillHighlightBackground;
+                        }
 
-                          switch (cellData.coloring) {
-                            case CellColoring.colorA:
-                              background = sudokuTheme.coloringPrimary;
-                              break;
-                            case CellColoring.colorB:
-                              background = sudokuTheme.coloringSecondary;
-                              break;
-                            case CellColoring.none:
-                              break;
-                          }
-
-                          if (!hasColoring && cellData.isColorAPeer) {
-                            background =
-                                sudokuTheme.coloringPrimaryPeerBackground;
-                          }
-                          if (!hasColoring && cellData.isColorBPeer) {
-                            background =
-                                sudokuTheme.coloringSecondaryPeerBackground;
-                          }
-                          if (!hasColoring && cellData.isColorMixedPeer) {
-                            background =
-                                sudokuTheme.coloringMixedPeerBackground;
-                          }
-
-                          if (cellData.isHighlighted) {
-                            background =
-                                sudokuTheme.autoFillHighlightBackground;
-                          }
-                        } else {
-                          if (cellData.isPeer) {
-                            background = sudokuTheme.peerCellBackground;
-                          }
-                          if (cellData.matchesSelectedValue) {
-                            background = sudokuTheme.matchingValueBackground;
-                          }
-                          if (cellData.isSelected) {
-                            background = sudokuTheme.selectedCellBackground;
-                          }
-                          if (cellData.isHighlighted) {
-                            background =
-                                sudokuTheme.autoFillHighlightBackground;
-                          }
+                        if (cellData.isTechniqueSelected) {
+                          background = Color.alphaBlend(
+                            colorScheme.primary.withValues(alpha: 0.24),
+                            background,
+                          );
                         }
 
                         final borderColor = colorScheme.outlineVariant;
@@ -225,8 +168,9 @@ class SudokuGrid extends StatelessWidget {
                                 cell: cellData.cell,
                                 isSelected: cellData.isSelected,
                                 isHighlighted: cellData.isHighlighted,
+                                isTechniqueSelected:
+                                    cellData.isTechniqueSelected,
                                 selectedValue: cellData.selectedValue,
-                                coloring: cellData.coloring,
                                 sudokuTheme: sudokuTheme,
                               ),
                             ),
@@ -238,28 +182,7 @@ class SudokuGrid extends StatelessWidget {
                 ),
               );
 
-              final children = <Widget>[grid];
-              if (linkOverlay.enabled && linkOverlay.segments.isNotEmpty) {
-                children.add(
-                  IgnorePointer(
-                    child: CustomPaint(
-                      size: Size(constraints.maxWidth, constraints.maxHeight),
-                      painter: LinkPainter(
-                        segments: linkOverlay.segments,
-                        startIndex: linkOverlay.startIndex,
-                        primaryColor: colorScheme.primary,
-                        secondaryColor: colorScheme.secondary,
-                        nodeFillColor: colorScheme.surface,
-                        nodeStrokeColor: colorScheme.onSurface.withValues(
-                          alpha: 0.7,
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              }
-
-              return Stack(children: children);
+              return grid;
             },
           ),
         ),
@@ -273,9 +196,9 @@ class SudokuCellContents extends StatelessWidget {
   final SudokuCell cell;
   final bool isSelected;
   final bool isHighlighted;
+  final bool isTechniqueSelected;
   final int? selectedValue;
   final SudokuTheme sudokuTheme;
-  final CellColoring coloring;
 
   const SudokuCellContents({
     super.key,
@@ -283,8 +206,8 @@ class SudokuCellContents extends StatelessWidget {
     required this.cell,
     required this.isSelected,
     required this.isHighlighted,
+    required this.isTechniqueSelected,
     required this.selectedValue,
-    required this.coloring,
     required this.sudokuTheme,
   });
 
@@ -298,12 +221,8 @@ class SudokuCellContents extends StatelessWidget {
           Color textColor;
           if (cell.isGiven) {
             textColor = sudokuTheme.givenCellTextColor;
-          } else if (useHighlightFont || isSelected) {
+          } else if (useHighlightFont || isSelected || isTechniqueSelected) {
             textColor = sudokuTheme.valueHighlightColor;
-          } else if (coloring == CellColoring.colorA) {
-            textColor = sudokuTheme.coloringPrimaryTextColor;
-          } else if (coloring == CellColoring.colorB) {
-            textColor = sudokuTheme.coloringSecondaryTextColor;
           } else {
             textColor = sudokuTheme.valueRegularTextColor;
           }
