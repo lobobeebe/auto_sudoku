@@ -307,6 +307,51 @@ void main() {
       expect(hint.eliminations, contains((_cell(1, 1), 3)));
     });
 
+    test('W-Wing', () {
+      final hint = _nextHint({
+        (0, 0): {1, 4},
+        (0, 2): {6, 8},
+        (0, 3): {4, 6, 8, 9},
+        (0, 5): {4, 6, 8, 9},
+        (0, 6): {1, 8},
+        (1, 1): {6, 8, 9},
+        (1, 3): {6, 8},
+        (1, 7): {6, 9},
+        (2, 0): {1, 4},
+        (2, 1): {6, 8, 9},
+        (2, 3): {4, 6, 7, 8},
+        (2, 4): {7, 8},
+        (2, 6): {1, 8},
+        (2, 7): {6, 9},
+        (3, 3): {3, 7},
+        (3, 5): {3, 7},
+        (4, 1): {4, 6},
+        (4, 2): {4, 6},
+        (5, 3): {4, 8},
+        (5, 5): {4, 8},
+        (6, 1): {4, 5, 8},
+        (6, 2): {4, 8},
+        (6, 5): {8, 9},
+        (6, 8): {5, 8, 9},
+        (7, 1): {5, 8},
+        (7, 3): {3, 5, 8, 9},
+        (7, 5): {3, 8, 9},
+        (7, 8): {5, 8, 9},
+        (8, 3): {5, 6, 7, 8},
+        (8, 4): {7, 8},
+        (8, 5): {6, 7, 8},
+        (8, 8): {5, 8},
+      }, settings: SolverSettings(allowHiddenSingles: false));
+
+      expect(hint.technique, StrategyUsed.wWing);
+      expect(hint.digits, equals([5, 8]));
+      expect(
+        hint.cells,
+        equals([_cell(6, 1), _cell(6, 8), _cell(7, 1), _cell(8, 8)]),
+      );
+      expect(hint.eliminations, contains((_cell(7, 8), 8)));
+    });
+
     test('Coloring', () {
       final hint = _nextHint(
         {

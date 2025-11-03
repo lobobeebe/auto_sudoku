@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 
 import 'package:auto_sudoku/data/puzzle_repository.dart';
 import 'package:auto_sudoku/data/sudoku_puzzle.dart';
@@ -24,29 +25,26 @@ class SudokuCell {
     this.coloring = CellColoring.none,
   }) : notes = notes != null ? Set<int>.from(notes) : <int>{};
 
-  SudokuCell withValue(int? newValue) =>
-      SudokuCell(
-        value: newValue,
-        notes: const <int>{},
-        isGiven: isGiven,
-        coloring: coloring,
-      );
+  SudokuCell withValue(int? newValue) => SudokuCell(
+    value: newValue,
+    notes: const <int>{},
+    isGiven: isGiven,
+    coloring: coloring,
+  );
 
-  SudokuCell withNotes(Set<int> newNotes) =>
-      SudokuCell(
-        value: value,
-        notes: newNotes,
-        isGiven: isGiven,
-        coloring: coloring,
-      );
+  SudokuCell withNotes(Set<int> newNotes) => SudokuCell(
+    value: value,
+    notes: newNotes,
+    isGiven: isGiven,
+    coloring: coloring,
+  );
 
-  SudokuCell withColoring(CellColoring newColoring) =>
-      SudokuCell(
-        value: value,
-        notes: notes,
-        isGiven: isGiven,
-        coloring: newColoring,
-      );
+  SudokuCell withColoring(CellColoring newColoring) => SudokuCell(
+    value: value,
+    notes: notes,
+    isGiven: isGiven,
+    coloring: newColoring,
+  );
 }
 
 class SudokuBoardState extends ChangeNotifier {
@@ -63,6 +61,10 @@ class SudokuBoardState extends ChangeNotifier {
   ColoringBrush _coloringBrush = ColoringBrush.colorA;
   Set<int>? _colorAPeersCache;
   Set<int>? _colorBPeersCache;
+  bool _linksMode = false;
+  int? _linksDigit;
+  int? _linkStartIndex;
+  final List<LinkSegment> _linkSegments = <LinkSegment>[];
 
   bool _isAnimatingSingles = false;
   bool _pendingAutoSingles = false;
@@ -113,6 +115,12 @@ class SudokuBoardState extends ChangeNotifier {
     }
     return mixed;
   }
+
+  bool get linksMode => _linksMode;
+  int? get linksDigit => _linksDigit;
+  int? get linkStartIndex => _linkStartIndex;
+  List<LinkSegment> get linkSegments =>
+      List<LinkSegment>.unmodifiable(_linkSegments);
   bool get isAnimatingSingles => _isAnimatingSingles;
   int? get autoFillHighlightIndex => _autoFillHighlightIndex;
   bool get canUndo => _history.isNotEmpty;
@@ -120,8 +128,7 @@ class SudokuBoardState extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
   solver.Hint? get hint => _hint;
-  String get difficulty =>
-      _currentPuzzle?.difficulty.toString() ?? 'Unknown';
+  String get difficulty => _currentPuzzle?.difficulty.toString() ?? 'Unknown';
   List<String> get techniques => _currentPuzzle?.techniques ?? const [];
 
   /// Returns the current board values as a flat list with zero for blanks.
@@ -238,6 +245,10 @@ class SudokuBoardState extends ChangeNotifier {
     _noteMode = false;
     _colorMode = false;
     _coloringBrush = ColoringBrush.colorA;
+    _linksMode = false;
+    _linksDigit = null;
+    _linkStartIndex = null;
+    _linkSegments.clear();
     _isAnimatingSingles = false;
     _pendingAutoSingles = false;
     _autoFillHighlightIndex = null;
@@ -268,6 +279,10 @@ class SudokuBoardState extends ChangeNotifier {
     if (_noteMode && _colorMode) {
       _colorMode = false;
     }
+    if (_noteMode && _linksMode) {
+      _linksMode = false;
+      _clearLinks(resetDigit: true);
+    }
     _emitChange();
   }
 
@@ -279,6 +294,51 @@ class SudokuBoardState extends ChangeNotifier {
     if (_colorMode && _noteMode) {
       _noteMode = false;
     }
+    if (_colorMode && _linksMode) {
+      _linksMode = false;
+      _clearLinks(resetDigit: true);
+    }
+    _emitChange();
+  }
+
+  void toggleLinksMode() {
+    if (_isAnimatingSingles) {
+      return;
+    }
+    _linksMode = !_linksMode;
+    if (_linksMode) {
+      if (_noteMode) _noteMode = false;
+      if (_colorMode) _colorMode = false;
+      if (_selectedIndex != null && _linksDigit != null) {
+        _updateLinkSegmentsFrom(_selectedIndex!);
+      }
+    } else {
+      _clearLinks(resetDigit: true);
+    }
+    _emitChange();
+  }
+
+  void setLinksDigit(int digit) {
+    if (digit < 1 || digit > 9) {
+      return;
+    }
+    if (_linksDigit == digit) {
+      _linksDigit = null;
+      _clearLinks(resetDigit: false);
+      _emitChange();
+      return;
+    }
+    _linksDigit = digit;
+    if (_linksMode && _selectedIndex != null) {
+      _updateLinkSegmentsFrom(_selectedIndex!);
+    } else {
+      _clearLinks(resetDigit: false);
+    }
+    _emitChange();
+  }
+
+  void clearLinks() {
+    _clearLinks(resetDigit: false);
     _emitChange();
   }
 
@@ -325,6 +385,9 @@ class SudokuBoardState extends ChangeNotifier {
 
   void deselectCell() {
     _selectedIndex = null;
+    if (_linksMode) {
+      _clearLinks(resetDigit: false);
+    }
     _emitChange();
   }
 
@@ -333,6 +396,18 @@ class SudokuBoardState extends ChangeNotifier {
       return;
     }
     final index = _index(row, col);
+
+    if (_linksMode) {
+      if (_selectedIndex == index) {
+        _selectedIndex = null;
+        _clearLinks(resetDigit: false);
+      } else {
+        _selectedIndex = index;
+        _updateLinkSegmentsFrom(index);
+      }
+      _emitChange();
+      return;
+    }
 
     if (_colorMode) {
       final cell = _cells[index];
@@ -449,6 +524,13 @@ class SudokuBoardState extends ChangeNotifier {
     _pruneNotesAround(idx, digit);
     _scheduleAutoSingles();
     _evaluateCompletion();
+    if (_linksMode) {
+      if (_linksDigit != null && _selectedIndex != null) {
+        _updateLinkSegmentsFrom(_selectedIndex!);
+      } else {
+        _clearLinks(resetDigit: false);
+      }
+    }
     _emitChange();
     return true;
   }
@@ -529,6 +611,13 @@ class SudokuBoardState extends ChangeNotifier {
     _evaluateCompletion();
     _autoFillHighlightIndex = null;
     _isAnimatingSingles = false;
+    if (_linksMode) {
+      if (_linksDigit != null && _selectedIndex != null) {
+        _updateLinkSegmentsFrom(_selectedIndex!);
+      } else {
+        _clearLinks(resetDigit: false);
+      }
+    }
     _emitChange();
 
     if (_pendingAutoSingles) {
@@ -629,6 +718,176 @@ class SudokuBoardState extends ChangeNotifier {
   void _invalidateColoringCaches() {
     _colorAPeersCache = null;
     _colorBPeersCache = null;
+  }
+
+  void _clearLinks({bool resetDigit = false}) {
+    _linkSegments.clear();
+    _linkStartIndex = null;
+    if (resetDigit) {
+      _linksDigit = null;
+    }
+  }
+
+  Set<int> digitsAvailableForLinks() {
+    final sets = _buildCandidateSets();
+    final digits = <int>{};
+    for (final set in sets) {
+      digits.addAll(set);
+    }
+    return digits;
+  }
+
+  List<Set<int>> _buildCandidateSets() {
+    final notesList = toNotesList();
+    final hasAnyNotes = notesList.any((set) => set.isNotEmpty);
+    return List<Set<int>>.generate(_cells.length, (index) {
+      final cell = _cells[index];
+      if (cell.value != null) {
+        return <int>{};
+      }
+      if (hasAnyNotes && notesList[index].isNotEmpty) {
+        return _filterNotes(index, notesList[index]);
+      }
+      if (!hasAnyNotes) {
+        final row = index ~/ size;
+        final col = index % size;
+        return _candidatesFor(row, col);
+      }
+      return <int>{};
+    });
+  }
+
+  Set<int> _filterNotes(int index, Set<int> notes) {
+    final valid = <int>{};
+    for (final digit in notes) {
+      if (_isPlacementValid(index, digit)) {
+        valid.add(digit);
+      }
+    }
+    return valid;
+  }
+
+  bool _isPlacementValid(int index, int digit) {
+    if (digit < 1 || digit > size) {
+      return false;
+    }
+    final row = index ~/ size;
+    final col = index % size;
+    for (var c = 0; c < size; c++) {
+      if (c == col) continue;
+      if (_cells[_index(row, c)].value == digit) {
+        return false;
+      }
+    }
+    for (var r = 0; r < size; r++) {
+      if (r == row) continue;
+      if (_cells[_index(r, col)].value == digit) {
+        return false;
+      }
+    }
+    final startRow = (row ~/ 3) * 3;
+    final startCol = (col ~/ 3) * 3;
+    for (var r = startRow; r < startRow + 3; r++) {
+      for (var c = startCol; c < startCol + 3; c++) {
+        final idx = _index(r, c);
+        if (idx == index) continue;
+        if (_cells[idx].value == digit) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  void _updateLinkSegmentsFrom(int index) {
+    if (!_linksMode) {
+      return;
+    }
+    _linkStartIndex = index;
+    final digit = _linksDigit;
+    final candidateSets = _buildCandidateSets();
+    if (digit == null || !candidateSets[index].contains(digit)) {
+      _linkSegments.clear();
+      return;
+    }
+
+    final graph = _buildStrongLinkGraph(digit, candidateSets);
+    final visited = <int>{index};
+    final queue = Queue<(int, bool)>();
+    queue.add((index, true));
+    _linkSegments.clear();
+
+    while (queue.isNotEmpty) {
+      final (node, usePrimaryColor) = queue.removeFirst();
+      final neighbors = graph[node];
+      if (neighbors == null) continue;
+      for (final neighbor in neighbors) {
+        if (visited.contains(neighbor)) continue;
+        visited.add(neighbor);
+        queue.add((neighbor, !usePrimaryColor));
+        _linkSegments.add(
+          LinkSegment(
+            fromIndex: node,
+            toIndex: neighbor,
+            usePrimaryColor: usePrimaryColor,
+          ),
+        );
+      }
+    }
+  }
+
+  Map<int, Set<int>> _buildStrongLinkGraph(int digit, List<Set<int>> sets) {
+    final graph = <int, Set<int>>{};
+
+    void addEdge(int a, int b) {
+      graph.putIfAbsent(a, () => <int>{}).add(b);
+      graph.putIfAbsent(b, () => <int>{}).add(a);
+    }
+
+    for (var row = 0; row < size; row++) {
+      final indices = <int>[];
+      for (var col = 0; col < size; col++) {
+        final index = _index(row, col);
+        if (sets[index].contains(digit)) {
+          indices.add(index);
+        }
+      }
+      if (indices.length == 2) {
+        addEdge(indices[0], indices[1]);
+      }
+    }
+
+    for (var col = 0; col < size; col++) {
+      final indices = <int>[];
+      for (var row = 0; row < size; row++) {
+        final index = _index(row, col);
+        if (sets[index].contains(digit)) {
+          indices.add(index);
+        }
+      }
+      if (indices.length == 2) {
+        addEdge(indices[0], indices[1]);
+      }
+    }
+
+    for (var boxRow = 0; boxRow < size; boxRow += 3) {
+      for (var boxCol = 0; boxCol < size; boxCol += 3) {
+        final indices = <int>[];
+        for (var r = boxRow; r < boxRow + 3; r++) {
+          for (var c = boxCol; c < boxCol + 3; c++) {
+            final index = _index(r, c);
+            if (sets[index].contains(digit)) {
+              indices.add(index);
+            }
+          }
+        }
+        if (indices.length == 2) {
+          addEdge(indices[0], indices[1]);
+        }
+      }
+    }
+
+    return graph;
   }
 
   Set<int> _collectColorPeers(CellColoring color) {
@@ -827,6 +1086,11 @@ class SudokuBoardState extends ChangeNotifier {
     _status = snapshot.status;
     _pendingAutoSingles = false;
     _autoFillHighlightIndex = null;
+    if (_linksMode && _linksDigit != null && _selectedIndex != null) {
+      _updateLinkSegmentsFrom(_selectedIndex!);
+    } else {
+      _clearLinks(resetDigit: false);
+    }
     _emitChange();
     return true;
   }
@@ -908,6 +1172,13 @@ class SudokuBoardState extends ChangeNotifier {
       _scheduleAutoSingles();
       _evaluateCompletion();
     }
+    if (_linksMode) {
+      if (_linksDigit != null && _selectedIndex != null) {
+        _updateLinkSegmentsFrom(_selectedIndex!);
+      } else {
+        _clearLinks(resetDigit: false);
+      }
+    }
     if (emitChange) _emitChange();
     return true;
   }
@@ -923,4 +1194,16 @@ class _BoardSnapshot {
   final List<SudokuCell> cells;
   final int? selectedIndex;
   final GameStatus status;
+}
+
+class LinkSegment {
+  final int fromIndex;
+  final int toIndex;
+  final bool usePrimaryColor;
+
+  const LinkSegment({
+    required this.fromIndex,
+    required this.toIndex,
+    required this.usePrimaryColor,
+  });
 }

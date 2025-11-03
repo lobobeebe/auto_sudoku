@@ -187,7 +187,7 @@ void main(List<String> args) {
     for (final st in resTech.steps) {
       techSet.add(st);
     }
-    final techniques = techSet.map(techniqueLabel).toList()..sort();
+    final techniques = techSet.map((s) => s.toString()).toList()..sort();
 
     if (result.difficulty != Difficulty.trivial &&
         result.difficulty != Difficulty.impossible) {

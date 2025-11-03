@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:auto_sudoku/state/sudoku_board_state.dart';
 import 'package:auto_sudoku/ui/theme/sudoku_theme.dart';
 import 'package:auto_sudoku/ui/widgets/color_pad.dart';
+import 'package:auto_sudoku/ui/widgets/pad_button.dart';
 import 'package:auto_sudoku/ui/utils/feedback.dart';
 import 'package:provider/provider.dart';
 
@@ -57,27 +58,66 @@ class NumberPad extends StatelessWidget {
           );
         }
 
+        final linksCandidateDigits = board.linksMode
+            ? board.digitsAvailableForLinks()
+            : null;
+
         return SizedBox(
           width: maxWidth,
           child: Row(
             spacing: spacing,
-            children: digits
-                .map(
-                  (digit) => Flexible(
-                    child: _PadButton(
-                      label: '$digit',
-                      width: buttonWidth,
-                      verticalPadding: verticalPadding,
-                      fontSize: fontSize,
-                      isEnabled: isEnabled && board.canPlaceDigit(digit),
-                      isComplete: board.isDigitSolved(digit),
-                      sudokuTheme: sudokuTheme,
-                      noteMode: board.noteMode,
-                      onPressed: () => _handleDigit(context, digit),
-                    ),
+            children: digits.map((digit) {
+              final isComplete = board.isDigitSolved(digit);
+              final isLinkSelected =
+                  board.linksMode && board.linksDigit == digit;
+              final hasCandidates =
+                  linksCandidateDigits?.contains(digit) ?? false;
+              final buttonEnabled = board.linksMode
+                  ? isEnabled && !isComplete && hasCandidates
+                  : isEnabled && !isComplete && board.canPlaceDigit(digit);
+              final background = board.linksMode
+                  ? (isComplete || !hasCandidates
+                        ? Colors.transparent
+                        : (isLinkSelected
+                              ? colorScheme.primary
+                              : colorScheme.surfaceContainerHighest))
+                  : (board.noteMode
+                        ? colorScheme.primary
+                        : sudokuTheme.numberPadBackground);
+              final foreground = board.linksMode
+                  ? (isLinkSelected
+                        ? colorScheme.onPrimary
+                        : (hasCandidates
+                              ? colorScheme.onSurfaceVariant
+                              : colorScheme.onSurface.withValues(alpha: 0.38)))
+                  : (board.noteMode
+                        ? colorScheme.onPrimary
+                        : sudokuTheme.numberPadForeground);
+              final disabledBackground = board.linksMode
+                  ? Colors.transparent
+                  : (isComplete ? Colors.transparent : null);
+              final padding = EdgeInsets.symmetric(
+                vertical: verticalPadding.clamp(8.0, 16.0),
+              );
+
+              return Flexible(
+                child: PadButton(
+                  label: '$digit',
+                  width: buttonWidth,
+                  padding: padding,
+                  background: background,
+                  foreground: foreground,
+                  disabledBackground: disabledBackground,
+                  textStyle: sudokuTheme.numberPadTextStyle.copyWith(
+                    fontSize: fontSize,
                   ),
-                )
-                .toList(),
+                  isEnabled: buttonEnabled,
+                  onPressed: () => board.linksMode
+                      ? board.setLinksDigit(digit)
+                      : _handleDigit(context, digit),
+                ),
+              );
+            }).toList(),
           ),
         );
       },
@@ -94,57 +134,5 @@ class NumberPad extends StatelessWidget {
     if (!updated) {
       showFeedback(context, 'Cannot update this cell right now.');
     }
-  }
-}
-
-class _PadButton extends StatelessWidget {
-  final String label;
-  final VoidCallback onPressed;
-  final bool isEnabled;
-  final bool isComplete;
-  final SudokuTheme sudokuTheme;
-  final bool noteMode;
-  final double width;
-  final double verticalPadding;
-  final double fontSize;
-
-  const _PadButton({
-    required this.label,
-    required this.onPressed,
-    this.isEnabled = true,
-    required this.isComplete,
-    required this.sudokuTheme,
-    required this.noteMode,
-    required this.width,
-    required this.verticalPadding,
-    required this.fontSize,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return SizedBox(
-      width: width,
-      child: FilledButton(
-        onPressed: (isEnabled && !isComplete) ? onPressed : null,
-        style: FilledButton.styleFrom(
-          padding: EdgeInsets.symmetric(
-            vertical: verticalPadding.clamp(8.0, 16.0),
-          ),
-          disabledBackgroundColor: isComplete ? Colors.transparent : null,
-          backgroundColor: noteMode
-              ? colorScheme.primary
-              : sudokuTheme.numberPadBackground,
-          foregroundColor: noteMode
-              ? colorScheme.onPrimary
-              : sudokuTheme.numberPadForeground,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          textStyle: sudokuTheme.numberPadTextStyle,
-        ),
-        child: Text(label, style: TextStyle(fontSize: fontSize)),
-      ),
-    );
   }
 }

@@ -24,13 +24,17 @@ class SudokuTheme {
       coloringPrimaryTextColor = Colors.black,
       coloringSecondary = Colors.red.shade400.withValues(alpha: 0.85),
       coloringSecondaryTextColor = Colors.white,
-      coloringPrimaryPeerBackground =
-          Colors.green.shade100.withValues(alpha: 0.6),
-      coloringSecondaryPeerBackground =
-          Colors.red.shade100.withValues(alpha: 0.6),
-      coloringMixedPeerBackground =
-          Color.lerp(Colors.green.shade100, Colors.red.shade100, 0.5)!
-              .withValues(alpha: 0.62),
+      coloringPrimaryPeerBackground = Colors.green.shade100.withValues(
+        alpha: 0.6,
+      ),
+      coloringSecondaryPeerBackground = Colors.red.shade100.withValues(
+        alpha: 0.6,
+      ),
+      coloringMixedPeerBackground = Color.lerp(
+        Colors.green.shade100,
+        Colors.red.shade100,
+        0.5,
+      )!.withValues(alpha: 0.62),
 
       // Peers
       peerCellBackground = Color.alphaBlend(

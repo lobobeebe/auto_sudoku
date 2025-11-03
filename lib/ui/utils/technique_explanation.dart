@@ -606,7 +606,7 @@ TechniqueExplanation explainTechnique(Hint hint) {
   }
 
   return TechniqueExplanation(
-    title: 'Technique',
+    title: hint.technique.toString(),
     overview: 'Technique explanation unavailable.',
     steps: const ['No steps available.'],
   );

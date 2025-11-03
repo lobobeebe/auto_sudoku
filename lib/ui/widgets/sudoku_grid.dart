@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'package:auto_sudoku/state/sudoku_board_state.dart';
 import 'package:auto_sudoku/ui/theme/sudoku_theme.dart';
+import 'package:auto_sudoku/ui/widgets/link_painter.dart';
 import 'package:provider/provider.dart';
 
 typedef _CellViewData = ({
@@ -43,169 +44,222 @@ class SudokuGrid extends StatelessWidget {
               ),
             ],
           ),
-          child: GridView.builder(
-            physics: const NeverScrollableScrollPhysics(),
-            padding: EdgeInsets.zero,
-            itemCount: SudokuBoardState.size * SudokuBoardState.size,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: SudokuBoardState.size,
-            ),
-            itemBuilder: (context, index) {
-              final row = index ~/ SudokuBoardState.size;
-              final col = index % SudokuBoardState.size;
-
-              return Builder(
-                builder: (context) {
-                  final cellData = context
-                      .select<SudokuBoardState, _CellViewData>((state) {
-                        final cell = state.cellAt(row, col);
-                        final selectedIndex = state.selectedIndex;
-                        final isSelected = selectedIndex == index;
-                        final selectedRow = state.selectedRow;
-                        final selectedCol = state.selectedCol;
-                        final selectedValue = state.selectedValue;
-                        final coloringMode = state.coloringMode;
-                        final isSameRow =
-                            selectedRow != null && selectedRow == row;
-                        final isSameCol =
-                            selectedCol != null && selectedCol == col;
-                        final isSameBox =
-                            selectedRow != null &&
-                            selectedCol != null &&
-                            (selectedRow ~/ 3 == row ~/ 3) &&
-                            (selectedCol ~/ 3 == col ~/ 3);
-                        final isPeer =
-                            !isSelected &&
-                            !coloringMode &&
-                            (isSameRow || isSameCol || isSameBox);
-                        final matchesSelectedValue =
-                            !isSelected &&
-                            selectedValue != null &&
-                            cell.value != null &&
-                            cell.value == selectedValue;
-                        final isHighlighted =
-                            state.autoFillHighlightIndex == index;
-                        final isColorAPeer =
-                            coloringMode &&
-                            state.isColorPeer(CellColoring.colorA, index);
-                        final isColorBPeer =
-                            coloringMode &&
-                            state.isColorPeer(CellColoring.colorB, index);
-                        final isColorMixedPeer =
-                            coloringMode &&
-                            state.colorMixedPeerIndices.contains(index);
-
-                        return (
-                          cell: cell,
-                          coloring: cell.coloring,
-                          coloringMode: coloringMode,
-                          isSelected: isSelected,
-                          isPeer: isPeer,
-                          matchesSelectedValue: matchesSelectedValue,
-                          isHighlighted: isHighlighted,
-                          isColorAPeer: isColorAPeer,
-                          isColorBPeer: isColorBPeer,
-                          isColorMixedPeer: isColorMixedPeer,
-                          selectedValue: selectedValue,
-                          isAnimatingSingles: state.isAnimatingSingles,
-                        );
-                      });
-
-                  Color background = sudokuTheme.boardSurface;
-
-                  if (cellData.coloringMode) {
-                    final hasColoring = cellData.coloring != CellColoring.none;
-
-                    switch (cellData.coloring) {
-                      case CellColoring.colorA:
-                        background = sudokuTheme.coloringPrimary;
-                        break;
-                      case CellColoring.colorB:
-                        background = sudokuTheme.coloringSecondary;
-                        break;
-                      case CellColoring.none:
-                        break;
-                    }
-
-                    if (!hasColoring && cellData.isColorAPeer) {
-                      background = sudokuTheme.coloringPrimaryPeerBackground;
-                    }
-                    if (!hasColoring && cellData.isColorBPeer) {
-                      background = sudokuTheme.coloringSecondaryPeerBackground;
-                    }
-                    if (!hasColoring && cellData.isColorMixedPeer) {
-                      background = sudokuTheme.coloringMixedPeerBackground;
-                    }
-
-                    if (cellData.isHighlighted) {
-                      background = sudokuTheme.autoFillHighlightBackground;
-                    }
-                  } else {
-                    if (cellData.isPeer) {
-                      background = sudokuTheme.peerCellBackground;
-                    }
-                    if (cellData.matchesSelectedValue) {
-                      background = sudokuTheme.matchingValueBackground;
-                    }
-                    if (cellData.isSelected) {
-                      background = sudokuTheme.selectedCellBackground;
-                    }
-                    if (cellData.isHighlighted) {
-                      background = sudokuTheme.autoFillHighlightBackground;
-                    }
-                  }
-
-                  final borderColor = colorScheme.outlineVariant;
-                  final border = Border(
-                    top: BorderSide(
-                      color: borderColor,
-                      width: row == 0 ? 2 : (row % 3 == 0 ? 1.5 : 0.5),
-                    ),
-                    left: BorderSide(
-                      color: borderColor,
-                      width: col == 0 ? 2 : (col % 3 == 0 ? 1.5 : 0.5),
-                    ),
-                    right: BorderSide(
-                      color: borderColor,
-                      width: col == SudokuBoardState.size - 1
-                          ? 2
-                          : ((col + 1) % 3 == 0 ? 1.5 : 0.5),
-                    ),
-                    bottom: BorderSide(
-                      color: borderColor,
-                      width: row == SudokuBoardState.size - 1
-                          ? 2
-                          : ((row + 1) % 3 == 0 ? 1.5 : 0.5),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final linkOverlay = context
+                  .select<
+                    SudokuBoardState,
+                    ({
+                      bool enabled,
+                      List<LinkSegment> segments,
+                      int? startIndex,
+                    })
+                  >(
+                    (state) => (
+                      enabled: state.linksMode,
+                      segments: state.linkSegments,
+                      startIndex: state.linkStartIndex,
                     ),
                   );
 
-                  return GestureDetector(
-                    onTap: cellData.isAnimatingSingles
-                        ? null
-                        : () => board.selectCell(row, col),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      curve: Curves.easeOut,
-                      decoration: BoxDecoration(
-                        color: background,
-                        border: border,
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(2),
-                        child: SudokuCellContents(
-                          index: index,
-                          cell: cellData.cell,
-                          isSelected: cellData.isSelected,
-                          isHighlighted: cellData.isHighlighted,
-                          selectedValue: cellData.selectedValue,
-                          coloring: cellData.coloring,
-                          sudokuTheme: sudokuTheme,
+              final grid = SizedBox(
+                width: constraints.maxWidth,
+                height: constraints.maxHeight,
+                child: GridView.builder(
+                  physics: const NeverScrollableScrollPhysics(),
+                  padding: EdgeInsets.zero,
+                  itemCount: SudokuBoardState.size * SudokuBoardState.size,
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: SudokuBoardState.size,
+                  ),
+                  itemBuilder: (context, index) {
+                    final row = index ~/ SudokuBoardState.size;
+                    final col = index % SudokuBoardState.size;
+
+                    return Builder(
+                      builder: (context) {
+                        final cellData = context
+                            .select<SudokuBoardState, _CellViewData>((state) {
+                              final cell = state.cellAt(row, col);
+                              final selectedIndex = state.selectedIndex;
+                              final isSelected = selectedIndex == index;
+                              final selectedRow = state.selectedRow;
+                              final selectedCol = state.selectedCol;
+                              final selectedValue = state.selectedValue;
+                              final coloringMode = state.coloringMode;
+                              final isSameRow =
+                                  selectedRow != null && selectedRow == row;
+                              final isSameCol =
+                                  selectedCol != null && selectedCol == col;
+                              final isSameBox =
+                                  selectedRow != null &&
+                                  selectedCol != null &&
+                                  (selectedRow ~/ 3 == row ~/ 3) &&
+                                  (selectedCol ~/ 3 == col ~/ 3);
+                              final isPeer =
+                                  !isSelected &&
+                                  !coloringMode &&
+                                  (isSameRow || isSameCol || isSameBox);
+                              final matchesSelectedValue =
+                                  !isSelected &&
+                                  selectedValue != null &&
+                                  cell.value != null &&
+                                  cell.value == selectedValue;
+                              final isHighlighted =
+                                  state.autoFillHighlightIndex == index;
+                              final isColorAPeer =
+                                  coloringMode &&
+                                  state.isColorPeer(CellColoring.colorA, index);
+                              final isColorBPeer =
+                                  coloringMode &&
+                                  state.isColorPeer(CellColoring.colorB, index);
+                              final isColorMixedPeer =
+                                  coloringMode &&
+                                  state.colorMixedPeerIndices.contains(index);
+
+                              return (
+                                cell: cell,
+                                coloring: cell.coloring,
+                                coloringMode: coloringMode,
+                                isSelected: isSelected,
+                                isPeer: isPeer,
+                                matchesSelectedValue: matchesSelectedValue,
+                                isHighlighted: isHighlighted,
+                                isColorAPeer: isColorAPeer,
+                                isColorBPeer: isColorBPeer,
+                                isColorMixedPeer: isColorMixedPeer,
+                                selectedValue: selectedValue,
+                                isAnimatingSingles: state.isAnimatingSingles,
+                              );
+                            });
+
+                        Color background = sudokuTheme.boardSurface;
+
+                        if (cellData.coloringMode) {
+                          final hasColoring =
+                              cellData.coloring != CellColoring.none;
+
+                          switch (cellData.coloring) {
+                            case CellColoring.colorA:
+                              background = sudokuTheme.coloringPrimary;
+                              break;
+                            case CellColoring.colorB:
+                              background = sudokuTheme.coloringSecondary;
+                              break;
+                            case CellColoring.none:
+                              break;
+                          }
+
+                          if (!hasColoring && cellData.isColorAPeer) {
+                            background =
+                                sudokuTheme.coloringPrimaryPeerBackground;
+                          }
+                          if (!hasColoring && cellData.isColorBPeer) {
+                            background =
+                                sudokuTheme.coloringSecondaryPeerBackground;
+                          }
+                          if (!hasColoring && cellData.isColorMixedPeer) {
+                            background =
+                                sudokuTheme.coloringMixedPeerBackground;
+                          }
+
+                          if (cellData.isHighlighted) {
+                            background =
+                                sudokuTheme.autoFillHighlightBackground;
+                          }
+                        } else {
+                          if (cellData.isPeer) {
+                            background = sudokuTheme.peerCellBackground;
+                          }
+                          if (cellData.matchesSelectedValue) {
+                            background = sudokuTheme.matchingValueBackground;
+                          }
+                          if (cellData.isSelected) {
+                            background = sudokuTheme.selectedCellBackground;
+                          }
+                          if (cellData.isHighlighted) {
+                            background =
+                                sudokuTheme.autoFillHighlightBackground;
+                          }
+                        }
+
+                        final borderColor = colorScheme.outlineVariant;
+                        final border = Border(
+                          top: BorderSide(
+                            color: borderColor,
+                            width: row == 0 ? 2 : (row % 3 == 0 ? 1.5 : 0.5),
+                          ),
+                          left: BorderSide(
+                            color: borderColor,
+                            width: col == 0 ? 2 : (col % 3 == 0 ? 1.5 : 0.5),
+                          ),
+                          right: BorderSide(
+                            color: borderColor,
+                            width: col == SudokuBoardState.size - 1
+                                ? 2
+                                : ((col + 1) % 3 == 0 ? 1.5 : 0.5),
+                          ),
+                          bottom: BorderSide(
+                            color: borderColor,
+                            width: row == SudokuBoardState.size - 1
+                                ? 2
+                                : ((row + 1) % 3 == 0 ? 1.5 : 0.5),
+                          ),
+                        );
+
+                        return GestureDetector(
+                          onTap: cellData.isAnimatingSingles
+                              ? null
+                              : () => board.selectCell(row, col),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 180),
+                            curve: Curves.easeOut,
+                            decoration: BoxDecoration(
+                              color: background,
+                              border: border,
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(2),
+                              child: SudokuCellContents(
+                                index: index,
+                                cell: cellData.cell,
+                                isSelected: cellData.isSelected,
+                                isHighlighted: cellData.isHighlighted,
+                                selectedValue: cellData.selectedValue,
+                                coloring: cellData.coloring,
+                                sudokuTheme: sudokuTheme,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              );
+
+              final children = <Widget>[grid];
+              if (linkOverlay.enabled && linkOverlay.segments.isNotEmpty) {
+                children.add(
+                  IgnorePointer(
+                    child: CustomPaint(
+                      size: Size(constraints.maxWidth, constraints.maxHeight),
+                      painter: LinkPainter(
+                        segments: linkOverlay.segments,
+                        startIndex: linkOverlay.startIndex,
+                        primaryColor: colorScheme.primary,
+                        secondaryColor: colorScheme.secondary,
+                        nodeFillColor: colorScheme.surface,
+                        nodeStrokeColor: colorScheme.onSurface.withValues(
+                          alpha: 0.7,
                         ),
                       ),
                     ),
-                  );
-                },
-              );
+                  ),
+                );
+              }
+
+              return Stack(children: children);
             },
           ),
         ),

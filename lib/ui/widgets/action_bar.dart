@@ -85,6 +85,14 @@ class ActionBar extends StatelessWidget {
           icon: const Icon(Icons.palette_outlined),
           selectedIcon: const Icon(Icons.palette),
         ),
+        IconButton(
+          tooltip: board.linksMode ? 'Disable Links' : 'Enable Links',
+          isSelected: board.linksMode,
+          style: toolStyle,
+          onPressed: isEnabled ? board.toggleLinksMode : null,
+          icon: const Icon(Icons.alt_route_outlined),
+          selectedIcon: const Icon(Icons.alt_route),
+        ),
       ],
     );
 
