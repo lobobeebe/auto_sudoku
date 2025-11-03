@@ -2,18 +2,19 @@ import 'package:auto_sudoku/data/puzzle_repository.dart';
 import 'package:auto_sudoku/state/sudoku_board_state.dart';
 import 'package:auto_sudoku/ui/pages/sudoku_home_page.dart';
 import 'package:flutter/material.dart';
-
 import 'package:provider/provider.dart';
 
 class HomeScreen extends StatelessWidget {
-  final _repository = PuzzleRepository();
-
-  HomeScreen({super.key});
+  const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    final repository = context.watch<PuzzleRepository>();
+    final isLoadingRepo = repository.isLoading && !repository.isLoaded;
+    final hasError = repository.error != null && !repository.isLoaded;
+    final errorMessage = repository.error;
 
     return Scaffold(
       body: Container(
@@ -64,6 +65,48 @@ class HomeScreen extends StatelessWidget {
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 32),
+                      AnimatedSize(
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeInOut,
+                        child: Column(
+                          children: [
+                            if (isLoadingRepo)
+                              const Padding(
+                                padding: EdgeInsets.only(bottom: 16),
+                                child: CircularProgressIndicator.adaptive(),
+                              ),
+                            if (hasError) ...[
+                              Text(
+                                'We couldn\'t load puzzles just yet.',
+                                style: textTheme.bodyMedium?.copyWith(
+                                  color: colorScheme.error,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              if (errorMessage != null) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  errorMessage,
+                                  style: textTheme.bodySmall?.copyWith(
+                                    color: colorScheme.error,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                              const SizedBox(height: 12),
+                              FilledButton.tonalIcon(
+                                icon: const Icon(Icons.refresh_rounded),
+                                label: const Text('Try Again'),
+                                onPressed: () {
+                                  repository.preload();
+                                },
+                              ),
+                              const SizedBox(height: 16),
+                            ],
+                          ],
+                        ),
+                      ),
                       FilledButton.icon(
                         icon: const Icon(Icons.play_arrow_rounded),
                         label: const Text('Start Puzzle'),
@@ -76,20 +119,24 @@ class HomeScreen extends StatelessWidget {
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  ChangeNotifierProvider<SudokuBoardState>(
-                                    create: (context) =>
-                                        SudokuBoardState(repo: _repository)
-                                          ..init(),
-                                    builder: (context, child) =>
-                                        SudokuHomePage(),
+                        onPressed: repository.isLoaded
+                            ? () {
+                                final repo = context.read<PuzzleRepository>();
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        ChangeNotifierProvider<
+                                          SudokuBoardState
+                                        >(
+                                          create: (_) =>
+                                              SudokuBoardState(repo: repo)
+                                                ..init(),
+                                          child: const SudokuHomePage(),
+                                        ),
                                   ),
-                            ),
-                          );
-                        },
+                                );
+                              }
+                            : null,
                       ),
                     ],
                   ),
