@@ -1,21 +1,9 @@
+import 'package:auto_sudoku/ui/highlighters/grid_highlighter.dart';
 import 'package:auto_sudoku/ui/widgets/cell_notes.dart';
 import 'package:flutter/material.dart';
 
 import 'package:auto_sudoku/state/sudoku_board_state.dart';
-import 'package:auto_sudoku/ui/theme/sudoku_theme.dart';
 import 'package:provider/provider.dart';
-
-typedef _CellViewData = ({
-  SudokuCell cell,
-  bool isSelected,
-  bool isPeer,
-  bool matchesSelectedValue,
-  bool isHighlighted,
-  int? selectedValue,
-  bool isAnimatingSingles,
-  bool techniqueModeActive,
-  bool isTechniqueSelected,
-});
 
 class SudokuGrid extends StatelessWidget {
   const SudokuGrid({super.key});
@@ -23,8 +11,8 @@ class SudokuGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final sudokuTheme = SudokuTheme.of(context);
     final board = Provider.of<SudokuBoardState>(context, listen: false);
+    final highlighter = board.highlighter;
 
     return Center(
       child: AspectRatio(
@@ -55,78 +43,16 @@ class SudokuGrid extends StatelessWidget {
                   itemBuilder: (context, index) {
                     final row = index ~/ SudokuBoardState.size;
                     final col = index % SudokuBoardState.size;
+                    final cell = board.getCellAt(row, col);
+
+                    CellViewModel cellVM = highlighter.getByIndex(
+                      context,
+                      index,
+                    );
 
                     return Builder(
                       builder: (context) {
-                        final cellData = context
-                            .select<SudokuBoardState, _CellViewData>((state) {
-                              final cell = state.cellAt(row, col);
-                              final selectedIndex = state.selectedIndex;
-                              final isSelected = selectedIndex == index;
-                              final selectedRow = state.selectedRow;
-                              final selectedCol = state.selectedCol;
-                              final selectedValue = state.selectedValue;
-                              final isSameRow =
-                                  selectedRow != null && selectedRow == row;
-                              final isSameCol =
-                                  selectedCol != null && selectedCol == col;
-                              final isSameBox =
-                                  selectedRow != null &&
-                                  selectedCol != null &&
-                                  (selectedRow ~/ 3 == row ~/ 3) &&
-                                  (selectedCol ~/ 3 == col ~/ 3);
-                              final isPeer =
-                                  !isSelected &&
-                                  (isSameRow || isSameCol || isSameBox);
-                              final matchesSelectedValue =
-                                  !isSelected &&
-                                  selectedValue != null &&
-                                  cell.value != null &&
-                                  cell.value == selectedValue;
-                              final isHighlighted =
-                                  state.autoFillHighlightIndex == index;
-                              final techniqueModeActive =
-                                  state.isInteractiveModeActive;
-                              final isTechniqueSelected =
-                                  techniqueModeActive &&
-                                  state.interactiveSelection.contains(index);
-
-                              return (
-                                cell: cell,
-                                isSelected: isSelected,
-                                isPeer: isPeer,
-                                matchesSelectedValue: matchesSelectedValue,
-                                isHighlighted: isHighlighted,
-                                selectedValue: selectedValue,
-                                isAnimatingSingles: state.isAnimatingSingles,
-                                techniqueModeActive: techniqueModeActive,
-                                isTechniqueSelected: isTechniqueSelected,
-                              );
-                            });
-
-                        Color background = sudokuTheme.boardSurface;
-                        if (board.isInteractiveModeActive) {
-                          if (cellData.isTechniqueSelected) {
-                            background = Color.alphaBlend(
-                              colorScheme.primary.withValues(alpha: 0.24),
-                              background,
-                            );
-                          }
-                        } else {
-                          if (cellData.isPeer) {
-                            background = sudokuTheme.peerCellBackground;
-                          }
-                          if (cellData.matchesSelectedValue) {
-                            background = sudokuTheme.matchingValueBackground;
-                          }
-                          if (cellData.isSelected) {
-                            background = sudokuTheme.selectedCellBackground;
-                          }
-                          if (cellData.isHighlighted) {
-                            background =
-                                sudokuTheme.autoFillHighlightBackground;
-                          }
-                        }
+                        final background = cellVM.backgroundColor;
 
                         final borderColor = colorScheme.outlineVariant;
                         final border = Border(
@@ -153,9 +79,7 @@ class SudokuGrid extends StatelessWidget {
                         );
 
                         return GestureDetector(
-                          onTap: cellData.isAnimatingSingles
-                              ? null
-                              : () => board.selectCell(row, col),
+                          onTap: () => board.requestSelectCell(row, col),
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 180),
                             curve: Curves.easeOut,
@@ -165,16 +89,13 @@ class SudokuGrid extends StatelessWidget {
                             ),
                             child: Padding(
                               padding: const EdgeInsets.all(2),
-                              child: SudokuCellContents(
-                                index: index,
-                                cell: cellData.cell,
-                                isSelected: cellData.isSelected,
-                                isHighlighted: cellData.isHighlighted,
-                                isTechniqueSelected:
-                                    cellData.isTechniqueSelected,
-                                selectedValue: cellData.selectedValue,
-                                sudokuTheme: sudokuTheme,
-                              ),
+                              child: cell != null
+                                  ? SudokuCellContents(
+                                      index: index,
+                                      cell: cell,
+                                      viewModel: cellVM,
+                                    )
+                                  : SizedBox(),
                             ),
                           ),
                         );
@@ -196,21 +117,13 @@ class SudokuGrid extends StatelessWidget {
 class SudokuCellContents extends StatelessWidget {
   final int index;
   final SudokuCell cell;
-  final bool isSelected;
-  final bool isHighlighted;
-  final bool isTechniqueSelected;
-  final int? selectedValue;
-  final SudokuTheme sudokuTheme;
+  final CellViewModel viewModel;
 
   const SudokuCellContents({
     super.key,
     required this.index,
     required this.cell,
-    required this.isSelected,
-    required this.isHighlighted,
-    required this.isTechniqueSelected,
-    required this.selectedValue,
-    required this.sudokuTheme,
+    required this.viewModel,
   });
 
   @override
@@ -219,28 +132,17 @@ class SudokuCellContents extends StatelessWidget {
       builder: (context, constraints) {
         if (cell.value != null) {
           final fontSize = constraints.maxHeight * 0.65;
-          final bool useHighlightFont = isHighlighted;
-          Color textColor;
-          if (cell.isGiven) {
-            textColor = sudokuTheme.givenCellTextColor;
-          } else if (useHighlightFont || isSelected || isTechniqueSelected) {
-            textColor = sudokuTheme.valueHighlightColor;
-          } else {
-            textColor = sudokuTheme.valueRegularTextColor;
-          }
           return AnimatedScale(
             duration: const Duration(milliseconds: 160),
             curve: Curves.easeOutBack,
-            scale: isHighlighted ? 1.12 : 1.0,
+            scale: viewModel.valueScale ?? 1,
             child: Center(
               child: Text(
                 '${cell.value}',
                 style: TextStyle(
                   fontSize: fontSize,
-                  fontWeight: (isSelected || useHighlightFont)
-                      ? FontWeight.w900
-                      : FontWeight.w600,
-                  color: textColor,
+                  fontWeight: viewModel.valueFontWeight,
+                  color: viewModel.valueTextColor,
                 ),
               ),
             ),
@@ -254,7 +156,7 @@ class SudokuCellContents extends StatelessWidget {
         return CellNotes(
           index: index,
           activeNotes: cell.notes,
-          sudokuTheme: sudokuTheme,
+          viewModel: viewModel,
         );
       },
     );

@@ -273,6 +273,7 @@ class NakedSingleStrategy extends Strategy {
         return Hint(
           StrategyType.nakedSingle,
           eliminations: const <(int, int)>[],
+          placements: [(i, d)],
           cells: [i],
           digits: [d],
           unit: null,

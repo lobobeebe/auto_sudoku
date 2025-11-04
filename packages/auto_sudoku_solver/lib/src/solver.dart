@@ -53,22 +53,17 @@ class Solver {
     // StrategyType.aic,
   ];
 
-  Hint? getHintByClues(
-    Sudoku s,
-    List<int> clueIndices, {
-    SolverSettings? settings,
-  }) {
-    final effective = settings ?? SolverSettings.all();
+  final SolverSettings settings;
+
+  Solver({SolverSettings? settings})
+    : settings = settings ?? SolverSettings.all();
+
+  Hint? getHintByClues(Sudoku s, List<int> clueIndices) {
     final cand = CandidateMap.fromBoard(s);
-    return _getHintByClues(s, cand, effective, clueIndices);
+    return _getHintByClues(s, cand, clueIndices);
   }
 
-  Hint? _getHintByClues(
-    Sudoku s,
-    CandidateMap cand,
-    SolverSettings settings,
-    List<int> clueIndices,
-  ) {
+  Hint? _getHintByClues(Sudoku s, CandidateMap cand, List<int> clueIndices) {
     for (final strat in strategyOrder) {
       if (!settings.allows(strat.type)) {
         continue;
@@ -80,20 +75,14 @@ class Solver {
     return null;
   }
 
-  Hint? nextHint(Sudoku s, {SolverSettings? settings}) {
-    final effective = settings ?? SolverSettings.all();
+  Hint? nextHint(Sudoku s) {
     final cand = CandidateMap.fromBoard(s);
-    return _nextHintInternal(s, cand, effective);
+    return _nextHintInternal(s, cand);
   }
 
-  Hint? _nextHintInternal(
-    Sudoku s,
-    CandidateMap cand,
-    SolverSettings settings,
-  ) {
+  Hint? _nextHintInternal(Sudoku s, CandidateMap cand) {
     for (final strat in strategyOrder) {
       if (!settings.allows(strat.type)) {
-        print("Not allowed");
         continue;
       }
       final hint = strat.findHint(s, cand);
@@ -610,9 +599,7 @@ class Solver {
     return null;
   }
 
-  SolveResult solveLogical(Sudoku s, {SolverSettings? settings}) {
-    settings ??= SolverSettings.all();
-
+  SolveResult solveLogical(Sudoku s) {
     final steps = <StrategyType>[];
     final cand = CandidateMap.fromBoard(s);
 
@@ -627,7 +614,7 @@ class Solver {
           }
         }
       }
-      final hint = _nextHintInternal(s, cand, settings);
+      final hint = _nextHintInternal(s, cand);
       if (hint == null) {
         break;
       }
@@ -1400,12 +1387,9 @@ class Solver {
     return solutions;
   }
 
-  Rating rateLogical(
-    Sudoku s, {
-    SolverSettings settings = const SolverSettings(),
-  }) {
+  Rating rateLogical(Sudoku s) {
     final copy = Sudoku(List<int>.from(s.cells));
-    final res = solveLogical(copy, settings: settings);
+    final res = solveLogical(copy);
     final counts = <StrategyType, int>{};
     final first = <StrategyType, int>{};
     for (var i = 0; i < res.steps.length; i++) {

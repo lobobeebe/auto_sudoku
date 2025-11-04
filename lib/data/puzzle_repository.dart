@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:math';
 
-import 'package:auto_sudoku/data/sudoku_puzzle.dart';
+import 'package:auto_sudoku/data/sudoku_puzzle_model.dart';
 import 'package:auto_sudoku_solver/auto_sudoku_solver.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -11,7 +11,7 @@ class PuzzleRepository extends ChangeNotifier {
 
   final String assetPath;
   final Random _random = Random();
-  List<SudokuPuzzle>? _cache;
+  List<SudokuPuzzleModel>? _cache;
   bool _isLoading = false;
   bool _isLoaded = false;
   String? _error;
@@ -29,7 +29,7 @@ class PuzzleRepository extends ChangeNotifier {
     return _preloadFuture!;
   }
 
-  Future<SudokuPuzzle> loadRandomPuzzle() async {
+  Future<SudokuPuzzleModel> loadRandomPuzzle() async {
     if (!_isLoaded) {
       await preload();
     }
@@ -40,7 +40,7 @@ class PuzzleRepository extends ChangeNotifier {
     return cache[_random.nextInt(cache.length)];
   }
 
-  Future<SudokuPuzzle> loadRandomPuzzleByDifficulty(
+  Future<SudokuPuzzleModel> loadRandomPuzzleByDifficulty(
     Difficulty difficulty,
   ) async {
     if (!_isLoaded) {
@@ -83,9 +83,9 @@ class PuzzleRepository extends ChangeNotifier {
   }
 }
 
-List<SudokuPuzzle> _parsePuzzles(String raw) {
+List<SudokuPuzzleModel> _parsePuzzles(String raw) {
   final List<dynamic> jsonList = json.decode(raw) as List<dynamic>;
   return jsonList
-      .map((entry) => SudokuPuzzle.fromJson(entry as Map<String, dynamic>))
+      .map((entry) => SudokuPuzzleModel.fromJson(entry as Map<String, dynamic>))
       .toList(growable: false);
 }

@@ -6,14 +6,12 @@ import 'package:auto_sudoku/ui/utils/feedback.dart';
 import 'package:provider/provider.dart';
 
 class ActionBar extends StatelessWidget {
-  const ActionBar({super.key, required this.onHintRequested});
-
-  final Future<void> Function()? onHintRequested;
+  const ActionBar({super.key});
 
   @override
   Widget build(BuildContext context) {
     final board = context.watch<SudokuBoardState>();
-    final isEnabled = !board.isAnimatingSingles && board.hint == null;
+    final isEnabled = board.allowControls;
     final colorScheme = Theme.of(context).colorScheme;
 
     final toolStyle = ButtonStyle(
@@ -43,23 +41,17 @@ class ActionBar extends StatelessWidget {
       children: [
         IconButton.filledTonal(
           tooltip: 'Undo last move',
-          onPressed: isEnabled && board.canUndo
-              ? () {
-                  final undone = board.undo();
-                  if (!undone) {
-                    showFeedback(context, 'Nothing left to undo.');
-                  }
-                }
-              : null,
+          onPressed: isEnabled && board.allowUndo ? board.requestUndo : null,
           icon: const Icon(Icons.undo_rounded),
         ),
         IconButton.filledTonal(
           tooltip: 'Hint',
-          onPressed:
-              isEnabled &&
-                  board.status == GameStatus.playing &&
-                  onHintRequested != null
-              ? () => onHintRequested!.call()
+          onPressed: isEnabled && board.allowRequestHint
+              ? () {
+                  if (!board.requestNewHint()) {
+                    showFeedback(context, 'No logical hint available.');
+                  }
+                }
               : null,
           icon: const Icon(Icons.question_mark),
         ),
@@ -71,10 +63,10 @@ class ActionBar extends StatelessWidget {
       spacing: 12,
       children: [
         IconButton(
-          tooltip: board.noteMode ? 'Disable Notes' : 'Enable Notes',
-          isSelected: board.noteMode,
+          tooltip: board.isNoteMode ? 'Disable Notes' : 'Enable Notes',
+          isSelected: board.isNoteMode,
           style: toolStyle,
-          onPressed: isEnabled ? board.toggleNoteMode : null,
+          onPressed: isEnabled ? board.requestToggleNodeMode : null,
           icon: const Icon(Icons.edit_outlined),
           selectedIcon: const Icon(Icons.edit),
         ),
@@ -99,12 +91,12 @@ class ActionBar extends StatelessWidget {
             ),
             // Add more PopupMenuItem widgets for other options if needed
           ],
-          enabled: !board.isAnimatingSingles && !board.isLoading,
+          enabled: isEnabled && board.allowRequestHint,
           tooltip: 'Technique',
           style: toolStyle,
           icon: const Icon(Icons.auto_fix_high_outlined),
           onSelected: (strategy) {
-            board.beginInteractiveMode(strategy);
+            board.requestInteractive({strategy});
           },
         ),
       ],

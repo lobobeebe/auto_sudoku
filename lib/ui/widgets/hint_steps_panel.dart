@@ -1,18 +1,14 @@
+import 'package:auto_sudoku/state/sudoku_board_state.dart';
+import 'package:auto_sudoku/ui/utils/feedback.dart';
 import 'package:auto_sudoku/ui/utils/technique_explanation.dart';
 import 'package:auto_sudoku_solver/auto_sudoku_solver.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class HintStepsPanel extends StatefulWidget {
-  const HintStepsPanel({
-    super.key,
-    required this.hint,
-    required this.onSkip,
-    required this.onApply,
-  });
+  const HintStepsPanel({super.key, required this.hint});
 
   final Hint hint;
-  final VoidCallback onSkip;
-  final VoidCallback onApply;
 
   @override
   State<HintStepsPanel> createState() => _HintStepsPanelState();
@@ -38,6 +34,8 @@ class _HintStepsPanelState extends State<HintStepsPanel> {
 
   @override
   Widget build(BuildContext context) {
+    final board = Provider.of<SudokuBoardState>(context, listen: false);
+
     return Theme(
       data: Theme.of(context).copyWith(
         dividerColor: Colors.transparent, // Removes the outline divider
@@ -56,11 +54,16 @@ class _HintStepsPanelState extends State<HintStepsPanel> {
                 ),
               ),
               IconButton.filledTonal(
-                onPressed: widget.onSkip,
+                onPressed: () => board.requestClearHint(),
                 icon: const Icon(Icons.close),
               ),
               IconButton.filled(
-                onPressed: widget.onApply,
+                onPressed: () {
+                  final applied = board.requestApplyCurrentHint();
+                  if (!applied) {
+                    showFeedback(context, 'Unable to apply hint.');
+                  }
+                },
                 icon: const Icon(Icons.check),
               ),
             ],

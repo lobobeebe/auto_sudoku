@@ -1,3 +1,5 @@
+import 'package:auto_sudoku/ui/widgets/background_orb.dart';
+import 'package:auto_sudoku/ui/widgets/control_bar.dart';
 import 'package:auto_sudoku/ui/widgets/interactive_strategy_card.dart';
 import 'package:flutter/material.dart';
 
@@ -19,14 +21,13 @@ class SudokuHomePage extends StatefulWidget {
 
 class _SudokuHomePageState extends State<SudokuHomePage> {
   final Solver _solver = Solver();
-  GameStatus? _lastGameStatus;
 
   @override
   Widget build(BuildContext context) {
     final board = context.watch<SudokuBoardState>();
     final theme = Theme.of(context);
 
-    _maybeShowEndDialog(board);
+    board.onBuild(context);
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -54,7 +55,7 @@ class _SudokuHomePageState extends State<SudokuHomePage> {
             padding: const EdgeInsets.only(right: 16),
             child: IconButton.filledTonal(
               icon: const Icon(Icons.refresh_rounded),
-              onPressed: board.isLoading ? null : board.resetBoard,
+              onPressed: board.allowReset() ? board.resetBoard : null,
               style: FilledButton.styleFrom(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 18,
@@ -75,22 +76,8 @@ class _SudokuHomePageState extends State<SudokuHomePage> {
   Widget _buildBody(BuildContext context, SudokuBoardState board) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    Widget content;
-    if (board.isLoading) {
-      content = const Center(
-        key: ValueKey('loading'),
-        child: CircularProgressIndicator.adaptive(),
-      );
-    } else if (board.error != null) {
-      content = _ErrorPanel(
-        key: const ValueKey('error'),
-        message: board.error!,
-        onReturn: () => Navigator.pop(context),
-      );
-    } else {
-      content = _buildPuzzleContent(context, board);
-    }
-
+    Widget content =
+        board.buildBodyOverride(context) ?? _buildPuzzleContent(context, board);
     return Stack(
       children: [
         Positioned.fill(
@@ -110,12 +97,12 @@ class _SudokuHomePageState extends State<SudokuHomePage> {
         Positioned(
           top: -72,
           right: -20,
-          child: _BackgroundOrb(color: colorScheme.primary, size: 220),
+          child: BackgroundOrb(color: colorScheme.primary, size: 220),
         ),
         Positioned(
           bottom: -80,
           left: -60,
-          child: _BackgroundOrb(
+          child: BackgroundOrb(
             color: colorScheme.secondaryContainer,
             size: 260,
           ),
@@ -175,8 +162,6 @@ class _SudokuHomePageState extends State<SudokuHomePage> {
   Widget _buildControlsCard(BuildContext context, SudokuBoardState board) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final hint = board.hint;
-    final isTechniqueActive = board.isInteractiveModeActive;
 
     Widget wrapCard({required Key key, required Widget child}) {
       return Container(
@@ -201,45 +186,7 @@ class _SudokuHomePageState extends State<SudokuHomePage> {
       );
     }
 
-    late final Widget child;
-    if (isTechniqueActive) {
-      switch (board.interactiveMode) {
-        case StrategyType.nakedPair:
-        case StrategyType.nakedTriple:
-        case StrategyType.nakedQuad:
-          child = wrapCard(
-            key: const ValueKey('technique_pair'),
-            child: InteractiveStrategyCard(
-              icon: const Icon(Icons.auto_awesome_motion_rounded),
-              label: "Naked",
-            ),
-          );
-          break;
-        default:
-      }
-    } else if (hint != null) {
-      child = wrapCard(
-        key: const ValueKey('hintPanel'),
-        child: HintStepsPanel(
-          hint: hint,
-          onSkip: _handleHintSkip,
-          onApply: _handleHintApply,
-        ),
-      );
-    } else {
-      child = wrapCard(
-        key: const ValueKey('controls'),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            ActionBar(onHintRequested: _handleHintRequest),
-            const SizedBox(height: 20),
-            const NumberPad(),
-          ],
-        ),
-      );
-    }
+    Widget bottomBar = board.buildBottomBar();
 
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 260),
@@ -258,183 +205,7 @@ class _SudokuHomePageState extends State<SudokuHomePage> {
           ),
         );
       },
-      child: child,
-    );
-  }
-
-  void _maybeShowEndDialog(SudokuBoardState board) {
-    final status = board.status;
-    _lastGameStatus ??= status;
-
-    if (_lastGameStatus != status) {
-      _lastGameStatus = status;
-
-      if (status != GameStatus.playing) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _showResultDialog(board);
-        });
-      }
-    }
-  }
-
-  Future<void> _showResultDialog(SudokuBoardState board) async {
-    final isWin = board.status == GameStatus.won;
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
-    await showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-          ),
-          title: Row(
-            children: [
-              Icon(
-                isWin
-                    ? Icons.emoji_events_rounded
-                    : Icons.error_outline_rounded,
-                color: isWin ? colorScheme.primary : colorScheme.error,
-              ),
-              const SizedBox(width: 12),
-              Text(isWin ? 'Puzzle Complete!' : 'Incorrect Move'),
-            ],
-          ),
-          content: Text(
-            isWin
-                ? 'Great job! You solved the puzzle.'
-                : 'That entry conflicts with the solution. Undo the move or exit to the menu.',
-            style: textTheme.bodyMedium,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-              },
-              child: const Text('Review'),
-            ),
-            FilledButton(
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-                Navigator.of(context).pop();
-              },
-              child: const Text('Exit'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Future<void> _handleHintRequest() async {
-    final board = context.read<SudokuBoardState>();
-    final sudoku = Sudoku(board.toValueList(), notes: board.toNotesList());
-    final hint = _solver.nextHint(sudoku);
-
-    if (hint == null) {
-      showFeedback(context, 'No logical hint available.');
-      return;
-    }
-
-    board.deselectCell();
-    board.setHint(hint);
-  }
-
-  void _handleHintSkip() {
-    final board = context.read<SudokuBoardState>();
-    board.clearHint();
-  }
-
-  void _handleHintApply() {
-    final board = context.read<SudokuBoardState>();
-    final applied = board.applyCurrentHint();
-    if (!applied) {
-      board.clearHint();
-      showFeedback(context, 'Unable to apply hint.');
-    }
-  }
-}
-
-class _ErrorPanel extends StatelessWidget {
-  final String message;
-  final VoidCallback onReturn;
-
-  const _ErrorPanel({super.key, required this.message, required this.onReturn});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 420),
-        child: Card(
-          elevation: 12,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(28),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.sentiment_dissatisfied_rounded,
-                  size: 48,
-                  color: colorScheme.error,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'We hit a snag while loading puzzles.',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  message,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: colorScheme.error,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                FilledButton(onPressed: onReturn, child: const Text('Return')),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _BackgroundOrb extends StatelessWidget {
-  final Color color;
-  final double size;
-
-  const _BackgroundOrb({required this.color, required this.size});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: color.withValues(alpha: 0.22),
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.25),
-            blurRadius: size * 0.6,
-            spreadRadius: size * 0.18,
-          ),
-        ],
-      ),
+      child: bottomBar,
     );
   }
 }

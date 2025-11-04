@@ -4,14 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class InteractiveStrategyCard extends StatelessWidget {
-  final Widget icon;
-  final String label;
+  final StrategyType strategy;
 
-  const InteractiveStrategyCard({
-    super.key,
-    required this.icon,
-    required this.label,
-  });
+  const InteractiveStrategyCard({super.key, required this.strategy});
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -19,7 +14,7 @@ class InteractiveStrategyCard extends StatelessWidget {
         Row(
           spacing: 12,
           children: [
-            icon,
+            Icon(icon),
             Expanded(
               child: Text(
                 label,
@@ -28,7 +23,7 @@ class InteractiveStrategyCard extends StatelessWidget {
             ),
             IconButton.filledTonal(
               onPressed: () {
-                context.read<SudokuBoardState>().cancelInteractiveMode();
+                context.read<SudokuBoardState>().requestCancelInteractive();
               },
               icon: const Icon(Icons.close),
             ),
@@ -42,12 +37,8 @@ class InteractiveStrategyCard extends StatelessWidget {
                 );
                 final hint = solver.getHintByClues(
                   sudoku,
-                  board.interactiveSelection,
+                  board.selectedIndices,
                 );
-
-                if (hint != null) {
-                  board.setHint(hint);
-                }
               },
               icon: const Icon(Icons.check),
             ),
@@ -56,4 +47,14 @@ class InteractiveStrategyCard extends StatelessWidget {
       ],
     );
   }
+
+  String get label => switch (strategy) {
+    StrategyType.nakedPair => "Naked",
+    _ => "Unknown",
+  };
+
+  IconData get icon => switch (strategy) {
+    StrategyType.nakedPair => Icons.auto_awesome_motion_rounded,
+    _ => Icons.question_mark_rounded,
+  };
 }

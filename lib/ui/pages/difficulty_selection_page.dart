@@ -169,8 +169,20 @@ class _DifficultySelectionPageState extends State<DifficultySelectionPage>
                     ),
                   ),
               child: ChangeNotifierProvider<SudokuBoardState>(
-                create: (_) =>
-                    SudokuBoardState(repo: repo)..init(difficulty: difficulty),
+                create: (_) {
+                  final board = SudokuBoardState();
+                  repo
+                      .loadRandomPuzzleByDifficulty(difficulty)
+                      .then((puzzle) => board.requestInitPuzzle(puzzle))
+                      .onError((error, st) {
+                        board.requestInitPuzzle(null, error: error.toString());
+                        debugPrintStack(
+                          label: error.toString(),
+                          stackTrace: st,
+                        );
+                      });
+                  return board;
+                },
                 child: const SudokuHomePage(),
               ),
             ),

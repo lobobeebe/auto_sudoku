@@ -15,7 +15,7 @@ class NumberPad extends StatelessWidget {
     final board = context.watch<SudokuBoardState>();
     final colorScheme = Theme.of(context).colorScheme;
     final digits = List.generate(9, (index) => index + 1);
-    final isEnabled = !board.isAnimatingSingles && board.hint == null;
+    final isEnabled = board.allowControls;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -53,11 +53,11 @@ class NumberPad extends StatelessWidget {
             children: digits.map((digit) {
               final isComplete = board.isDigitSolved(digit);
               final buttonEnabled =
-                  isEnabled && !isComplete && board.canPlaceDigit(digit);
-              final background = board.noteMode
+                  isEnabled && !isComplete && board.canPressDigit(digit);
+              final background = board.isNoteMode
                   ? colorScheme.primary
                   : sudokuTheme.numberPadBackground;
-              final foreground = board.noteMode
+              final foreground = board.isNoteMode
                   ? colorScheme.onPrimary
                   : sudokuTheme.numberPadForeground;
               final disabledBackground = isComplete ? Colors.transparent : null;
@@ -89,11 +89,8 @@ class NumberPad extends StatelessWidget {
 
   void _handleDigit(BuildContext context, int digit) {
     final board = context.read<SudokuBoardState>();
-    if (board.selectedIndex == null) {
-      showFeedback(context, 'Select a cell before entering numbers.');
-      return;
-    }
-    final updated = board.enterDigit(digit);
+
+    final updated = board.requestEnterDigit(digit);
     if (!updated) {
       showFeedback(context, 'Cannot update this cell right now.');
     }

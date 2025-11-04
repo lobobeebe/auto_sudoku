@@ -1,11 +1,10 @@
-import 'dart:async';
-
-import 'package:auto_sudoku/data/puzzle_repository.dart';
-import 'package:auto_sudoku/data/sudoku_puzzle.dart';
+import 'package:auto_sudoku/data/sudoku_puzzle_model.dart';
+import 'package:auto_sudoku/state/board_mode.dart';
+import 'package:auto_sudoku/ui/highlighters/grid_highlighter.dart';
 import 'package:auto_sudoku_solver/auto_sudoku_solver.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 
-enum GameStatus { playing, won, lost }
+enum GameResult { playing, won, lost }
 
 class SudokuCell {
   final int? value;
@@ -29,57 +28,75 @@ class SudokuBoardState extends ChangeNotifier {
     size * size,
     (_) => SudokuCell(),
   );
-  SudokuPuzzle? _currentPuzzle;
-  int? _selectedIndex;
-  bool _noteMode = false;
+  SudokuPuzzleModel? _currentPuzzle;
 
-  bool _isAnimatingSingles = false;
-  bool _pendingAutoSingles = false;
-  int? _autoFillHighlightIndex;
-  final Duration _autoFillStepDelay = const Duration(milliseconds: 160);
-  final List<_BoardSnapshot> _history = <_BoardSnapshot>[];
+  final List<BoardSnapshot> _history = <BoardSnapshot>[];
   bool _isDisposed = false;
+  final List<int> _selectedIndices = [];
 
-  bool _isLoading = true;
-  String? _error;
-  Hint? _hint;
-  GameStatus _status = GameStatus.playing;
-  PuzzleRepository repo;
+  late BoardMode _mode;
+  bool _hasBoardModeBuilt = false;
+  final Solver _hintSolver = Solver(settings: SolverSettings.all());
 
-  StrategyType? _interactiveMode;
-  final List<int> _interactiveSelection = <int>[];
+  // Solver for finding singles
+  final Solver _singleSolver = Solver(
+    settings: SolverSettings(
+      allowed: {StrategyType.hiddenSingle, StrategyType.nakedSingle},
+    ),
+  );
 
-  SudokuBoardState({required this.repo});
+  SudokuBoardState() {
+    _mode = LoadingMode(this);
+  }
 
-  void _emitChange() {
+  void setMode(BoardMode next) {
+    _mode.onExit();
+    _mode = next;
+    _hasBoardModeBuilt = false;
+    _mode.onEnter();
+    emitChange();
+  }
+
+  void emitChange() {
     if (!_isDisposed) {
       super.notifyListeners();
     }
   }
 
-  SudokuPuzzle? get currentPuzzle => _currentPuzzle;
-  int? get selectedIndex => _selectedIndex;
-  int? get selectedRow =>
-      _selectedIndex != null ? _selectedIndex! ~/ size : null;
-  int? get selectedCol =>
-      _selectedIndex != null ? _selectedIndex! % size : null;
-  int? get selectedValue =>
-      _selectedIndex != null ? _cells[_selectedIndex!].value : null;
-  bool get noteMode => _noteMode;
+  SudokuPuzzleModel? get currentPuzzle => _currentPuzzle;
+  List<int> get selectedIndices => _selectedIndices;
+  int? getRow(int index) => index ~/ size;
+  int? getCol(int index) => index % size;
+  int getBox(int row, int col) {
+    final boxRow = row ~/ 3;
+    final boxCol = col ~/ 3;
+    return boxRow * 3 + boxCol;
+  }
 
-  bool get isAnimatingSingles => _isAnimatingSingles;
-  int? get autoFillHighlightIndex => _autoFillHighlightIndex;
-  bool get canUndo => _history.isNotEmpty;
-  GameStatus get status => _status;
-  bool get isLoading => _isLoading;
-  String? get error => _error;
-  Hint? get hint => _hint;
+  int getIndex(int row, int col) => row * size + col;
+  SudokuCell? getCellAtIndex(int index) {
+    return _cells[index];
+  }
+
+  void setCellAtIndex(int index, SudokuCell cell) {
+    _cells[index] = cell;
+  }
+
+  SudokuCell? getCellAt(int row, int col) {
+    final index = getIndex(row, col);
+    return getCellAtIndex(index);
+  }
+
+  List<int> get selectedValues =>
+      selectedIndices.map((index) => _cells[index].value ?? 0).toList();
+
+  bool get allowControls => _mode.allowControls();
+  bool get allowUndo => _mode.allowUndo() && _history.isNotEmpty;
+  bool get allowRequestHint => _mode.allowRequestHint();
+  bool get isNoteMode => _mode.isNoteMode();
+  GridHighlighter get highlighter => _mode.getGridHighlighter();
+
   String get difficulty => _currentPuzzle?.difficulty.toString() ?? 'Unknown';
-  List<String> get techniques => _currentPuzzle?.techniques ?? const [];
-  StrategyType? get interactiveMode => _interactiveMode;
-  List<int> get interactiveSelection =>
-      List<int>.unmodifiable(_interactiveSelection);
-  bool get isInteractiveModeActive => _interactiveMode != null;
 
   /// Returns the current board values as a flat list with zero for blanks.
   List<int> toValueList() =>
@@ -91,33 +108,60 @@ class SudokuBoardState extends ChangeNotifier {
     (index) => Set<int>.from(_cells[index].notes),
   );
 
-  void setHint(Hint? hint) {
-    _resetInteractiveMode(notify: false);
-    _hint = hint;
-    _emitChange();
+  void requestSelectCell(int row, int col) {
+    _mode.onRequestSelectCell(row, col);
   }
 
-  bool applyCurrentHint() {
-    final currentHint = _hint;
-    if (currentHint == null || _isAnimatingSingles) {
-      return false;
-    }
-    final snapshot = _makeSnapshot();
-    final mutated = _applyHintToBoard(
-      currentHint,
-      triggerAutomation: true,
-      emitChange: true,
-    );
-    if (!mutated) {
-      return false;
-    }
-    _history.add(snapshot);
-    _hint = null;
-    return true;
+  void requestClearHint() {
+    _mode.onRequestClearHint();
   }
 
-  bool canPlaceDigit(int digit) {
-    final idx = _selectedIndex;
+  bool requestNewHint() {
+    if (_mode.allowRequestHint()) {
+      final sudoku = Sudoku(toValueList(), notes: toNotesList());
+      final hint = _hintSolver.nextHint(sudoku);
+
+      if (hint != null) {
+        _mode.onRequestSetHint(hint);
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  void requestSetHint(Hint hint) {
+    _mode.onRequestSetHint(hint);
+  }
+
+  bool requestApplyCurrentHint() {
+    return _mode.onRequestApplyCurrentHint();
+  }
+
+  bool allowReset() => _mode.allowReset();
+
+  void requestToggleNodeMode() => _mode.onRequestNoteMode();
+
+  void requestInteractive(Set<StrategyType> types) =>
+      _mode.onRequestInteractive(types);
+
+  void requestCancelInteractive() => _mode.onRequestCancelInteractive();
+
+  Widget? buildBodyOverride(BuildContext context) =>
+      _mode.buildBodyOverride(context);
+
+  void onBuild(BuildContext context) {
+    if (!_hasBoardModeBuilt) {
+      _mode.onFirstBuild(context);
+      _hasBoardModeBuilt = true;
+    }
+  }
+
+  Widget buildBottomBar() => _mode.buildBottomBar();
+
+  bool canPressDigit(int digit) => _mode.canPressDigit(digit);
+
+  bool canPlaceDigit(int? idx, int digit) {
     if (idx == null || digit < 1 || digit > size) {
       return true;
     }
@@ -132,13 +176,13 @@ class SudokuBoardState extends ChangeNotifier {
     final col = idx % size;
     for (var c = 0; c < size; c++) {
       if (c == col) continue;
-      if (_cells[_index(row, c)].value == digit) {
+      if (_cells[getIndex(row, c)].value == digit) {
         return false;
       }
     }
     for (var r = 0; r < size; r++) {
       if (r == row) continue;
-      if (_cells[_index(r, col)].value == digit) {
+      if (_cells[getIndex(r, col)].value == digit) {
         return false;
       }
     }
@@ -146,7 +190,7 @@ class SudokuBoardState extends ChangeNotifier {
     final startCol = (col ~/ 3) * 3;
     for (var r = startRow; r < startRow + 3; r++) {
       for (var c = startCol; c < startCol + 3; c++) {
-        final index = _index(r, c);
+        final index = getIndex(r, c);
         if (index == idx) continue;
         if (_cells[index].value == digit) {
           return false;
@@ -169,39 +213,16 @@ class SudokuBoardState extends ChangeNotifier {
     return count >= size;
   }
 
-  SudokuCell cellAt(int row, int col) => _cells[_index(row, col)];
-
-  Future<void> init({Difficulty? difficulty}) async {
-    _isLoading = true;
-    _error = null;
-    _emitChange();
-
-    try {
-      final puzzle = difficulty == null
-          ? await repo.loadRandomPuzzle()
-          : await repo.loadRandomPuzzleByDifficulty(difficulty);
-      _initFromPuzzle(puzzle);
-    } catch (e) {
-      _error = e.toString();
-    } finally {
-      _isLoading = false;
-      _emitChange();
-    }
+  void requestInitPuzzle(SudokuPuzzleModel? puzzle, {String? error}) {
+    _mode.onRequestInitPuzzle(puzzle, error);
   }
 
-  void _initFromPuzzle(SudokuPuzzle puzzle) {
-    clearHint();
+  void initPuzzle(SudokuPuzzleModel puzzle) {
     _currentPuzzle = puzzle;
-    _selectedIndex = null;
-    _noteMode = false;
-    _isAnimatingSingles = false;
-    _pendingAutoSingles = false;
-    _autoFillHighlightIndex = null;
     _history.clear();
-    _status = GameStatus.playing;
-    _interactiveMode = null;
-    _interactiveSelection.clear();
 
+    // TODO - Should this be part of the puzzle object init?
+    // Read in Given cells
     for (var index = 0; index < _cells.length; index++) {
       final char = puzzle.puzzle[index];
       final parsed = int.tryParse(char);
@@ -211,180 +232,13 @@ class SudokuBoardState extends ChangeNotifier {
           : SudokuCell();
     }
 
-    fillAllNotes(notify: false);
-    _emitChange();
-    _scheduleAutoSingles();
-  }
-
-  void toggleNoteMode() {
-    if (_isAnimatingSingles) {
-      return;
-    }
-
-    _noteMode = !_noteMode;
-    _emitChange();
-  }
-
-  void deselectCell() {
-    _selectedIndex = null;
-    _emitChange();
-  }
-
-  void selectCell(int row, int col) {
-    if (_isAnimatingSingles) {
-      return;
-    }
-    final index = _index(row, col);
-
-    if (isInteractiveModeActive) {
-      _handleInteractiveSelectionTap(index);
-      return;
-    }
-
-    if (_selectedIndex == index) {
-      _selectedIndex = null;
-    } else {
-      _selectedIndex = index;
-    }
-    _emitChange();
-  }
-
-  void getHintByClues() {}
-
-  void _handleInteractiveSelectionTap(int index) {
-    final cell = _cells[index];
-    if (cell.isGiven || cell.value != null) {
-      return;
-    }
-
-    if (_interactiveSelection.contains(index)) {
-      _interactiveSelection.remove(index);
-      if (_selectedIndex == index) {
-        _selectedIndex = null;
-      }
-      _emitChange();
-      return;
-    }
-
-    _interactiveSelection.add(index);
-    _selectedIndex = index;
-
-    _emitChange();
-  }
-
-  void beginInteractiveMode(StrategyType mode) {
-    if (_isAnimatingSingles) {
-      return;
-    }
-
-    clearHint();
-
-    _resetInteractiveMode(notify: false);
-    _interactiveMode = mode;
-    _emitChange();
-  }
-
-  void cancelInteractiveMode() {
-    if (_interactiveMode == null) {
-      return;
-    }
-    _resetInteractiveMode();
-  }
-
-  void _resetInteractiveMode({bool notify = true}) {
-    _interactiveMode = null;
-    _interactiveSelection.clear();
-    _selectedIndex = null;
-    if (notify) {
-      _emitChange();
-    }
-  }
-
-  bool enterDigit(int digit) {
-    if (_isAnimatingSingles) {
-      return false;
-    }
-    final idx = _selectedIndex;
-    if (idx == null || digit < 1 || digit > 9) {
-      return false;
-    }
-    final cell = _cells[idx];
-    if (cell.isGiven) {
-      return false;
-    }
-
-    if (_noteMode) {
-      if (cell.value != null) {
-        return false;
-      }
-      final updatedNotes = {...cell.notes};
-      if (updatedNotes.contains(digit)) {
-        updatedNotes.remove(digit);
-      } else {
-        updatedNotes.add(digit);
-      }
-      final wasChanged = !_setsEqual(updatedNotes, cell.notes);
-      if (!wasChanged) {
-        return false;
-      }
-      clearHint();
-      _pushSnapshot();
-      _cells[idx] = cell.withNotes(updatedNotes);
-      _status = GameStatus.playing;
-      _scheduleAutoSingles();
-      _emitChange();
-      return true;
-    }
-
-    clearHint();
-    _pushSnapshot();
-    if (cell.value == digit) {
-      _cells[idx] = SudokuCell(
-        value: null,
-        notes: const <int>{},
-        isGiven: cell.isGiven,
-      );
-      _restoreNotesAround(idx, digit);
-      final row = idx ~/ size;
-      final col = idx % size;
-      final candidates = _candidatesFor(row, col);
-      _cells[idx] = _cells[idx].withNotes(candidates);
-      _status = GameStatus.playing;
-      _scheduleAutoSingles();
-      _emitChange();
-      return true;
-    }
-
-    final solutionDigit = _currentPuzzle != null
-        ? int.tryParse(_currentPuzzle!.solution[idx])
-        : null;
-
-    _cells[idx] = cell.withValue(digit);
-
-    if (solutionDigit != null && solutionDigit != digit) {
-      _status = GameStatus.lost;
-      _pendingAutoSingles = false;
-      _autoFillHighlightIndex = null;
-      _emitChange();
-      return true;
-    }
-
-    _status = GameStatus.playing;
-    _pruneNotesAround(idx, digit);
-    _scheduleAutoSingles();
-    _evaluateCompletion();
-    _emitChange();
-    return true;
-  }
-
-  bool fillAllNotes({bool notify = true}) {
-    var changed = false;
+    // TODO - Should this be part of the puzzle object init?
+    // Fill in all notes
     for (var index = 0; index < _cells.length; index++) {
       final cell = _cells[index];
       if (cell.value != null) {
         if (cell.notes.isNotEmpty) {
           _cells[index] = cell.withNotes(const <int>{});
-          changed = true;
         }
         continue;
       }
@@ -392,176 +246,115 @@ class SudokuBoardState extends ChangeNotifier {
       final row = index ~/ size;
       final col = index % size;
       final candidates = _candidatesFor(row, col);
-      if (_setsEqual(cell.notes, candidates)) {
-        continue;
-      }
       _cells[index] = cell.withNotes(candidates);
-      changed = true;
-    }
-    if (changed && notify) {
-      _emitChange();
-    }
-    return changed;
-  }
-
-  void _scheduleAutoSingles() {
-    if (_isAnimatingSingles) {
-      _pendingAutoSingles = true;
-      return;
-    }
-    final nextSingle = _findNextSingle();
-    if (nextSingle == null) {
-      _pendingAutoSingles = false;
-      final previousStatus = _status;
-      _evaluateCompletion();
-      if (_status != previousStatus) {
-        _emitChange();
-      }
-      return;
-    }
-    _pendingAutoSingles = false;
-    unawaited(_runAutoSingles(nextSingle));
-  }
-
-  Future<void> _runAutoSingles(MapEntry<int, int> initialSingle) async {
-    if (_isAnimatingSingles) {
-      _pendingAutoSingles = true;
-      return;
-    }
-
-    clearHint();
-    _isAnimatingSingles = true;
-    _emitChange();
-
-    MapEntry<int, int>? current = initialSingle;
-    while (current != null) {
-      final index = current.key;
-      final value = current.value;
-      final cell = _cells[index];
-
-      if (cell.value == null && !cell.isGiven) {
-        _cells[index] = cell.withValue(value);
-        _pruneNotesAround(index, value);
-        _autoFillHighlightIndex = index;
-        _emitChange();
-      }
-
-      await Future.delayed(_autoFillStepDelay);
-      current = _findNextSingle();
-    }
-
-    _evaluateCompletion();
-    _autoFillHighlightIndex = null;
-    _isAnimatingSingles = false;
-    _emitChange();
-
-    if (_pendingAutoSingles) {
-      _pendingAutoSingles = false;
-      _scheduleAutoSingles();
     }
   }
 
-  MapEntry<int, int>? _findNextSingle() {
-    MapEntry<int, int>? best;
-    final candidatesCache = <int, Set<int>>{};
-
-    Set<int> candidatesForIndex(int index) {
-      final cached = candidatesCache[index];
-      if (cached != null) {
-        return cached;
-      }
-      final cell = _cells[index];
-      if (cell.notes.isNotEmpty) {
-        final notes = <int>{...cell.notes};
-        candidatesCache[index] = notes;
-        return notes;
-      }
-      final row = index ~/ size;
-      final col = index % size;
-      final computed = _candidatesFor(row, col);
-      candidatesCache[index] = computed;
-      return computed;
-    }
-
-    for (var index = 0; index < _cells.length; index++) {
-      final cell = _cells[index];
-      if (cell.value != null) {
-        continue;
-      }
-      final candidates = candidatesForIndex(index);
-      if (candidates.length == 1) {
-        final value = candidates.first;
-        if (best == null || index < best.key) {
-          best = MapEntry(index, value);
-        }
-      }
-    }
-
-    if (best != null) {
-      return best;
-    }
-
-    MapEntry<int, int>? hiddenBest;
-
-    void inspect(List<int> indices) {
-      final counts = <int, int>{};
-      final locations = <int, int>{};
-      for (final index in indices) {
-        final cell = _cells[index];
-        if (cell.value != null) {
-          continue;
-        }
-        final candidates = candidatesForIndex(index);
-        for (final candidate in candidates) {
-          counts[candidate] = (counts[candidate] ?? 0) + 1;
-          locations[candidate] = index;
-        }
-      }
-      for (final entry in counts.entries) {
-        if (entry.value == 1) {
-          final index = locations[entry.key]!;
-          if (hiddenBest == null || index < hiddenBest!.key) {
-            hiddenBest = MapEntry(index, entry.key);
-          }
-        }
-      }
-    }
-
-    for (var row = 0; row < size; row++) {
-      inspect([for (var col = 0; col < size; col++) _index(row, col)]);
-    }
-
-    for (var col = 0; col < size; col++) {
-      inspect([for (var row = 0; row < size; row++) _index(row, col)]);
-    }
-
-    for (var boxRow = 0; boxRow < size; boxRow += 3) {
-      for (var boxCol = 0; boxCol < size; boxCol += 3) {
-        final indices = <int>[];
-        for (var r = boxRow; r < boxRow + 3; r++) {
-          for (var c = boxCol; c < boxCol + 3; c++) {
-            indices.add(_index(r, c));
-          }
-        }
-        inspect(indices);
-      }
-    }
-
-    return hiddenBest;
+  bool requestEnterDigit(int digit) {
+    return _mode.onRequestEnterDigit(digit);
   }
 
-  int _index(int row, int col) => row * size + col;
+  // Helper to determine if the current board has an available single
+  Hint? nextSingle() {
+    return _singleSolver.nextHint(Sudoku(toValueList(), notes: toNotesList()));
+  }
+
+  bool isDigitSelected(int digit) {
+    return selectedValues.contains(digit);
+  }
+
+  bool isIndexSelected(int index) {
+    return _selectedIndices.contains(index);
+  }
+
+  bool isPeerWithAllSelected(int index) {
+    if (_selectedIndices.isEmpty) return false;
+    return _selectedIndices.every(
+      (selectedIndex) => arePeers(selectedIndex, index),
+    );
+  }
+
+  bool matchesAnySelected(int index) {
+    if (index < 0 || index >= _cells.length) {
+      return false;
+    }
+
+    final digit = _cells[index].value;
+    if (digit == null) {
+      return false;
+    }
+
+    return _selectedIndices.any(
+      (selectedIndex) => _cells[selectedIndex].value == digit,
+    );
+  }
+
+  bool arePeers(int lhsIndex, int rhsIndex) {
+    final lhsRow = getRow(lhsIndex);
+    final lhsCol = getCol(lhsIndex);
+
+    final rhsRow = getRow(rhsIndex);
+    final rhsCol = getCol(rhsIndex);
+
+    if (lhsRow == null || lhsCol == null || rhsRow == null || rhsCol == null) {
+      return false;
+    }
+
+    if (lhsRow == rhsRow || lhsCol == rhsCol) return true;
+
+    final lhsBox = getBox(lhsRow, lhsCol);
+    final rhsBox = getBox(rhsRow, rhsCol);
+
+    return lhsBox == rhsBox;
+  }
+
+  Set<int> getPeerIndices(int index) {
+    final Set<int> peerIndices = {};
+    final row = getRow(index);
+    final col = getCol(index);
+
+    if (row == null || col == null) {
+      return {};
+    }
+
+    // Same row
+    for (var c = 0; c < size; c++) {
+      if (c != col) {
+        peerIndices.add(getIndex(row, c));
+      }
+    }
+
+    // Same Column
+    for (var r = 0; r < size; r++) {
+      if (r != row) {
+        peerIndices.add(getIndex(r, col));
+      }
+    }
+
+    // Same Box
+    final startRow = (row ~/ 3) * 3;
+    final startCol = (col ~/ 3) * 3;
+    for (var r = startRow; r < startRow + 3; r++) {
+      for (var c = startCol; c < startCol + 3; c++) {
+        if (r != row || c != col) {
+          peerIndices.add(getIndex(r, c));
+        }
+      }
+    }
+
+    return peerIndices;
+  }
 
   Set<int> _candidatesFor(int row, int col) {
     final used = <int>{};
     for (var c = 0; c < size; c++) {
-      final value = _cells[_index(row, c)].value;
+      final value = _cells[getIndex(row, c)].value;
       if (value != null) {
         used.add(value);
       }
     }
     for (var r = 0; r < size; r++) {
-      final value = _cells[_index(r, col)].value;
+      final value = _cells[getIndex(r, col)].value;
       if (value != null) {
         used.add(value);
       }
@@ -570,7 +363,7 @@ class SudokuBoardState extends ChangeNotifier {
     final startCol = (col ~/ 3) * 3;
     for (var r = startRow; r < startRow + 3; r++) {
       for (var c = startCol; c < startCol + 3; c++) {
-        final value = _cells[_index(r, c)].value;
+        final value = _cells[getIndex(r, c)].value;
         if (value != null) {
           used.add(value);
         }
@@ -583,22 +376,117 @@ class SudokuBoardState extends ChangeNotifier {
     };
   }
 
-  void _pruneNotesAround(int index, [int? value]) {
-    final target = value ?? _cells[index].value;
+  @override
+  void dispose() {
+    _isDisposed = true;
+    super.dispose();
+  }
+
+  void resetBoard() {
+    if (_currentPuzzle == null) {
+      return;
+    }
+    initPuzzle(_currentPuzzle!);
+  }
+
+  void requestUndo() {
+    _mode.onRequestUndo();
+  }
+
+  bool undo() {
+    if (_history.isEmpty) {
+      return false;
+    }
+
+    final snapshot = _history.removeLast();
+    for (var i = 0; i < _cells.length; i++) {
+      _cells[i] = snapshot.cells[i];
+    }
+    emitChange();
+    return true;
+  }
+
+  void pushSnapshot({BoardSnapshot? snapshot}) {
+    _history.add(snapshot ?? makeSnapshot());
+  }
+
+  GameResult? evaluateResult() {
+    if (_currentPuzzle == null) {
+      return null;
+    }
+
+    // If any cell is unfilled, we are not yet complete
+    for (final cell in _cells) {
+      if (cell.value == null) {
+        return null;
+      }
+    }
+
+    // Evaluate against the solution
+    final solution = _currentPuzzle!.solution;
+    for (var index = 0; index < _cells.length; index++) {
+      final expected = int.tryParse(solution[index]);
+      if (expected == null || _cells[index].value != expected) {
+        return GameResult.lost;
+      }
+    }
+
+    return GameResult.won;
+  }
+
+  BoardSnapshot makeSnapshot() {
+    final cellsCopy = List<SudokuCell>.generate(_cells.length, (index) {
+      final cell = _cells[index];
+      return SudokuCell(
+        value: cell.value,
+        notes: cell.notes,
+        isGiven: cell.isGiven,
+      );
+    });
+    return BoardSnapshot(cells: cellsCopy);
+  }
+
+  bool applyHintToBoard(Hint hint) {
+    var mutated = false;
+
+    for (final (index, digit) in hint.placements) {
+      if (index < 0 || index >= _cells.length) continue;
+      final cell = _cells[index];
+      if (cell.isGiven || cell.value == digit) continue;
+      _cells[index] = cell.withValue(digit);
+      pruneNotesAround(index, digit);
+      mutated = true;
+    }
+
+    for (final (index, digit) in hint.eliminations) {
+      if (index < 0 || index >= _cells.length) continue;
+      final cell = _cells[index];
+      if (cell.value != null || !cell.notes.contains(digit)) continue;
+      final updatedNotes = {...cell.notes}..remove(digit);
+      _cells[index] = cell.withNotes(updatedNotes);
+      mutated = true;
+    }
+
+    return mutated;
+  }
+
+  void pruneNotesAround(int index, [int? value]) {
+    final target = value ?? getCellAtIndex(index)?.value;
     if (target == null) {
       return;
     }
+    final size = SudokuBoardState.size;
     final row = index ~/ size;
     final col = index % size;
 
     for (var c = 0; c < size; c++) {
-      final peer = _index(row, c);
+      final peer = getIndex(row, c);
       if (peer != index) {
         _removeNote(peer, target);
       }
     }
     for (var r = 0; r < size; r++) {
-      final peer = _index(r, col);
+      final peer = getIndex(r, col);
       if (peer != index) {
         _removeNote(peer, target);
       }
@@ -607,7 +495,7 @@ class SudokuBoardState extends ChangeNotifier {
     final startCol = (col ~/ 3) * 3;
     for (var r = startRow; r < startRow + 3; r++) {
       for (var c = startCol; c < startCol + 3; c++) {
-        final peer = _index(r, c);
+        final peer = getIndex(r, c);
         if (peer != index) {
           _removeNote(peer, target);
         }
@@ -623,187 +511,10 @@ class SudokuBoardState extends ChangeNotifier {
     final updated = {...cell.notes}..remove(note);
     _cells[index] = cell.withNotes(updated);
   }
-
-  bool _setsEqual(Set<int> a, Set<int> b) {
-    if (a.length != b.length) {
-      return false;
-    }
-    for (final value in a) {
-      if (!b.contains(value)) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  void _restoreNotesAround(int index, int value) {
-    final row = index ~/ size;
-    final col = index % size;
-
-    for (var c = 0; c < size; c++) {
-      final peer = _index(row, c);
-      if (peer != index) {
-        _addNoteIfCandidate(peer, value);
-      }
-    }
-    for (var r = 0; r < size; r++) {
-      final peer = _index(r, col);
-      if (peer != index) {
-        _addNoteIfCandidate(peer, value);
-      }
-    }
-    final startRow = (row ~/ 3) * 3;
-    final startCol = (col ~/ 3) * 3;
-    for (var r = startRow; r < startRow + 3; r++) {
-      for (var c = startCol; c < startCol + 3; c++) {
-        final peer = _index(r, c);
-        if (peer != index) {
-          _addNoteIfCandidate(peer, value);
-        }
-      }
-    }
-  }
-
-  void _addNoteIfCandidate(int index, int value) {
-    final cell = _cells[index];
-    if (cell.value != null || cell.isGiven) {
-      return;
-    }
-    final row = index ~/ size;
-    final col = index % size;
-    final candidates = _candidatesFor(row, col);
-    if (!candidates.contains(value)) {
-      return;
-    }
-    if (cell.notes.contains(value)) {
-      return;
-    }
-    final updated = {...cell.notes}..add(value);
-    _cells[index] = cell.withNotes(updated);
-  }
-
-  @override
-  void dispose() {
-    _pendingAutoSingles = false;
-    _isAnimatingSingles = false;
-    _autoFillHighlightIndex = null;
-    _isDisposed = true;
-    super.dispose();
-  }
-
-  void resetBoard() {
-    if (_currentPuzzle == null) {
-      return;
-    }
-    _initFromPuzzle(_currentPuzzle!);
-  }
-
-  bool undo() {
-    if (_isAnimatingSingles || _history.isEmpty) {
-      return false;
-    }
-    clearHint();
-    final snapshot = _history.removeLast();
-    for (var i = 0; i < _cells.length; i++) {
-      _cells[i] = snapshot.cells[i];
-    }
-    _selectedIndex = snapshot.selectedIndex;
-    _status = snapshot.status;
-    _pendingAutoSingles = false;
-    _autoFillHighlightIndex = null;
-    _emitChange();
-    return true;
-  }
-
-  void _pushSnapshot() {
-    _history.add(_makeSnapshot());
-  }
-
-  void _evaluateCompletion() {
-    if (_status == GameStatus.lost || _currentPuzzle == null) {
-      return;
-    }
-    for (final cell in _cells) {
-      if (cell.value == null) {
-        return;
-      }
-    }
-    final solution = _currentPuzzle!.solution;
-    for (var index = 0; index < _cells.length; index++) {
-      final expected = int.tryParse(solution[index]);
-      if (expected == null || _cells[index].value != expected) {
-        return;
-      }
-    }
-    _status = GameStatus.won;
-  }
-
-  void clearHint() {
-    _hint = null;
-    _emitChange();
-  }
-
-  _BoardSnapshot _makeSnapshot() {
-    final cellsCopy = List<SudokuCell>.generate(_cells.length, (index) {
-      final cell = _cells[index];
-      return SudokuCell(
-        value: cell.value,
-        notes: cell.notes,
-        isGiven: cell.isGiven,
-      );
-    });
-    return _BoardSnapshot(
-      cells: cellsCopy,
-      selectedIndex: _selectedIndex,
-      status: _status,
-    );
-  }
-
-  bool _applyHintToBoard(
-    Hint hint, {
-    required bool triggerAutomation,
-    required bool emitChange,
-  }) {
-    var mutated = false;
-
-    for (final (index, digit) in hint.placements) {
-      if (index < 0 || index >= _cells.length) continue;
-      final cell = _cells[index];
-      if (cell.isGiven || cell.value == digit) continue;
-      _cells[index] = cell.withValue(digit);
-      _pruneNotesAround(index, digit);
-      mutated = true;
-    }
-
-    for (final (index, digit) in hint.eliminations) {
-      if (index < 0 || index >= _cells.length) continue;
-      final cell = _cells[index];
-      if (cell.value != null || !cell.notes.contains(digit)) continue;
-      final updatedNotes = {...cell.notes}..remove(digit);
-      _cells[index] = cell.withNotes(updatedNotes);
-      mutated = true;
-    }
-
-    if (!mutated) return false;
-
-    _status = GameStatus.playing;
-    if (triggerAutomation) {
-      _scheduleAutoSingles();
-      _evaluateCompletion();
-    }
-    if (emitChange) _emitChange();
-    return true;
-  }
 }
 
-class _BoardSnapshot {
-  _BoardSnapshot({
-    required this.cells,
-    required this.selectedIndex,
-    required this.status,
-  });
+class BoardSnapshot {
+  BoardSnapshot({required this.cells});
 
   final List<SudokuCell> cells;
-  final int? selectedIndex;
-  final GameStatus status;
 }

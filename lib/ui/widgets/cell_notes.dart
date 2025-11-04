@@ -1,17 +1,18 @@
 import 'package:auto_sudoku/state/sudoku_board_state.dart';
-import 'package:auto_sudoku/ui/theme/sudoku_theme.dart';
+import 'package:auto_sudoku/ui/highlighters/grid_highlighter.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class CellNotes extends StatelessWidget {
   final int index;
   final Set<int> activeNotes;
-  final SudokuTheme sudokuTheme;
+  final CellViewModel viewModel;
+
   const CellNotes({
     super.key,
     required this.index,
     required this.activeNotes,
-    required this.sudokuTheme,
+    required this.viewModel,
   });
   @override
   Widget build(BuildContext context) {
@@ -29,15 +30,16 @@ class CellNotes extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.max,
                 children: List.generate(3, (col) {
-                  final digit = digits[row * 3 + col];
+                  final index = row * 3 + col;
+                  final digit = digits[index];
                   return _CellNote(
                     index: index,
                     width: cellWidth,
                     height: cellHeight,
                     isActive: activeNotes.contains(digit),
+                    viewModel: viewModel.notes[index],
                     state: board,
                     digit: digit,
-                    sudokuTheme: sudokuTheme,
                   );
                 }),
               ),
@@ -56,7 +58,7 @@ class _CellNote extends StatelessWidget {
   final SudokuBoardState state;
   final double width;
   final double height;
-  final SudokuTheme sudokuTheme;
+  final CellNoteViewModel viewModel;
   const _CellNote({
     required this.index,
     required this.digit,
@@ -64,30 +66,29 @@ class _CellNote extends StatelessWidget {
     required this.state,
     required this.width,
     required this.height,
-    required this.sudokuTheme,
+    required this.viewModel,
   });
   @override
   Widget build(BuildContext context) {
-    final board = Provider.of<SudokuBoardState>(context);
-    final hint = board.hint;
-    final isMatching =
-        board.selectedValue != null && board.selectedValue == digit;
-    final isElimination =
-        hint != null && hint.eliminations.contains((index, digit));
-    final isClue =
-        hint != null &&
-        hint.cells.contains(index) &&
-        hint.digits.contains(digit);
-    final isBig = isMatching || isElimination || isClue;
-    final fontSize = height * (isBig ? .825 : .66);
-    final fontWeight = isBig ? FontWeight.w700 : FontWeight.w500;
-    final fontColor = isElimination
-        ? sudokuTheme.noteEliminationTextColor
-        : (isClue
-              ? sudokuTheme.noteClueTextColor
-              : (isMatching
-                    ? sudokuTheme.noteHighlightTextColor
-                    : sudokuTheme.noteDefaultColor));
+    // final hint = board.hint;
+    // final isMatching =
+    //     board.selectedValue != null && board.selectedValue == digit;
+    // final isElimination =
+    //     hint != null && hint.eliminations.contains((index, digit));
+    // final isClue =
+    //     hint != null &&
+    //     hint.cells.contains(index) &&
+    //     hint.digits.contains(digit);
+    // final isBig = isMatching || isElimination || isClue;
+    // final fontSize = height * (isBig ? .825 : .66);
+    // final fontWeight = isBig ? FontWeight.w700 : FontWeight.w500;
+    // final fontColor = isElimination
+    //     ? sudokuTheme.noteEliminationTextColor
+    //     : (isClue
+    //           ? sudokuTheme.noteClueTextColor
+    //           : (isMatching
+    //                 ? sudokuTheme.noteHighlightTextColor
+    //                 : sudokuTheme.noteDefaultColor));
     return SizedBox(
       width: width,
       height: height,
@@ -96,12 +97,12 @@ class _CellNote extends StatelessWidget {
             ? Text(
                 "${digit ?? ""}",
                 style: TextStyle(
-                  fontSize: fontSize,
-                  color: fontColor,
-                  fontWeight: fontWeight,
+                  fontSize: (viewModel.scale ?? 1) * 10,
+                  color: viewModel.textColor,
+                  fontWeight: viewModel.fontWeight,
                 ),
               )
-            : SizedBox.shrink(),
+            : SizedBox.expand(),
       ),
     );
   }
