@@ -23,11 +23,11 @@ void main() {
       expect(hint, isNotNull);
       expect(hint!.strategy, StrategyType.hiddenSingle);
       expect(hint.placements, isNotNull);
-      expect(hint.placements, contains((cell, 5)));
+      expect(hint.placements[cell], 5);
 
       final hintFromClues = strat.getHintFromClues(h.s, h.cand, [cell]);
       expect(hintFromClues, isNotNull);
-      expect(hintFromClues!.placements, contains((cell, 5)));
+      expect(hintFromClues!.placements[cell], 5);
     });
 
     test('Hidden Pair in a row: eliminations inside the pair cells', () {
@@ -58,14 +58,10 @@ void main() {
       expect(hint.digits.toSet(), {3, 7});
 
       // Eliminations are within the pair cells: remove non {3,7}
-      final elim = hint.eliminations.toSet();
-      expect(elim.contains((a, 9)), isTrue);
-      expect(elim.contains((b, 1)), isTrue);
-      // Should not eliminate 3 or 7 from the pair cells.
-      expect(elim.contains((a, 3)), isFalse);
-      expect(elim.contains((a, 7)), isFalse);
-      expect(elim.contains((b, 3)), isFalse);
-      expect(elim.contains((b, 7)), isFalse);
+      final elim = hint.eliminations;
+      expect(elim.length, 2);
+      expect(elim[a], {9});
+      expect(elim[b], {1});
 
       // getHintFromClues path mirrors the same outcome
       final fromClues = strat.getHintFromClues(h.s, h.cand, [a, b]);
@@ -102,10 +98,10 @@ void main() {
       expect(hint.cells.toSet(), {a, b, c});
       expect(hint.digits.toSet(), {1, 4, 6});
 
-      final elim = hint.eliminations.toSet();
+      final elim = hint.eliminations;
       // Eliminations are candidates in those cells not among {1,4,6}
-      expect(elim.contains((a, 9)), isTrue);
-      expect(elim.contains((c, 8)), isTrue);
+      expect(elim[a], {9});
+      expect(elim[c], {8});
 
       final fromClues = strat.getHintFromClues(h.s, h.cand, [a, b, c]);
       expect(fromClues, isNotNull);
@@ -145,9 +141,9 @@ void main() {
       expect(hint.cells.toSet(), {a, b, c, d});
       expect(hint.digits.toSet(), {2, 4, 6, 9});
 
-      final elim = hint.eliminations.toSet();
-      expect(elim.contains((a, 8)), isTrue);
-      expect(elim.contains((d, 1)), isTrue);
+      final elim = hint.eliminations;
+      expect(elim[a], {8});
+      expect(elim[d], {1});
 
       final fromClues = strat.getHintFromClues(h.s, h.cand, [a, b, c, d]);
       expect(fromClues, isNotNull);

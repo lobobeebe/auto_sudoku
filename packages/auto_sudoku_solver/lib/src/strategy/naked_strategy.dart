@@ -87,20 +87,12 @@ abstract class NakedStrategy extends Strategy {
     if (inSameCol) collect(s.colIndices(baseCol), HintUnit.column);
     if (inSameBox) collect(s.boxIndices(baseBox), HintUnit.box);
 
-    // Flatten eliminations
-    final eliminations = <(int, int)>[];
-    for (final e in eliminationsMap.entries) {
-      for (final d in e.value) {
-        eliminations.add((e.key, d));
-      }
-    }
-
-    if (eliminations.isEmpty) return null;
+    if (eliminationsMap.isEmpty) return null;
 
     final digits = union.toList()..sort();
     return Hint(
       type,
-      eliminations: eliminations,
+      eliminations: eliminationsMap,
       cells: List<int>.from(indices),
       digits: digits,
       unit: chosenUnit,
@@ -140,11 +132,13 @@ abstract class NakedStrategy extends Strategy {
       if (!validSize || union.length != k) continue;
 
       // Gather eliminations from the rest of the unit
-      final eliminations = <(int, int)>[];
+      final eliminations = <int, Set<int>>{};
       for (final i in empties) {
         if (combo.contains(i)) continue;
         for (final d in union) {
-          if (cand[i].contains(d)) eliminations.add((i, d));
+          if (cand[i].contains(d)) {
+            eliminations.putIfAbsent(i, () => {}).add(d);
+          }
         }
       }
       if (eliminations.isEmpty) continue;
@@ -272,8 +266,8 @@ class NakedSingleStrategy extends Strategy {
         final d = cands.first;
         return Hint(
           StrategyType.nakedSingle,
-          eliminations: const <(int, int)>[],
-          placements: [(i, d)],
+          eliminations: const <int, Set<int>>{},
+          placements: {i: d},
           cells: [i],
           digits: [d],
           unit: null,
@@ -293,7 +287,8 @@ class NakedSingleStrategy extends Strategy {
     final d = cands.first;
     return Hint(
       StrategyType.nakedSingle,
-      eliminations: const <(int, int)>[],
+      eliminations: const <int, Set<int>>{},
+      placements: {i: d},
       cells: [i],
       digits: [d],
       unit: null,

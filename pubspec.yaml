@@ -38,6 +38,7 @@ dependencies:
   
   auto_sudoku_solver:
     path: packages/auto_sudoku_solver
+  ultimate_flutter_icons: ^1.4.0
 
 dev_dependencies:
   flutter_test:

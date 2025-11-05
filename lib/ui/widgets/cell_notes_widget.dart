@@ -1,14 +1,14 @@
+import 'package:auto_sudoku/data/cell_view_model.dart';
 import 'package:auto_sudoku/state/sudoku_board_state.dart';
-import 'package:auto_sudoku/ui/highlighters/grid_highlighter.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-class CellNotes extends StatelessWidget {
+class CellNotesWidget extends StatelessWidget {
   final int index;
   final Set<int> activeNotes;
   final CellViewModel viewModel;
 
-  const CellNotes({
+  const CellNotesWidget({
     super.key,
     required this.index,
     required this.activeNotes,
@@ -70,25 +70,6 @@ class _CellNote extends StatelessWidget {
   });
   @override
   Widget build(BuildContext context) {
-    // final hint = board.hint;
-    // final isMatching =
-    //     board.selectedValue != null && board.selectedValue == digit;
-    // final isElimination =
-    //     hint != null && hint.eliminations.contains((index, digit));
-    // final isClue =
-    //     hint != null &&
-    //     hint.cells.contains(index) &&
-    //     hint.digits.contains(digit);
-    // final isBig = isMatching || isElimination || isClue;
-    // final fontSize = height * (isBig ? .825 : .66);
-    // final fontWeight = isBig ? FontWeight.w700 : FontWeight.w500;
-    // final fontColor = isElimination
-    //     ? sudokuTheme.noteEliminationTextColor
-    //     : (isClue
-    //           ? sudokuTheme.noteClueTextColor
-    //           : (isMatching
-    //                 ? sudokuTheme.noteHighlightTextColor
-    //                 : sudokuTheme.noteDefaultColor));
     return SizedBox(
       width: width,
       height: height,
@@ -100,6 +81,7 @@ class _CellNote extends StatelessWidget {
                   fontSize: (viewModel.scale ?? 1) * 10,
                   color: viewModel.textColor,
                   fontWeight: viewModel.fontWeight,
+                  height: .5,
                 ),
               )
             : SizedBox.expand(),

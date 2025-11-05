@@ -1,6 +1,9 @@
+import 'package:auto_sudoku/data/cell_view_model.dart';
 import 'package:auto_sudoku/data/sudoku_puzzle_model.dart';
 import 'package:auto_sudoku/state/board_mode.dart';
-import 'package:auto_sudoku/ui/highlighters/grid_highlighter.dart';
+import 'package:auto_sudoku/state/board_state/loading_state.dart';
+import 'package:auto_sudoku/ui/theme/sudoku_theme.dart';
+import 'package:auto_sudoku/ui/widgets/strategy_category_popup_menu.dart';
 import 'package:auto_sudoku_solver/auto_sudoku_solver.dart';
 import 'package:flutter/material.dart';
 
@@ -23,6 +26,7 @@ class SudokuCell {
 
 class SudokuBoardState extends ChangeNotifier {
   static const int size = 9;
+  final bool shouldAnimate = false;
 
   final List<SudokuCell> _cells = List.generate(
     size * size,
@@ -40,9 +44,7 @@ class SudokuBoardState extends ChangeNotifier {
 
   // Solver for finding singles
   final Solver _singleSolver = Solver(
-    settings: SolverSettings(
-      allowed: {StrategyType.hiddenSingle, StrategyType.nakedSingle},
-    ),
+    settings: SolverSettings(allowed: {StrategyType.nakedSingle}),
   );
 
   SudokuBoardState() {
@@ -62,6 +64,8 @@ class SudokuBoardState extends ChangeNotifier {
       super.notifyListeners();
     }
   }
+
+  StrategyCategory? strategyCategory = StrategyCategory.naked;
 
   SudokuPuzzleModel? get currentPuzzle => _currentPuzzle;
   List<int> get selectedIndices => _selectedIndices;
@@ -94,7 +98,6 @@ class SudokuBoardState extends ChangeNotifier {
   bool get allowUndo => _mode.allowUndo() && _history.isNotEmpty;
   bool get allowRequestHint => _mode.allowRequestHint();
   bool get isNoteMode => _mode.isNoteMode();
-  GridHighlighter get highlighter => _mode.getGridHighlighter();
 
   String get difficulty => _currentPuzzle?.difficulty.toString() ?? 'Unknown';
 
@@ -130,12 +133,20 @@ class SudokuBoardState extends ChangeNotifier {
     return false;
   }
 
-  void requestSetHint(Hint hint) {
+  void requestSetHint(Hint? hint) {
+    if (hint == null) {
+      requestClearHint();
+      return;
+    }
     _mode.onRequestSetHint(hint);
   }
 
   bool requestApplyCurrentHint() {
     return _mode.onRequestApplyCurrentHint();
+  }
+
+  void requestStrategyCategory(StrategyCategory category) {
+    return _mode.onRequestStrategyCategory(category);
   }
 
   bool allowReset() => _mode.allowReset();
@@ -158,6 +169,9 @@ class SudokuBoardState extends ChangeNotifier {
   }
 
   Widget buildBottomBar() => _mode.buildBottomBar();
+
+  CellViewModel buildCellViewModel(int index, SudokuTheme theme) =>
+      _mode.buildCellViewModel(index, theme);
 
   bool canPressDigit(int digit) => _mode.canPressDigit(digit);
 
@@ -265,6 +279,13 @@ class SudokuBoardState extends ChangeNotifier {
 
   bool isIndexSelected(int index) {
     return _selectedIndices.contains(index);
+  }
+
+  bool isPeerWithAnySelected(int index) {
+    if (_selectedIndices.isEmpty) return false;
+    return _selectedIndices.any(
+      (selectedIndex) => arePeers(selectedIndex, index),
+    );
   }
 
   bool isPeerWithAllSelected(int index) {
@@ -410,6 +431,14 @@ class SudokuBoardState extends ChangeNotifier {
     _history.add(snapshot ?? makeSnapshot());
   }
 
+  bool canWinBySingles() {
+    final result = _singleSolver.solveLogical(
+      Sudoku(toValueList(), notes: toNotesList()),
+    );
+
+    return result.solved;
+  }
+
   GameResult? evaluateResult() {
     if (_currentPuzzle == null) {
       return null;
@@ -421,7 +450,7 @@ class SudokuBoardState extends ChangeNotifier {
         return null;
       }
     }
-
+    bool hasEmptyCells = false;
     // Evaluate against the solution
     final solution = _currentPuzzle!.solution;
     for (var index = 0; index < _cells.length; index++) {
@@ -429,9 +458,13 @@ class SudokuBoardState extends ChangeNotifier {
       if (expected == null || _cells[index].value != expected) {
         return GameResult.lost;
       }
+
+      if (_cells[index].value == null) {
+        hasEmptyCells = true;
+      }
     }
 
-    return GameResult.won;
+    return hasEmptyCells ? null : GameResult.won;
   }
 
   BoardSnapshot makeSnapshot() {
@@ -449,7 +482,10 @@ class SudokuBoardState extends ChangeNotifier {
   bool applyHintToBoard(Hint hint) {
     var mutated = false;
 
-    for (final (index, digit) in hint.placements) {
+    for (final entry in hint.placements.entries) {
+      final index = entry.key;
+      final digit = entry.value;
+
       if (index < 0 || index >= _cells.length) continue;
       final cell = _cells[index];
       if (cell.isGiven || cell.value == digit) continue;
@@ -458,13 +494,16 @@ class SudokuBoardState extends ChangeNotifier {
       mutated = true;
     }
 
-    for (final (index, digit) in hint.eliminations) {
-      if (index < 0 || index >= _cells.length) continue;
-      final cell = _cells[index];
-      if (cell.value != null || !cell.notes.contains(digit)) continue;
-      final updatedNotes = {...cell.notes}..remove(digit);
-      _cells[index] = cell.withNotes(updatedNotes);
-      mutated = true;
+    for (final entry in hint.eliminations.entries) {
+      final index = entry.key;
+      for (final digit in entry.value) {
+        if (index < 0 || index >= _cells.length) continue;
+        final cell = _cells[index];
+        if (cell.value != null || !cell.notes.contains(digit)) continue;
+        final updatedNotes = {...cell.notes}..remove(digit);
+        _cells[index] = cell.withNotes(updatedNotes);
+        mutated = true;
+      }
     }
 
     return mutated;

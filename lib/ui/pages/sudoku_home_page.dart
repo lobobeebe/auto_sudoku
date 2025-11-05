@@ -1,26 +1,12 @@
 import 'package:auto_sudoku/ui/widgets/background_orb.dart';
-import 'package:auto_sudoku/ui/widgets/control_bar.dart';
-import 'package:auto_sudoku/ui/widgets/interactive_strategy_card.dart';
 import 'package:flutter/material.dart';
 
 import 'package:auto_sudoku/state/sudoku_board_state.dart';
-import 'package:auto_sudoku/ui/utils/feedback.dart';
-import 'package:auto_sudoku/ui/widgets/action_bar.dart';
-import 'package:auto_sudoku/ui/widgets/hint_steps_panel.dart';
-import 'package:auto_sudoku/ui/widgets/number_pad.dart';
 import 'package:auto_sudoku/ui/widgets/sudoku_grid.dart';
-import 'package:auto_sudoku_solver/auto_sudoku_solver.dart';
 import 'package:provider/provider.dart';
 
-class SudokuHomePage extends StatefulWidget {
+class SudokuHomePage extends StatelessWidget {
   const SudokuHomePage({super.key});
-
-  @override
-  State<SudokuHomePage> createState() => _SudokuHomePageState();
-}
-
-class _SudokuHomePageState extends State<SudokuHomePage> {
-  final Solver _solver = Solver();
 
   @override
   Widget build(BuildContext context) {
@@ -129,7 +115,6 @@ class _SudokuHomePageState extends State<SudokuHomePage> {
           key: const ValueKey('puzzle'),
           constraints: const BoxConstraints(maxWidth: 1120),
           child: Column(
-            mainAxisSize: MainAxisSize.max,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(child: _buildBoardCard(context)),
@@ -160,32 +145,6 @@ class _SudokuHomePageState extends State<SudokuHomePage> {
   }
 
   Widget _buildControlsCard(BuildContext context, SudokuBoardState board) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    Widget wrapCard({required Key key, required Widget child}) {
-      return Container(
-        key: key,
-        height: 162,
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(28),
-          color: colorScheme.surface.withValues(alpha: 0.94),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
-              blurRadius: 26,
-              offset: const Offset(0, 16),
-            ),
-          ],
-          border: Border.all(
-            color: colorScheme.outlineVariant.withValues(alpha: 0.18),
-          ),
-        ),
-        child: child,
-      );
-    }
-
     Widget bottomBar = board.buildBottomBar();
 
     return AnimatedSwitcher(

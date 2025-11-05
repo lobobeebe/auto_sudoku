@@ -11,7 +11,6 @@ class CommonContainer extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     return Container(
-      height: 162,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(28),

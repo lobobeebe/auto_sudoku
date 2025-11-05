@@ -100,11 +100,14 @@ abstract class HiddenStrategy extends Strategy {
     if (targetDigits.length != k) return null;
 
     // Eliminations: in the selected cells, remove candidates not among the target digits.
-    final elim = <(int, int)>[];
+    final elim = <int, Set<int>>{};
     final digitSet = targetDigits.toSet();
     for (final i in indices) {
       for (final cnd in cand[i]) {
-        if (!digitSet.contains(cnd)) elim.add((i, cnd));
+        if (!digitSet.contains(cnd)) {
+          elim.putIfAbsent(i, () => {});
+          elim[i]!.add((cnd));
+        }
       }
     }
     if (elim.isEmpty) return null;
@@ -178,11 +181,14 @@ abstract class HiddenStrategy extends Strategy {
         if (posSet.length != k) return;
 
         // Eliminations: within those cells, drop candidates not in chosen digits.
-        final elim = <(int, int)>[];
+        final elim = <int, Set<int>>{};
         final digitSet = pick.toSet();
         for (final i in posSet) {
           for (final cnd in cand[i]) {
-            if (!digitSet.contains(cnd)) elim.add((i, cnd));
+            if (!digitSet.contains(cnd)) {
+              elim.putIfAbsent(i, () => {});
+              elim[i]!.add(cnd);
+            }
           }
         }
         if (elim.isEmpty) return;
@@ -234,7 +240,7 @@ class HiddenSingleStrategy extends Strategy {
           final cell = pos.first;
           return Hint(
             StrategyType.hiddenSingle,
-            placements: [(cell, d)],
+            placements: {cell: d},
             cells: [cell],
             digits: [d],
             unit: unitType,
@@ -280,7 +286,7 @@ class HiddenSingleStrategy extends Strategy {
         if (count == 1 && onlyHere) {
           return Hint(
             StrategyType.hiddenSingle,
-            placements: [(i, d)],
+            placements: {i: d},
             cells: [i],
             digits: [d],
             unit: unitType,

@@ -45,16 +45,20 @@ Hint? _pointingFromClues(Sudoku s, CandidateMap cand, List<int> indices) {
     }
     if (inBox.isEmpty) continue;
     final set = inBox.toSet();
-    if (!indexSet.containsAll(set))
+    if (!indexSet.containsAll(set)) {
       continue; // clues must cover all box candidates
+    }
 
     // eliminations: along the row/col outside the box
-    final elim = <(int, int)>[];
+    final elim = <int, Set<int>>{};
     if (sameRow) {
       final r = _rowOf(indices.first);
       for (final i in s.rowIndices(r)) {
         if (_boxOf(i) == box) continue;
-        if (s.cells[i] == 0 && cand[i].contains(d)) elim.add((i, d));
+        if (s.cells[i] == 0 && cand[i].contains(d)) {
+          elim.putIfAbsent(i, () => {});
+          elim[i]!.add(d);
+        }
       }
       if (elim.isEmpty) continue;
       return Hint(
@@ -68,7 +72,10 @@ Hint? _pointingFromClues(Sudoku s, CandidateMap cand, List<int> indices) {
       final c = _colOf(indices.first);
       for (final i in s.colIndices(c)) {
         if (_boxOf(i) == box) continue;
-        if (s.cells[i] == 0 && cand[i].contains(d)) elim.add((i, d));
+        if (s.cells[i] == 0 && cand[i].contains(d)) {
+          elim.putIfAbsent(i, () => {});
+          elim[i]!.add(d);
+        }
       }
       if (elim.isEmpty) continue;
       return Hint(
@@ -107,10 +114,14 @@ Hint? _claimingFromClues(Sudoku s, CandidateMap cand, List<int> indices) {
       if (!inRow.every((i) => _boxOf(i) == box && indexSet.contains(i)))
         continue;
 
-      final elim = <(int, int)>[];
+      final elim = <int, Set<int>>{};
       for (final i in s.boxIndices(box)) {
         if (_rowOf(i) == r) continue;
-        if (s.cells[i] == 0 && cand[i].contains(d)) elim.add((i, d));
+        if (s.cells[i] == 0 && cand[i].contains(d)) {
+          elim.putIfAbsent(i, () => {});
+          elim[i]!.add(d);
+        }
+        ;
       }
       if (elim.isEmpty) continue;
       return Hint(
@@ -130,10 +141,14 @@ Hint? _claimingFromClues(Sudoku s, CandidateMap cand, List<int> indices) {
       if (!inCol.every((i) => _boxOf(i) == box && indexSet.contains(i)))
         continue;
 
-      final elim = <(int, int)>[];
+      final elim = <int, Set<int>>{};
       for (final i in s.boxIndices(box)) {
         if (_colOf(i) == c) continue;
-        if (s.cells[i] == 0 && cand[i].contains(d)) elim.add((i, d));
+        if (s.cells[i] == 0 && cand[i].contains(d)) {
+          elim.putIfAbsent(i, () => {});
+          elim[i]!.add(d);
+        }
+        ;
       }
       if (elim.isEmpty) continue;
       return Hint(
@@ -170,10 +185,14 @@ class PointingStrategy extends Strategy {
         final rows = inBox.map(_rowOf).toSet();
         if (rows.length == 1) {
           final r = rows.first;
-          final elim = <(int, int)>[];
+          final elim = <int, Set<int>>{};
           for (final i in s.rowIndices(r)) {
             if (_boxOf(i) == b) continue;
-            if (s.cells[i] == 0 && cand[i].contains(d)) elim.add((i, d));
+            if (s.cells[i] == 0 && cand[i].contains(d)) {
+              elim.putIfAbsent(i, () => {});
+              elim[i]!.add(d);
+            }
+            ;
           }
           if (elim.isNotEmpty) {
             return Hint(
@@ -188,10 +207,14 @@ class PointingStrategy extends Strategy {
         final cols = inBox.map(_colOf).toSet();
         if (cols.length == 1) {
           final c = cols.first;
-          final elim = <(int, int)>[];
+          final elim = <int, Set<int>>{};
           for (final i in s.colIndices(c)) {
             if (_boxOf(i) == b) continue;
-            if (s.cells[i] == 0 && cand[i].contains(d)) elim.add((i, d));
+            if (s.cells[i] == 0 && cand[i].contains(d)) {
+              elim.putIfAbsent(i, () => {});
+              elim[i]!.add(d);
+            }
+            ;
           }
           if (elim.isNotEmpty) {
             return Hint(
@@ -236,10 +259,14 @@ class ClaimingStrategy extends Strategy {
         final boxes = rowCells.map(_boxOf).toSet();
         if (boxes.length == 1) {
           final b = boxes.first;
-          final elim = <(int, int)>[];
+          final elim = <int, Set<int>>{};
           for (final i in s.boxIndices(b)) {
             if (_rowOf(i) == r) continue;
-            if (s.cells[i] == 0 && cand[i].contains(d)) elim.add((i, d));
+            if (s.cells[i] == 0 && cand[i].contains(d)) {
+              elim.putIfAbsent(i, () => {});
+              elim[i]!.add(d);
+            }
+            ;
           }
           if (elim.isNotEmpty) {
             return Hint(
@@ -265,10 +292,14 @@ class ClaimingStrategy extends Strategy {
         final boxes = colCells.map(_boxOf).toSet();
         if (boxes.length == 1) {
           final b = boxes.first;
-          final elim = <(int, int)>[];
+          final elim = <int, Set<int>>{};
           for (final i in s.boxIndices(b)) {
             if (_colOf(i) == c) continue;
-            if (s.cells[i] == 0 && cand[i].contains(d)) elim.add((i, d));
+            if (s.cells[i] == 0 && cand[i].contains(d)) {
+              elim.putIfAbsent(i, () => {});
+              elim[i]!.add(d);
+            }
+            ;
           }
           if (elim.isNotEmpty) {
             return Hint(

@@ -15,21 +15,13 @@ class HintStepsPanel extends StatefulWidget {
 }
 
 class _HintStepsPanelState extends State<HintStepsPanel> {
-  late final PageController _controller;
   late final TechniqueExplanation _explanation;
 
   @override
   void initState() {
     super.initState();
-    _controller = PageController();
 
     _explanation = explainTechnique(widget.hint);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
   }
 
   @override
@@ -67,13 +59,6 @@ class _HintStepsPanelState extends State<HintStepsPanel> {
                 icon: const Icon(Icons.check),
               ),
             ],
-          ),
-          Flexible(
-            fit: FlexFit.loose,
-            child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: SingleChildScrollView(child: Text(_explanation.overview)),
-            ),
           ),
         ],
       ),

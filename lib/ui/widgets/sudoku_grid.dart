@@ -1,5 +1,6 @@
-import 'package:auto_sudoku/ui/highlighters/grid_highlighter.dart';
-import 'package:auto_sudoku/ui/widgets/cell_notes.dart';
+import 'package:auto_sudoku/data/cell_view_model.dart';
+import 'package:auto_sudoku/ui/theme/sudoku_theme.dart';
+import 'package:auto_sudoku/ui/widgets/cell_notes_widget.dart';
 import 'package:flutter/material.dart';
 
 import 'package:auto_sudoku/state/sudoku_board_state.dart';
@@ -11,8 +12,8 @@ class SudokuGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final board = Provider.of<SudokuBoardState>(context, listen: false);
-    final highlighter = board.highlighter;
+    final board = Provider.of<SudokuBoardState>(context);
+    final theme = SudokuTheme.of(context);
 
     return Center(
       child: AspectRatio(
@@ -45,61 +46,57 @@ class SudokuGrid extends StatelessWidget {
                     final col = index % SudokuBoardState.size;
                     final cell = board.getCellAt(row, col);
 
-                    CellViewModel cellVM = highlighter.getByIndex(
-                      context,
+                    CellViewModel cellVM = board.buildCellViewModel(
                       index,
+                      theme,
                     );
 
-                    return Builder(
-                      builder: (context) {
-                        final background = cellVM.backgroundColor;
+                    final background = cellVM.backgroundColor;
 
-                        final borderColor = colorScheme.outlineVariant;
-                        final border = Border(
-                          top: BorderSide(
-                            color: borderColor,
-                            width: row == 0 ? 2 : (row % 3 == 0 ? 1.5 : 0.5),
-                          ),
-                          left: BorderSide(
-                            color: borderColor,
-                            width: col == 0 ? 2 : (col % 3 == 0 ? 1.5 : 0.5),
-                          ),
-                          right: BorderSide(
-                            color: borderColor,
-                            width: col == SudokuBoardState.size - 1
-                                ? 2
-                                : ((col + 1) % 3 == 0 ? 1.5 : 0.5),
-                          ),
-                          bottom: BorderSide(
-                            color: borderColor,
-                            width: row == SudokuBoardState.size - 1
-                                ? 2
-                                : ((row + 1) % 3 == 0 ? 1.5 : 0.5),
-                          ),
-                        );
+                    final borderColor = colorScheme.outlineVariant;
+                    final border = Border(
+                      top: BorderSide(
+                        color: borderColor,
+                        width: row == 0 ? 2 : (row % 3 == 0 ? 1.5 : 0.5),
+                      ),
+                      left: BorderSide(
+                        color: borderColor,
+                        width: col == 0 ? 2 : (col % 3 == 0 ? 1.5 : 0.5),
+                      ),
+                      right: BorderSide(
+                        color: borderColor,
+                        width: col == SudokuBoardState.size - 1
+                            ? 2
+                            : ((col + 1) % 3 == 0 ? 1.5 : 0.5),
+                      ),
+                      bottom: BorderSide(
+                        color: borderColor,
+                        width: row == SudokuBoardState.size - 1
+                            ? 2
+                            : ((row + 1) % 3 == 0 ? 1.5 : 0.5),
+                      ),
+                    );
 
-                        return GestureDetector(
-                          onTap: () => board.requestSelectCell(row, col),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 180),
-                            curve: Curves.easeOut,
-                            decoration: BoxDecoration(
-                              color: background,
-                              border: border,
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(2),
-                              child: cell != null
-                                  ? SudokuCellContents(
-                                      index: index,
-                                      cell: cell,
-                                      viewModel: cellVM,
-                                    )
-                                  : SizedBox(),
-                            ),
-                          ),
-                        );
-                      },
+                    return GestureDetector(
+                      onTap: () => board.requestSelectCell(row, col),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        curve: Curves.easeOut,
+                        decoration: BoxDecoration(
+                          color: background,
+                          border: border,
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(2),
+                          child: cell != null
+                              ? SudokuCellContents(
+                                  index: index,
+                                  cell: cell,
+                                  viewModel: cellVM,
+                                )
+                              : SizedBox(),
+                        ),
+                      ),
                     );
                   },
                 ),
@@ -153,7 +150,7 @@ class SudokuCellContents extends StatelessWidget {
           return const SizedBox.shrink();
         }
 
-        return CellNotes(
+        return CellNotesWidget(
           index: index,
           activeNotes: cell.notes,
           viewModel: viewModel,

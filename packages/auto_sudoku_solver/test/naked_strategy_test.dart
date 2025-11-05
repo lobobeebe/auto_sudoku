@@ -37,13 +37,14 @@ void main() {
       expect(hint.digits, [1, 2, 3]);
 
       // Eliminations expected at d: remove 1 and 3; at e: remove 2.
-      final elimSet = hint.eliminations.toSet(); // Set<(index, digit)>
-      expect(elimSet.contains((d, 1)), isTrue);
-      expect(elimSet.contains((d, 3)), isTrue);
-      expect(elimSet.contains((e, 2)), isTrue);
+      final elims = hint.eliminations; // Set<(index, digit)>
+      expect(elims[d], {1, 3});
+      expect(elims[e], {2});
 
       // Ensure we never eliminate from the triple's own cells.
-      expect(elimSet.any((t) => {a, b, c}.contains(t.$1)), isFalse);
+      expect(elims.containsKey(a), isFalse);
+      expect(elims.containsKey(b), isFalse);
+      expect(elims.containsKey(c), isFalse);
     });
 
     test('Naked Pair in a column produces eliminations in that column', () {
@@ -71,11 +72,12 @@ void main() {
       expect(hint.cells.toSet(), {p1, p2});
       expect(hint.digits.toSet(), {5, 7});
 
-      final elimSet = hint.eliminations.toSet();
-      expect(elimSet.contains((x, 5)), isTrue);
-      expect(elimSet.contains((y, 7)), isTrue);
+      final elims = hint.eliminations;
+      expect(elims[x], {5});
+      expect(elims[y], {7});
       // Never eliminate from the pair cells.
-      expect(elimSet.any((t) => {p1, p2}.contains(t.$1)), isFalse);
+      expect(elims.containsKey(p1), isFalse);
+      expect(elims.containsKey(p2), isFalse);
     });
 
     test('Naked Quad in a box produces eliminations inside that box', () {
@@ -107,11 +109,13 @@ void main() {
       expect(hint.cells.toSet(), {q1, q2, q3, q4});
       expect(hint.digits.toSet(), {2, 4, 6, 9});
 
-      final elimSet = hint.eliminations.toSet();
-      expect(elimSet.contains((peer, 2)), isTrue);
-      expect(elimSet.contains((peer, 9)), isTrue);
+      final elims = hint.eliminations;
+      expect(elims[peer], {2, 9});
       // Never eliminate from the quad cells.
-      expect(elimSet.any((t) => {q1, q2, q3, q4}.contains(t.$1)), isFalse);
+      expect(elims.containsKey(q1), isFalse);
+      expect(elims.containsKey(q2), isFalse);
+      expect(elims.containsKey(q3), isFalse);
+      expect(elims.containsKey(q4), isFalse);
     });
   });
 
@@ -146,10 +150,10 @@ void main() {
       expect(cells.length, 3);
       expect(cells.containsAll({a, b, c}), isTrue);
 
-      final elim = hint.eliminations.toSet();
-      expect(elim.contains((peer1, 1)), isTrue);
-      expect(elim.contains((peer2, 2)), isTrue);
-      expect(elim.any((t) => cells.contains(t.$1)), isFalse);
+      final elims = hint.eliminations;
+      expect(elims[peer1], {1});
+      expect(elims[peer2], {2});
+      expect(cells.any((c) => elims.containsKey(c)), isFalse);
     });
 
     test('findHint: Naked Pair in a column', () {
@@ -179,10 +183,10 @@ void main() {
       expect(cells.length, 2);
       expect(cells.containsAll({p1, p2}), isTrue);
 
-      final elim = hint.eliminations.toSet();
-      expect(elim.contains((x, 5)), isTrue);
-      expect(elim.contains((y, 7)), isTrue);
-      expect(elim.any((t) => cells.contains(t.$1)), isFalse);
+      final elims = hint.eliminations;
+      expect(elims[x], {5});
+      expect(elims[y], {7});
+      expect(cells.any((c) => elims.containsKey(c)), isFalse);
     });
 
     test('findHint: Naked Quad in a box', () {
@@ -214,10 +218,9 @@ void main() {
       expect(cells.length, 4);
       expect(cells.containsAll({q1, q2, q3, q4}), isTrue);
 
-      final elim = hint.eliminations.toSet();
-      expect(elim.contains((peer, 2)), isTrue);
-      expect(elim.contains((peer, 9)), isTrue);
-      expect(elim.any((t) => cells.contains(t.$1)), isFalse);
+      final elims = hint.eliminations;
+      expect(elims[peer], {2, 9});
+      expect(cells.any((c) => elims.containsKey(c)), isFalse);
     });
   });
 }

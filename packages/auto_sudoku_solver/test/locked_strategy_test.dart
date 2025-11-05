@@ -33,7 +33,7 @@ void main() {
         expect(hint.unit, HintUnit.row);
         expect(hint.digits, [5]);
         // Eliminations include row 0, col 5 candidate 5
-        expect(hint.eliminations.toSet().contains((outsideR0, 5)), isTrue);
+        expect(hint.eliminations[outsideR0], {5});
         // Cells list are the in-box candidates for d
         expect(hint.cells.toSet().containsAll({a, b}), isTrue);
       },
@@ -64,7 +64,7 @@ void main() {
         expect(hint!.strategy, StrategyType.pointing);
         expect(hint.unit, HintUnit.column);
         expect(hint.digits, [7]);
-        expect(hint.eliminations.toSet().contains((outsideCol, 7)), isTrue);
+        expect(hint.eliminations[outsideCol], {7});
       },
     );
   });
@@ -96,7 +96,8 @@ void main() {
         expect(hint.unit, HintUnit.row);
         expect(hint.digits, [3]);
         // eliminations include peer cell removing 3
-        expect(hint.eliminations.toSet().contains((peer, 3)), isTrue);
+        expect(hint.eliminations.length, 1);
+        expect(hint.eliminations[peer], {3});
         expect(hint.cells.toSet().containsAll({a, b}), isTrue);
       },
     );
@@ -128,7 +129,7 @@ void main() {
       expect(hint!.strategy, StrategyType.claiming);
       expect(hint.unit, HintUnit.column);
       expect(hint.digits, [9]);
-      expect(hint.eliminations.toSet().contains((peer, 9)), isTrue);
+      expect(hint.eliminations[peer], {9});
     });
   });
 }
