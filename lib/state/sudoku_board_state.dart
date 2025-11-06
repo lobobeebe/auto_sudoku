@@ -65,7 +65,7 @@ class SudokuBoardState extends ChangeNotifier {
     }
   }
 
-  StrategyCategory? strategyCategory = StrategyCategory.naked;
+  StrategyCategory? strategyCategory = StrategyCategory.nakedHidden;
 
   SudokuPuzzleModel? get currentPuzzle => _currentPuzzle;
   List<int> get selectedIndices => _selectedIndices;
@@ -259,8 +259,8 @@ class SudokuBoardState extends ChangeNotifier {
 
       final row = index ~/ size;
       final col = index % size;
-      final candidates = _candidatesFor(row, col);
-      _cells[index] = cell.withNotes(candidates);
+      final notes = _candidatesFor(row, col);
+      _cells[index] = cell.withNotes(notes);
     }
   }
 

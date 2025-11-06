@@ -4,24 +4,19 @@ import 'package:auto_sudoku_solver/auto_sudoku_solver.dart';
 /// Adjust construction if your real Sudoku / CandidateMap have different APIs.
 class SudokuTestHarness {
   final Sudoku s;
-  final CandidateMap cand;
 
-  SudokuTestHarness._(this.s, this.cand);
+  SudokuTestHarness._(this.s);
 
   /// Creates:
   /// - Sudoku with all cells empty (0)
-  /// - CandidateMap from [cands], a List<Set<int>> length 81 (cands[i] are candidates at index i)
-  static SudokuTestHarness make(List<Set<int>> cands) {
-    assert(cands.length == 81, 'Expected 81 candidate sets');
+  static SudokuTestHarness make(List<Set<int>> notes) {
+    assert(notes.length == 81, 'Expected 81 notes sets');
 
     // Construct a blank Sudoku with helpers rowIndices/colIndices/boxIndices available.
     // If your Sudoku has a different constructor, adjust here.
-    final sudoku = Sudoku(List<int>.filled(81, 0));
+    final sudoku = Sudoku(List<int>.filled(81, 0), notes: notes);
 
-    // If your CandidateMap has a different constructor, adjust here.
-    final cm = CandidateMap(cands, true);
-
-    return SudokuTestHarness._(sudoku, cm);
+    return SudokuTestHarness._(sudoku);
   }
 }
 

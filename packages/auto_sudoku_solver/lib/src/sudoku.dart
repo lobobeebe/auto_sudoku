@@ -1,21 +1,30 @@
 class Sudoku {
   static const size = 9;
+  static const numIndices = size * size;
   static const box = 3;
   final List<int> cells; // length 81, 0 empty else 1..9
-  final List<Set<int>>? notes; // optional per-cell candidate notes
+  final List<Set<int>> notes;
 
   Sudoku(List<int> values, {List<Set<int>>? notes})
     : cells = List<int>.from(values),
-      notes = notes == null ? null : _cloneNotes(_validateNotes(notes)) {
-    if (cells.length != 81) throw ArgumentError('Grid must have 81 cells');
-    if (this.notes != null && this.notes!.length != 81) {
-      throw ArgumentError('Notes must have 81 entries');
+      notes = notes == null ? [] : _cloneNotes(_validateNotes(notes)) {
+    if (cells.length != numIndices) {
+      throw ArgumentError('Grid must have $numIndices cells');
+    }
+
+    // Auto-calculate notes if empty
+    if (this.notes.isEmpty) {
+      _resetNotes();
+    }
+
+    if (this.notes.length != numIndices) {
+      throw ArgumentError('Notes must have $numIndices entries');
     }
   }
 
   Sudoku.clone(Sudoku other)
     : cells = List<int>.from(other.cells),
-      notes = other.notes == null ? null : _cloneNotes(other.notes!);
+      notes = _cloneNotes(other.notes);
 
   int get rLen => size;
   int get cLen => size;
@@ -28,11 +37,15 @@ class Sudoku {
   }
 
   Iterable<int> rowIndices(int r) sync* {
-    for (var c = 0; c < size; c++) yield idx(r, c);
+    for (var c = 0; c < size; c++) {
+      yield idx(r, c);
+    }
   }
 
   Iterable<int> colIndices(int c) sync* {
-    for (var r = 0; r < size; r++) yield idx(r, c);
+    for (var r = 0; r < size; r++) {
+      yield idx(r, c);
+    }
   }
 
   Iterable<int> boxIndices(int b) sync* {
@@ -55,6 +68,12 @@ class Sudoku {
     return peers;
   }
 
+  void removeFromPeers(int i, int val) {
+    for (final p in peersOf(i)) {
+      notes[p].remove(val);
+    }
+  }
+
   bool isValidPlacement(int i, int val) {
     if (val == 0) return true;
     for (final p in peersOf(i)) {
@@ -65,7 +84,22 @@ class Sudoku {
 
   bool get isSolved => cells.every((v) => v != 0);
 
-  Set<int>? notesAt(int i) => notes?[i];
+  Set<int>? notesAt(int i) {
+    if (i < 0 || i >= numIndices) {
+      throw ArgumentError('notesAt limited to $numIndices');
+    }
+    return notes[i];
+  }
+
+  List<int> bivalIndices() {
+    // Collect all bivalue cells
+    final bivals = <int>[];
+    for (var i = 0; i < 81; i++) {
+      if (cells[i] == 0 && notes[i].length == 2) bivals.add(i);
+    }
+
+    return bivals;
+  }
 
   static List<Set<int>> _cloneNotes(List<Set<int>> source) =>
       List<Set<int>>.generate(
@@ -74,8 +108,8 @@ class Sudoku {
       );
 
   static List<Set<int>> _validateNotes(List<Set<int>> notes) {
-    if (notes.length != 81) {
-      throw ArgumentError('Notes must have 81 entries');
+    if (notes.length != numIndices) {
+      throw ArgumentError('Notes must have $numIndices entries');
     }
     for (var i = 0; i < notes.length; i++) {
       final set = notes[i];
@@ -86,5 +120,22 @@ class Sudoku {
       }
     }
     return notes;
+  }
+
+  void _resetNotes() {
+    final newNotes = List.generate(81, (_) => <int>{});
+    for (var i = 0; i < 81; i++) {
+      if (cells[i] != 0) continue;
+      final cellNotes = newNotes[i];
+
+      for (var d = 1; d <= size; ++d) {
+        if (isValidPlacement(i, d)) {
+          cellNotes.add(d);
+        }
+      }
+    }
+
+    notes.clear();
+    notes.addAll(newNotes);
   }
 }

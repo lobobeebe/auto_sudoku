@@ -1,4 +1,3 @@
-import '../candidate_map.dart';
 import '../difficulty.dart';
 import '../hint.dart';
 import '../sudoku.dart';
@@ -8,48 +7,10 @@ import 'strategy.dart';
 ///
 /// Conventions:
 /// - Indices are 0..80 into Sudoku.cells.
-/// - Hint.eliminations is a Map<int, Set<int>> (cell -> digits removed).
-/// - Hint.placements (when used) is a Map<int, int> (cell -> digit).
+/// - Hint.eliminations is a Map int -> Set (cell -> digits removed).
+/// - Hint.placements (when used) is a Map int -> int (cell -> digit).
 /// - `cells` in the Hint usually list the key pattern cells (e.g., 4 corners of X-Wing,
 ///   pivot+pincers for XY-Wing, two bivalue cells + the two strong-link cells for W-Wing).
-
-int _rowOf(int i) => i ~/ 9;
-int _colOf(int i) => i % 9;
-int _boxOf(int i) => (_rowOf(i) ~/ 3) * 3 + (_colOf(i) ~/ 3);
-
-Iterable<int> _rowCells(int r) sync* {
-  for (var c = 0; c < 9; c++) {
-    yield r * 9 + c;
-  }
-}
-
-Iterable<int> _colCells(int c) sync* {
-  for (var r = 0; r < 9; r++) {
-    yield r * 9 + c;
-  }
-}
-
-Iterable<int> _boxCells(int b) sync* {
-  final br = (b ~/ 3) * 3;
-  final bc = (b % 3) * 3;
-  for (var r = br; r < br + 3; r++) {
-    for (var c = bc; c < bc + 3; c++) {
-      yield r * 9 + c;
-    }
-  }
-}
-
-Set<int> _peers(Sudoku s, int i) {
-  final r = _rowOf(i);
-  final c = _colOf(i);
-  final b = _boxOf(i);
-  final out = <int>{};
-  out.addAll(_rowCells(r));
-  out.addAll(_colCells(c));
-  out.addAll(_boxCells(b));
-  out.remove(i);
-  return out;
-}
 
 Map<int, Set<int>> _elimMapAdd(Map<int, Set<int>> m, int idx, int d) {
   m.putIfAbsent(idx, () => <int>{});
@@ -68,24 +29,26 @@ class XWingStrategy extends Strategy {
   Difficulty get difficulty => Difficulty.medium;
 
   @override
-  Hint? findHint(Sudoku s, CandidateMap cand) {
+  Hint? findHint(Sudoku s) {
     // Try row-based X-Wing (lock columns), then column-based (lock rows).
     for (var d = 1; d <= 9; d++) {
-      final hRow = _xWingRows(s, cand, d);
+      final hRow = _xWingRows(s, d);
       if (hRow != null) return hRow;
-      final hCol = _xWingCols(s, cand, d);
+      final hCol = _xWingCols(s, d);
       if (hCol != null) return hCol;
     }
     return null;
   }
 
-  Hint? _xWingRows(Sudoku s, CandidateMap cand, int d) {
+  Hint? _xWingRows(Sudoku s, int d) {
     final rowsWith2 =
         <int, List<int>>{}; // r -> columns where d appears (len==2)
     for (var r = 0; r < 9; r++) {
       final cols = <int>[];
       for (final idx in s.rowIndices(r)) {
-        if (s.cells[idx] == 0 && cand[idx].contains(d)) cols.add(_colOf(idx));
+        if (s.cells[idx] == 0 && s.notes[idx].contains(d)) {
+          cols.add(s.colOf(idx));
+        }
       }
       if (cols.length == 2) {
         cols.sort();
@@ -106,10 +69,12 @@ class XWingStrategy extends Strategy {
             if (r == r1 || r == r2) continue;
             final iA = r * 9 + cA;
             final iB = r * 9 + cB;
-            if (s.cells[iA] == 0 && cand[iA].contains(d))
+            if (s.cells[iA] == 0 && s.notes[iA].contains(d)) {
               _elimMapAdd(elim, iA, d);
-            if (s.cells[iB] == 0 && cand[iB].contains(d))
+            }
+            if (s.cells[iB] == 0 && s.notes[iB].contains(d)) {
               _elimMapAdd(elim, iB, d);
+            }
           }
           if (elim.isNotEmpty) {
             final corners = <int>{
@@ -132,12 +97,14 @@ class XWingStrategy extends Strategy {
     return null;
   }
 
-  Hint? _xWingCols(Sudoku s, CandidateMap cand, int d) {
+  Hint? _xWingCols(Sudoku s, int d) {
     final colsWith2 = <int, List<int>>{}; // c -> rows where d appears (len==2)
     for (var c = 0; c < 9; c++) {
       final rows = <int>[];
       for (final idx in s.colIndices(c)) {
-        if (s.cells[idx] == 0 && cand[idx].contains(d)) rows.add(_rowOf(idx));
+        if (s.cells[idx] == 0 && s.notes[idx].contains(d)) {
+          rows.add(s.rowOf(idx));
+        }
       }
       if (rows.length == 2) {
         rows.sort();
@@ -158,10 +125,12 @@ class XWingStrategy extends Strategy {
             if (c == c1 || c == c2) continue;
             final iA = rA * 9 + c;
             final iB = rB * 9 + c;
-            if (s.cells[iA] == 0 && cand[iA].contains(d))
+            if (s.cells[iA] == 0 && s.notes[iA].contains(d)) {
               _elimMapAdd(elim, iA, d);
-            if (s.cells[iB] == 0 && cand[iB].contains(d))
+            }
+            if (s.cells[iB] == 0 && s.notes[iB].contains(d)) {
               _elimMapAdd(elim, iB, d);
+            }
           }
           if (elim.isNotEmpty) {
             final corners = <int>{
@@ -185,7 +154,7 @@ class XWingStrategy extends Strategy {
   }
 
   @override
-  Hint? getHintFromClues(Sudoku s, CandidateMap cand, List<int> indices) {
+  Hint? getHintFromClues(Sudoku s, List<int> indices) {
     if (indices.length != 4) return null;
 
     // Derive the two rows and two cols implied by the four corners.
@@ -194,19 +163,19 @@ class XWingStrategy extends Strategy {
     if (rows.length != 2 || cols.length != 2) return null;
 
     // Consider only digits present in all four corners.
-    Set<int> common = cand[indices[0]].toSet();
+    Set<int> common = s.notes[indices[0]].toSet();
     for (final i in indices.skip(1)) {
-      common = common.intersection(cand[i]);
+      common = common.intersection(s.notes[i]);
     }
     if (common.isEmpty) return null;
 
     // Helper validators for the X-Wing constraint.
-    bool _rowsHaveExactlyTheseTwoColsForDigit(int d) {
+    bool rowsHaveExactlyTheseTwoColsForDigit(int d) {
       for (final r in rows) {
         final colsWithD = <int>[];
         for (final c in Iterable<int>.generate(9)) {
           final idx = r * 9 + c;
-          if (s.cells[idx] == 0 && cand[idx].contains(d)) colsWithD.add(c);
+          if (s.cells[idx] == 0 && s.notes[idx].contains(d)) colsWithD.add(c);
         }
         colsWithD.sort();
         final wanted = [...cols]..sort();
@@ -219,12 +188,12 @@ class XWingStrategy extends Strategy {
       return true;
     }
 
-    bool _colsHaveExactlyTheseTwoRowsForDigit(int d) {
+    bool colsHaveExactlyTheseTwoRowsForDigit(int d) {
       for (final c in cols) {
         final rowsWithD = <int>[];
         for (final r in Iterable<int>.generate(9)) {
           final idx = r * 9 + c;
-          if (s.cells[idx] == 0 && cand[idx].contains(d)) rowsWithD.add(r);
+          if (s.cells[idx] == 0 && s.notes[idx].contains(d)) rowsWithD.add(r);
         }
         rowsWithD.sort();
         final wanted = [...rows]..sort();
@@ -240,13 +209,13 @@ class XWingStrategy extends Strategy {
     // Try each common digit; prefer whichever yields valid eliminations.
     for (final d in common.toList()..sort()) {
       // Row-based X-Wing (lock columns)
-      if (_rowsHaveExactlyTheseTwoColsForDigit(d)) {
+      if (rowsHaveExactlyTheseTwoColsForDigit(d)) {
         final elim = <int, Set<int>>{};
         for (var r = 0; r < 9; r++) {
           if (r == rows[0] || r == rows[1]) continue;
           for (final c in cols) {
             final idx = r * 9 + c;
-            if (s.cells[idx] == 0 && cand[idx].contains(d)) {
+            if (s.cells[idx] == 0 && s.notes[idx].contains(d)) {
               (elim[idx] ??= <int>{}).add(d);
             }
           }
@@ -269,13 +238,13 @@ class XWingStrategy extends Strategy {
       }
 
       // Column-based X-Wing (lock rows)
-      if (_colsHaveExactlyTheseTwoRowsForDigit(d)) {
+      if (colsHaveExactlyTheseTwoRowsForDigit(d)) {
         final elim = <int, Set<int>>{};
         for (var c = 0; c < 9; c++) {
           if (c == cols[0] || c == cols[1]) continue;
           for (final r in rows) {
             final idx = r * 9 + c;
-            if (s.cells[idx] == 0 && cand[idx].contains(d)) {
+            if (s.cells[idx] == 0 && s.notes[idx].contains(d)) {
               (elim[idx] ??= <int>{}).add(d);
             }
           }
@@ -312,20 +281,20 @@ class XYWingStrategy extends Strategy {
   Difficulty get difficulty => Difficulty.medium;
 
   @override
-  Hint? findHint(Sudoku s, CandidateMap cand) {
+  Hint? findHint(Sudoku s) {
     // For each pivot (bivalue), look for two pincers (bivalue) that see the pivot
     // with patterns {a,b} (pivot), {a,c} and {b,c}. Eliminate c from cells that
     // see both pincers.
     final bivals = <int>[];
     for (var i = 0; i < 81; i++) {
       if (s.cells[i] != 0) continue;
-      if (cand[i].length == 2) bivals.add(i);
+      if (s.notes[i].length == 2) bivals.add(i);
     }
 
     for (final pivot in bivals) {
-      final pv = cand[pivot].toList()..sort();
+      final pv = s.notes[pivot].toList()..sort();
       final a = pv[0], b = pv[1];
-      final pivotPeers = _peers(s, pivot);
+      final pivotPeers = s.peersOf(pivot);
 
       // Map c -> pincer list for {a,c} and {b,c}
       final pincersA = <int, List<int>>{}; // c -> indices
@@ -333,7 +302,7 @@ class XYWingStrategy extends Strategy {
 
       for (final q in pivotPeers) {
         if (s.cells[q] != 0) continue;
-        final qs = cand[q];
+        final qs = s.notes[q];
         if (qs.length == 2) {
           if (qs.contains(a)) {
             final c = (qs.firstWhere((d) => d != a));
@@ -355,9 +324,9 @@ class XYWingStrategy extends Strategy {
             if (p1 == p2) continue; // need two distinct pincers
             // Cells that see both p1 and p2 get c eliminated.
             final elim = <int, Set<int>>{};
-            final peersBoth = _peers(s, p1).intersection(_peers(s, p2));
+            final peersBoth = s.peersOf(p1).intersection(s.peersOf(p2));
             for (final idx in peersBoth) {
-              if (s.cells[idx] == 0 && cand[idx].contains(c)) {
+              if (s.cells[idx] == 0 && s.notes[idx].contains(c)) {
                 _elimMapAdd(elim, idx, c);
               }
             }
@@ -378,7 +347,7 @@ class XYWingStrategy extends Strategy {
   }
 
   @override
-  Hint? getHintFromClues(Sudoku s, CandidateMap cand, List<int> indices) {
+  Hint? getHintFromClues(Sudoku s, List<int> indices) {
     if (indices.length != 3) return null;
 
     // All permutations of 3 items
@@ -402,15 +371,15 @@ class XYWingStrategy extends Strategy {
       }
 
       // Must be bivalue
-      final pv = cand[pivot];
-      final s1 = cand[p1];
-      final s2 = cand[p2];
+      final pv = s.notes[pivot];
+      final s1 = s.notes[p1];
+      final s2 = s.notes[p2];
       if (pv.length != 2 || s1.length != 2 || s2.length != 2) {
         continue;
       }
 
       // Pincers must see the pivot
-      final pivotPeers = _peers(s, pivot);
+      final pivotPeers = s.peersOf(pivot);
       if (!pivotPeers.contains(p1) || !pivotPeers.contains(p2)) {
         continue;
       }
@@ -441,10 +410,10 @@ class XYWingStrategy extends Strategy {
       if (c != c2.first || c == a || c == b) continue;
 
       // Eliminate c from cells that see BOTH pincers
-      final peersBoth = _peers(s, p1).intersection(_peers(s, p2));
+      final peersBoth = s.peersOf(p1).intersection(s.peersOf(p2));
       final elim = <int, Set<int>>{};
       for (final idx in peersBoth) {
-        if (s.cells[idx] == 0 && cand[idx].contains(c)) {
+        if (s.cells[idx] == 0 && s.notes[idx].contains(c)) {
           _elimMapAdd(elim, idx, c);
         }
       }
@@ -476,63 +445,73 @@ class WWingStrategy extends Strategy {
   Difficulty get difficulty => Difficulty.hard;
 
   @override
-  Hint? findHint(Sudoku s, CandidateMap cand) {
+  Hint? findHint(Sudoku s) {
     // Collect all bivalue cells
-    final bivals = <int>[];
-    for (var i = 0; i < 81; i++) {
-      if (s.cells[i] == 0 && cand[i].length == 2) bivals.add(i);
+    final bivals = s.bivalIndices();
+
+    // Fast peer lookups (avoid recomputing)
+    List<Set<int>> peerCache = List.generate(81, (i) => s.peersOf(i));
+
+    bool sees(int u, int v) => peerCache[u].contains(v);
+    bool sameHouse(int u, int v) =>
+        sees(u, v); // they "see" if share row/col/box
+
+    // Utility to try a family of strong links (row/col/box)
+    Iterable<List<int>> strongLinksForDigit(int d) sync* {
+      // rows
+      for (final link in _findStrongLinkOnLine(s, d, byRow: true)) {
+        yield link;
+      }
+      // cols
+      for (final link in _findStrongLinkOnLine(s, d, byRow: false)) {
+        yield link;
+      }
+      // boxes (you'll need to implement this to return [end1,end2] pairs)
+      for (final link in _findStrongLinkInBoxes(s, d)) {
+        yield link;
+      }
     }
 
-    // Consider each unordered pair of bivalue cells with same pair {x,y}
-    for (var aIdx = 0; aIdx < bivals.length; aIdx++) {
-      for (var bIdx = aIdx + 1; bIdx < bivals.length; bIdx++) {
-        final a = bivals[aIdx];
-        final b = bivals[bIdx];
-        final sA = cand[a];
-        final sB = cand[b];
+    for (var i = 0; i < bivals.length; i++) {
+      for (var j = i + 1; j < bivals.length; j++) {
+        final a = bivals[i], b = bivals[j];
+        final sA = s.notes[a], sB = s.notes[b];
         if (sA.length != 2 || sB.length != 2) continue;
-        if (sA.length != sB.length || !sA.containsAll(sB)) continue;
+        if (!sA.containsAll(sB)) continue;
+
+        // W-Wing requires A and B do NOT see each other
+        if (sameHouse(a, b)) continue;
+
         final pair = sA.toList()..sort();
         final x = pair[0], y = pair[1];
 
-        // Try strong link on x along a row
-        final rowStrong = _findStrongLinkOnLine(s, cand, x, byRow: true);
-        for (final line in rowStrong) {
-          // need one endpoint to see a and other to see b
-          final end1 = line[0], end2 = line[1];
-          final seesA =
-              _peers(s, a).contains(end1) || _peers(s, a).contains(end2);
-          final seesB =
-              _peers(s, b).contains(end1) || _peers(s, b).contains(end2);
-          if (!seesA || !seesB) continue;
-          final elim = _wWingElims(s, cand, a, b, y);
-          if (elim.isNotEmpty) {
+        // Try both possibilities: strong link on x (eliminate y) and on y (eliminate x)
+        for (final linkDigit in [x, y]) {
+          final elimDigit = (linkDigit == x) ? y : x;
+
+          for (final link in strongLinksForDigit(linkDigit)) {
+            final end1 = link[0], end2 = link[1];
+
+            // Endpoints must be distinct from A/B
+            if (end1 == a || end2 == a || end1 == b || end2 == b) continue;
+
+            // Each bivalue must align with a different endpoint of the conjugate pair
+            final aEnd1 = sees(a, end1), aEnd2 = sees(a, end2);
+            final bEnd1 = sees(b, end1), bEnd2 = sees(b, end2);
+
+            final crosses =
+                (aEnd1 && bEnd2) || (aEnd2 && bEnd1); // <-- critical correction
+            if (!crosses) continue;
+
+            // Compute eliminations: cells that see BOTH A and B and contain elimDigit
+            final elim = _wWingElims(s, a, b, elimDigit);
+            if (elim.isEmpty) continue;
+
             return Hint(
               StrategyType.wWing,
               eliminations: elim,
               cells: [a, b, end1, end2],
               digits: [x, y]..sort(),
-              unit: HintUnit.row,
-            );
-          }
-        }
-        // Try strong link on x along a column
-        final colStrong = _findStrongLinkOnLine(s, cand, x, byRow: false);
-        for (final line in colStrong) {
-          final end1 = line[0], end2 = line[1];
-          final seesA =
-              _peers(s, a).contains(end1) || _peers(s, a).contains(end2);
-          final seesB =
-              _peers(s, b).contains(end1) || _peers(s, b).contains(end2);
-          if (!seesA || !seesB) continue;
-          final elim = _wWingElims(s, cand, a, b, y);
-          if (elim.isNotEmpty) {
-            return Hint(
-              StrategyType.wWing,
-              eliminations: elim,
-              cells: [a, b, end1, end2],
-              digits: [x, y]..sort(),
-              unit: HintUnit.column,
             );
           }
         }
@@ -541,11 +520,42 @@ class WWingStrategy extends Strategy {
     return null;
   }
 
+  /// Returns all conjugate (strong) links for digit `d` inside 3×3 boxes.
+  /// Each entry is a pair [end1, end2] of cell indices in the same box.
+  List<List<int>> _findStrongLinkInBoxes(Sudoku s, int d) {
+    final links = <List<int>>[];
+
+    for (var box = 0; box < 9; box++) {
+      final startRow = (box ~/ 3) * 3;
+      final startCol = (box % 3) * 3;
+
+      // Collect all indices in this box where `d` is a candidate
+      final locs = <int>[];
+      for (var r = 0; r < 3; r++) {
+        for (var c = 0; c < 3; c++) {
+          final row = startRow + r;
+          final col = startCol + c;
+          final idx = row * 9 + col;
+
+          if (s.cells[idx] == 0 && s.notes[idx].contains(d)) {
+            locs.add(idx);
+          }
+        }
+      }
+
+      // Strong link exists iff exactly two candidate locations in the box
+      if (locs.length == 2) {
+        links.add([locs[0], locs[1]]);
+      }
+    }
+
+    return links;
+  }
+
   /// Returns list of strong-links for digit d on each row/column.
-  /// Each entry is a List<int> of length 2 containing the two cell indices.
+  /// Each entry is a List int of length 2 containing the two cell indices.
   List<List<int>> _findStrongLinkOnLine(
     Sudoku s,
-    CandidateMap cand,
     int d, {
     required bool byRow,
   }) {
@@ -554,7 +564,7 @@ class WWingStrategy extends Strategy {
       for (var r = 0; r < 9; r++) {
         final cells = <int>[];
         for (final i in s.rowIndices(r)) {
-          if (s.cells[i] == 0 && cand[i].contains(d)) cells.add(i);
+          if (s.cells[i] == 0 && s.notes[i].contains(d)) cells.add(i);
         }
         if (cells.length == 2) result.add(cells);
       }
@@ -562,7 +572,7 @@ class WWingStrategy extends Strategy {
       for (var c = 0; c < 9; c++) {
         final cells = <int>[];
         for (final i in s.colIndices(c)) {
-          if (s.cells[i] == 0 && cand[i].contains(d)) cells.add(i);
+          if (s.cells[i] == 0 && s.notes[i].contains(d)) cells.add(i);
         }
         if (cells.length == 2) result.add(cells);
       }
@@ -570,17 +580,11 @@ class WWingStrategy extends Strategy {
     return result;
   }
 
-  Map<int, Set<int>> _wWingElims(
-    Sudoku s,
-    CandidateMap cand,
-    int a,
-    int b,
-    int eliminateDigit,
-  ) {
+  Map<int, Set<int>> _wWingElims(Sudoku s, int a, int b, int eliminateDigit) {
     final elim = <int, Set<int>>{};
-    final common = _peers(s, a).intersection(_peers(s, b));
+    final common = s.peersOf(a).intersection(s.peersOf(b));
     for (final idx in common) {
-      if (s.cells[idx] == 0 && cand[idx].contains(eliminateDigit)) {
+      if (s.cells[idx] == 0 && s.notes[idx].contains(eliminateDigit)) {
         _elimMapAdd(elim, idx, eliminateDigit);
       }
     }
@@ -588,65 +592,186 @@ class WWingStrategy extends Strategy {
   }
 
   @override
-  Hint? getHintFromClues(Sudoku s, CandidateMap cand, List<int> indices) {
+  Hint? getHintFromClues(Sudoku s, List<int> indices) {
+    // Need at least the two bivalue cells; extras (up to two) may be link endpoints.
     if (indices.length < 2) return null;
-    // Expect at least two bivalue cells with same pair and optionally two link cells.
-    final a = indices[0];
-    final b = indices[1];
-    if (s.cells[a] != 0 || s.cells[b] != 0) return null;
-    if (cand[a].length != 2 || cand[b].length != 2) return null;
-    if (!cand[a].containsAll(cand[b])) return null;
-    final pair = cand[a].toList()..sort();
-    final x = pair[0], y = pair[1];
 
-    // If provided with four clues, treat indices[2], indices[3] as the strong-link endpoints.
-    // Otherwise, try to discover a link.
-    Map<int, Set<int>> elim = {};
-    if (indices.length >= 4) {
-      elim = _wWingElims(s, cand, a, b, y);
-      if (elim.isEmpty) return null;
-      return Hint(
-        StrategyType.wWing,
-        eliminations: elim,
-        cells: indices.take(4).toList(),
-        digits: [x, y],
-        unit: null,
-      );
+    // Keep only unsolved cells from clues.
+    final clues = indices.where((i) => s.cells[i] == 0).toList();
+    if (clues.length < 2) return null;
+
+    // Find any pair among clues that are identical bivalue sets {x,y}.
+    int? a, b; // the two bivalue cells
+    Set<int>? pairSet;
+    for (var i = 0; i < clues.length; i++) {
+      final ci = clues[i];
+      final si = s.notes[ci];
+      if (si.length != 2) continue;
+      for (var j = i + 1; j < clues.length; j++) {
+        final cj = clues[j];
+        final sj = s.notes[cj];
+        if (sj.length != 2) continue;
+        if (si.length == sj.length &&
+            si.containsAll(sj) &&
+            sj.containsAll(si)) {
+          a = ci;
+          b = cj;
+          pairSet = si;
+          break;
+        }
+      }
+      if (a != null) break;
+    }
+    if (a == null || b == null || pairSet == null) return null;
+
+    final pair = pairSet.toList()..sort();
+    int x = pair[0];
+    int y = pair[1];
+
+    // Helper to validate two endpoints form a strong link on digit d.
+    bool isStrongLink(int e1, int e2, int d) {
+      if (e1 == e2) return false;
+      if (s.cells[e1] != 0 || s.cells[e2] != 0) return false;
+      if (!s.notes[e1].contains(d) || !s.notes[e2].contains(d)) return false;
+      final r1 = s.rowOf(e1), c1 = s.colOf(e1);
+      final r2 = s.rowOf(e2), c2 = s.colOf(e2);
+      if (r1 == r2) {
+        // same row: d must appear exactly twice in that row
+        var cnt = 0;
+        int last1 = -1, last2 = -1;
+        for (final i in s.rowIndices(r1)) {
+          if (s.cells[i] == 0 && s.notes[i].contains(d)) {
+            cnt++;
+            if (last1 == -1) {
+              last1 = i;
+            } else {
+              last2 = i;
+            }
+          }
+        }
+        if (cnt == 2 &&
+            ((last1 == e1 && last2 == e2) || (last1 == e2 && last2 == e1))) {
+          return true;
+        }
+      } else if (c1 == c2) {
+        // same column: d must appear exactly twice in that column
+        var cnt = 0;
+        int last1 = -1, last2 = -1;
+        for (final i in s.colIndices(c1)) {
+          if (s.cells[i] == 0 && s.notes[i].contains(d)) {
+            cnt++;
+            if (last1 == -1) {
+              last1 = i;
+            } else {
+              last2 = i;
+            }
+          }
+        }
+        if (cnt == 2 &&
+            ((last1 == e1 && last2 == e2) || (last1 == e2 && last2 == e1))) {
+          return true;
+        }
+      }
+      return false;
     }
 
-    // Try to find any strong link on x along a row or column that connects peers of a and b.
-    for (final line in _findStrongLinkOnLine(s, cand, x, byRow: true)) {
-      final seesA =
-          _peers(s, a).contains(line[0]) || _peers(s, a).contains(line[1]);
-      final seesB =
-          _peers(s, b).contains(line[0]) || _peers(s, b).contains(line[1]);
-      if (!seesA || !seesB) continue;
-      elim = _wWingElims(s, cand, a, b, y);
-      if (elim.isNotEmpty)
-        return Hint(
-          StrategyType.wWing,
-          eliminations: elim,
-          cells: [a, b, ...line],
-          digits: [x, y],
-          unit: HintUnit.row,
-        );
+    // Compute eliminations for a,b given the elimination digit.
+    Map<int, Set<int>> elimFor(int eliminateDigit) =>
+        _wWingElims(s, a!, b!, eliminateDigit);
+
+    // Remaining indices are potential endpoints (0..n). Try to validate if we have at least two.
+    final remaining = clues.where((i) => i != a && i != b).toList();
+    if (remaining.length >= 2) {
+      // Try all pairs of remaining as strong link on x or y.
+      for (var i = 0; i < remaining.length; i++) {
+        for (var j = i + 1; j < remaining.length; j++) {
+          final e1 = remaining[i], e2 = remaining[j];
+          // Check strong link on x -> eliminate y
+          if (isStrongLink(e1, e2, x)) {
+            final seesA =
+                s.peersOf(a).contains(e1) || s.peersOf(a).contains(e2);
+            final seesB =
+                s.peersOf(b).contains(e1) || s.peersOf(b).contains(e2);
+            if (seesA && seesB) {
+              final elim = elimFor(y);
+              if (elim.isNotEmpty) {
+                return Hint(
+                  StrategyType.wWing,
+                  eliminations: elim,
+                  cells: [a, b, e1, e2],
+                  digits: [x, y]..sort(),
+                  unit: (s.rowOf(e1) == s.rowOf(e2))
+                      ? HintUnit.row
+                      : HintUnit.column,
+                );
+              }
+            }
+          }
+          // Or strong link on y -> eliminate x
+          if (isStrongLink(e1, e2, y)) {
+            final seesA =
+                s.peersOf(a).contains(e1) || s.peersOf(a).contains(e2);
+            final seesB =
+                s.peersOf(b).contains(e1) || s.peersOf(b).contains(e2);
+            if (seesA && seesB) {
+              final elim = elimFor(x);
+              if (elim.isNotEmpty) {
+                return Hint(
+                  StrategyType.wWing,
+                  eliminations: elim,
+                  cells: [a, b, e1, e2],
+                  digits: [x, y]..sort(),
+                  unit: (s.rowOf(e1) == s.rowOf(e2))
+                      ? HintUnit.row
+                      : HintUnit.column,
+                );
+              }
+            }
+          }
+        }
+      }
+      // If explicit endpoints were provided but none validated, fall through to auto-discovery.
     }
-    for (final line in _findStrongLinkOnLine(s, cand, x, byRow: false)) {
-      final seesA =
-          _peers(s, a).contains(line[0]) || _peers(s, a).contains(line[1]);
-      final seesB =
-          _peers(s, b).contains(line[0]) || _peers(s, b).contains(line[1]);
-      if (!seesA || !seesB) continue;
-      elim = _wWingElims(s, cand, a, b, y);
-      if (elim.isNotEmpty)
-        return Hint(
-          StrategyType.wWing,
-          eliminations: elim,
-          cells: [a, b, ...line],
-          digits: [x, y],
-          unit: HintUnit.column,
-        );
+
+    // Auto-discover a strong link on either digit (x first, then y), like findHint.
+    for (final d in [x, y]) {
+      final elimDigit = (d == x) ? y : x;
+      for (final line in _findStrongLinkOnLine(s, d, byRow: true)) {
+        final seesA =
+            s.peersOf(a).contains(line[0]) || s.peersOf(a).contains(line[1]);
+        final seesB =
+            s.peersOf(b).contains(line[0]) || s.peersOf(b).contains(line[1]);
+        if (!seesA || !seesB) continue;
+        final elim = elimFor(elimDigit);
+        if (elim.isNotEmpty) {
+          return Hint(
+            StrategyType.wWing,
+            eliminations: elim,
+            cells: [a, b, ...line],
+            digits: [x, y]..sort(),
+            unit: HintUnit.row,
+          );
+        }
+      }
+      for (final line in _findStrongLinkOnLine(s, d, byRow: false)) {
+        final seesA =
+            s.peersOf(a).contains(line[0]) || s.peersOf(a).contains(line[1]);
+        final seesB =
+            s.peersOf(b).contains(line[0]) || s.peersOf(b).contains(line[1]);
+        if (!seesA || !seesB) continue;
+        final elim = elimFor(elimDigit);
+        if (elim.isNotEmpty) {
+          return Hint(
+            StrategyType.wWing,
+            eliminations: elim,
+            cells: [a, b, ...line],
+            digits: [x, y]..sort(),
+            unit: HintUnit.column,
+          );
+        }
+      }
     }
+
     return null;
   }
 }

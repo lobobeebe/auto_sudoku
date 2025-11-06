@@ -38,6 +38,7 @@ class _DifficultySelectionPageState extends State<DifficultySelectionPage>
       title: 'Hard',
       description: 'For seasoned solvers seeking a serious puzzle.',
       icon: Icons.bolt_rounded,
+      enabled: false,
     ),
   ];
 
@@ -210,12 +211,15 @@ class _DifficultyCardState extends State<_DifficultyCard> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final enabled = widget.option.enabled;
 
     return GestureDetector(
       onTapDown: (_) => setState(() => _isPressed = true),
       onTapUp: (_) {
         setState(() => _isPressed = false);
-        widget.onTap();
+        if (enabled) {
+          widget.onTap();
+        }
       },
       onTapCancel: () => setState(() => _isPressed = false),
       child: AnimatedScale(
@@ -227,8 +231,10 @@ class _DifficultyCardState extends State<_DifficultyCard> {
             borderRadius: BorderRadius.circular(24),
             gradient: LinearGradient(
               colors: [
-                colorScheme.surfaceContainerLowest,
-                colorScheme.surfaceContainerHigh,
+                colorScheme.surfaceContainerLowest.withAlpha(
+                  enabled ? 255 : 50,
+                ),
+                colorScheme.surfaceContainerHigh.withAlpha(enabled ? 255 : 50),
               ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -250,11 +256,13 @@ class _DifficultyCardState extends State<_DifficultyCard> {
                   height: 64,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(20),
-                    color: colorScheme.primary.withValues(alpha: 0.1),
+                    color: colorScheme.primary.withValues(
+                      alpha: enabled ? 0.1 : .05,
+                    ),
                   ),
                   child: Icon(
                     widget.option.icon,
-                    color: colorScheme.primary,
+                    color: colorScheme.primary.withAlpha(enabled ? 255 : 50),
                     size: 34,
                   ),
                 ),
@@ -267,13 +275,16 @@ class _DifficultyCardState extends State<_DifficultyCard> {
                         widget.option.title,
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w700,
+                          color: enabled ? null : theme.disabledColor,
                         ),
                       ),
                       const SizedBox(height: 6),
                       Text(
                         widget.option.description,
                         style: theme.textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
+                          color: enabled
+                              ? colorScheme.onSurfaceVariant
+                              : theme.disabledColor,
                         ),
                       ),
                     ],
@@ -282,7 +293,9 @@ class _DifficultyCardState extends State<_DifficultyCard> {
                 const SizedBox(width: 12),
                 Icon(
                   Icons.chevron_right_rounded,
-                  color: colorScheme.onSurfaceVariant,
+                  color: enabled
+                      ? colorScheme.onSurfaceVariant
+                      : theme.disabledColor,
                   size: 28,
                 ),
               ],
@@ -299,12 +312,14 @@ class _DifficultyOption {
   final String title;
   final String description;
   final IconData icon;
+  final bool enabled;
 
   const _DifficultyOption({
     required this.difficulty,
     required this.title,
     required this.description,
     required this.icon,
+    this.enabled = true,
   });
 }
 

@@ -187,7 +187,7 @@ abstract class Strategy {
   @override
   String toString();
 
-  Hint? findHint(Sudoku s, CandidateMap cand);
+  Hint? findHint(Sudoku s);
 
-  Hint? getHintFromClues(Sudoku s, CandidateMap cand, List<int> indices);
+  Hint? getHintFromClues(Sudoku s, List<int> indices);
 }

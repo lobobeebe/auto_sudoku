@@ -27,7 +27,7 @@ void main() {
         final h = SudokuTestHarness.make(cands);
         final strat = PointingStrategy();
 
-        final hint = strat.findHint(h.s, h.cand);
+        final hint = strat.findHint(h.s);
         expect(hint, isNotNull, reason: 'Should find pointing along the row');
         expect(hint!.strategy, StrategyType.pointing);
         expect(hint.unit, HintUnit.row);
@@ -59,7 +59,7 @@ void main() {
         final strat = PointingStrategy();
 
         // Provide the two in-box column clue cells.
-        final hint = strat.getHintFromClues(h.s, h.cand, [c1, c2]);
+        final hint = strat.getHintFromClues(h.s, [c1, c2]);
         expect(hint, isNotNull, reason: 'Should derive pointing from clues');
         expect(hint!.strategy, StrategyType.pointing);
         expect(hint.unit, HintUnit.column);
@@ -90,7 +90,7 @@ void main() {
         final h = SudokuTestHarness.make(cands);
         final strat = ClaimingStrategy();
 
-        final hint = strat.findHint(h.s, h.cand);
+        final hint = strat.findHint(h.s);
         expect(hint, isNotNull, reason: 'Should find claiming from row→box');
         expect(hint!.strategy, StrategyType.claiming);
         expect(hint.unit, HintUnit.row);
@@ -120,7 +120,7 @@ void main() {
       final h = SudokuTestHarness.make(cands);
       final strat = ClaimingStrategy();
 
-      final hint = strat.getHintFromClues(h.s, h.cand, [x, y]);
+      final hint = strat.getHintFromClues(h.s, [x, y]);
       expect(
         hint,
         isNotNull,

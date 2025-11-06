@@ -2,17 +2,17 @@ import 'package:auto_sudoku_solver/src/sudoku_tool.dart';
 
 abstract class NakedStrategy extends Strategy {
   // Helper to find a subset hint (naked/hidden, k in {2,3,4})
-  Hint? _findNakedHint(Sudoku s, CandidateMap cand, int k) {
+  Hint? _findNakedHint(Sudoku s, int k) {
     for (var r = 0; r < 9; r++) {
-      final h = _processUnitNaked(s, cand, k, s.rowIndices(r), HintUnit.row);
+      final h = _processUnitNaked(s, k, s.rowIndices(r), HintUnit.row);
       if (h != null) return h;
     }
     for (var c = 0; c < 9; c++) {
-      final h = _processUnitNaked(s, cand, k, s.colIndices(c), HintUnit.column);
+      final h = _processUnitNaked(s, k, s.colIndices(c), HintUnit.column);
       if (h != null) return h;
     }
     for (var b = 0; b < 9; b++) {
-      final h = _processUnitNaked(s, cand, k, s.boxIndices(b), HintUnit.box);
+      final h = _processUnitNaked(s, k, s.boxIndices(b), HintUnit.box);
       if (h != null) return h;
     }
     return null;
@@ -21,7 +21,6 @@ abstract class NakedStrategy extends Strategy {
   // Build a Naked subset hint (k in {2,3,4}) from explicit user-selected indices.
   Hint? _getHintFromCluesCommon(
     Sudoku s,
-    CandidateMap cand,
     List<int> indices,
     int k,
     StrategyType type,
@@ -31,14 +30,14 @@ abstract class NakedStrategy extends Strategy {
     // Reject filled cells and candidates that are not 2..k in size.
     for (final i in indices) {
       if (s.cells[i] != 0) return null;
-      final len = cand[i].length;
+      final len = s.notes[i].length;
       if (len < 2 || len > k) return null;
     }
 
     // Union must be exactly k digits.
     final union = <int>{};
     for (final i in indices) {
-      union.addAll(cand[i]);
+      union.addAll(s.notes[i]);
     }
     if (union.length != k) return null;
 
@@ -72,7 +71,7 @@ abstract class NakedStrategy extends Strategy {
           continue; // never eliminate from the triple/pair/quad cells
         }
         if (s.cells[i] != 0) continue;
-        final cands = cand[i];
+        final cands = s.notes[i];
         for (final d in union) {
           if (cands.contains(d)) {
             eliminationsMap.putIfAbsent(i, () => <int>{}).add(d);
@@ -102,7 +101,6 @@ abstract class NakedStrategy extends Strategy {
   // Try Naked subset in each unit (generalized for k in {2,3,4})
   Hint? _processUnitNaked(
     Sudoku s,
-    CandidateMap cand,
     int k,
     Iterable<int> unit,
     HintUnit unitType,
@@ -112,7 +110,7 @@ abstract class NakedStrategy extends Strategy {
 
     // Consider only cells with 2..k candidates
     final subsetPool = empties.where((i) {
-      final len = cand[i].length;
+      final len = s.notes[i].length;
       return len >= 2 && len <= k;
     }).toList();
     if (subsetPool.length < k) return null;
@@ -122,12 +120,12 @@ abstract class NakedStrategy extends Strategy {
       final union = <int>{};
       var validSize = true;
       for (final idx in combo) {
-        final len = cand[idx].length;
+        final len = s.notes[idx].length;
         if (len > k || len < 2) {
           validSize = false;
           break;
         }
-        union.addAll(cand[idx]);
+        union.addAll(s.notes[idx]);
       }
       if (!validSize || union.length != k) continue;
 
@@ -136,7 +134,7 @@ abstract class NakedStrategy extends Strategy {
       for (final i in empties) {
         if (combo.contains(i)) continue;
         for (final d in union) {
-          if (cand[i].contains(d)) {
+          if (s.notes[i].contains(d)) {
             eliminations.putIfAbsent(i, () => {}).add(d);
           }
         }
@@ -179,7 +177,9 @@ abstract class NakedStrategy extends Strategy {
 
     while (true) {
       var i = k - 1;
-      while (i >= 0 && idx[i] == i + n - k) i--;
+      while (i >= 0 && idx[i] == i + n - k) {
+        i--;
+      }
       if (i < 0) break;
       idx[i]++;
       for (var j = i + 1; j < k; j++) {
@@ -194,16 +194,16 @@ class NakedPairStrategy extends NakedStrategy {
   @override
   StrategyType get type => StrategyType.nakedPair;
   @override
-  Hint? findHint(Sudoku s, CandidateMap cand) {
-    return _findNakedHint(s, cand, 2);
+  Hint? findHint(Sudoku s) {
+    return _findNakedHint(s, 2);
   }
 
   @override
   Difficulty get difficulty => Difficulty.easy;
 
   @override
-  Hint? getHintFromClues(Sudoku s, CandidateMap cand, List<int> indices) {
-    return _getHintFromCluesCommon(s, cand, indices, 2, StrategyType.nakedPair);
+  Hint? getHintFromClues(Sudoku s, List<int> indices) {
+    return _getHintFromCluesCommon(s, indices, 2, StrategyType.nakedPair);
   }
 }
 
@@ -212,22 +212,16 @@ class NakedTripleStrategy extends NakedStrategy {
   StrategyType get type => StrategyType.nakedTriple;
 
   @override
-  Hint? findHint(Sudoku s, CandidateMap cand) {
-    return _findNakedHint(s, cand, 3);
+  Hint? findHint(Sudoku s) {
+    return _findNakedHint(s, 3);
   }
 
   @override
   Difficulty get difficulty => Difficulty.easy;
 
   @override
-  Hint? getHintFromClues(Sudoku s, CandidateMap cand, List<int> indices) {
-    return _getHintFromCluesCommon(
-      s,
-      cand,
-      indices,
-      3,
-      StrategyType.nakedTriple,
-    );
+  Hint? getHintFromClues(Sudoku s, List<int> indices) {
+    return _getHintFromCluesCommon(s, indices, 3, StrategyType.nakedTriple);
   }
 }
 
@@ -236,16 +230,16 @@ class NakedQuadStrategy extends NakedStrategy {
   StrategyType get type => StrategyType.nakedQuad;
 
   @override
-  Hint? findHint(Sudoku s, CandidateMap cand) {
-    return _findNakedHint(s, cand, 4);
+  Hint? findHint(Sudoku s) {
+    return _findNakedHint(s, 4);
   }
 
   @override
   Difficulty get difficulty => Difficulty.easy;
 
   @override
-  Hint? getHintFromClues(Sudoku s, CandidateMap cand, List<int> indices) {
-    return _getHintFromCluesCommon(s, cand, indices, 4, StrategyType.nakedQuad);
+  Hint? getHintFromClues(Sudoku s, List<int> indices) {
+    return _getHintFromCluesCommon(s, indices, 4, StrategyType.nakedQuad);
   }
 }
 
@@ -257,11 +251,11 @@ class NakedSingleStrategy extends Strategy {
   Difficulty get difficulty => Difficulty.easy;
 
   @override
-  Hint? findHint(Sudoku s, CandidateMap cand) {
+  Hint? findHint(Sudoku s) {
     // Find the first empty cell that has exactly one candidate.
     for (var i = 0; i < 81; i++) {
       if (s.cells[i] != 0) continue;
-      final cands = cand[i];
+      final cands = s.notes[i];
       if (cands.length == 1) {
         final d = cands.first;
         return Hint(
@@ -278,11 +272,11 @@ class NakedSingleStrategy extends Strategy {
   }
 
   @override
-  Hint? getHintFromClues(Sudoku s, CandidateMap cand, List<int> indices) {
+  Hint? getHintFromClues(Sudoku s, List<int> indices) {
     if (indices.length != 1) return null;
     final i = indices.first;
     if (s.cells[i] != 0) return null;
-    final cands = cand[i];
+    final cands = s.notes[i];
     if (cands.length != 1) return null;
     final d = cands.first;
     return Hint(

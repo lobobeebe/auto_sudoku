@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 
 /// Categories shown in the popup.
-enum StrategyCategory { naked, hidden, locked, wings, coloring, advanced }
+enum StrategyCategory { nakedHidden, locked, wings, coloring, advanced }
 
 extension StrategyCategoryX on StrategyCategory {
   String get label => switch (this) {
-    StrategyCategory.naked => 'Naked',
-    StrategyCategory.hidden => 'Hidden',
+    StrategyCategory.nakedHidden => 'Naked/Hidden',
     StrategyCategory.locked => 'Locked',
     StrategyCategory.wings => 'Wings',
     StrategyCategory.coloring => 'Coloring',
@@ -14,8 +13,7 @@ extension StrategyCategoryX on StrategyCategory {
   };
 
   IconData get icon => switch (this) {
-    StrategyCategory.naked => Icons.flip_to_front_rounded,
-    StrategyCategory.hidden => Icons.visibility_off_rounded,
+    StrategyCategory.nakedHidden => Icons.auto_awesome_mosaic_rounded,
     StrategyCategory.locked => Icons.lock_rounded,
     StrategyCategory.wings => Icons.auto_awesome_rounded,
     StrategyCategory.coloring => Icons.palette_rounded,
@@ -35,8 +33,7 @@ class StrategyPopupMenuButton extends StatelessWidget {
     this.enabled,
     this.tooltip = 'Select strategy category',
     this.items = const [
-      StrategyCategory.naked,
-      StrategyCategory.hidden,
+      StrategyCategory.nakedHidden,
       StrategyCategory.locked,
       StrategyCategory.wings,
       // StrategyCategory.coloring,
@@ -100,54 +97,6 @@ class StrategyPopupMenuButton extends StatelessWidget {
                 )),
     );
   }
-}
-
-/// 2) Imperative helper, identical to showMenu<StrategyCategory>,
-/// but prebuilt with the same modern styling.
-/// Call from onTap with an anchor Rect (like a button's global bounds).
-Future<StrategyCategory?> showStrategyPopupMenuAt(
-  BuildContext context, {
-  required RelativeRect position,
-  StrategyCategory? initialValue,
-  List<StrategyCategory> items = const [
-    StrategyCategory.naked,
-    StrategyCategory.hidden,
-    StrategyCategory.locked,
-    StrategyCategory.wings,
-    StrategyCategory.coloring,
-    StrategyCategory.advanced,
-  ],
-  ShapeBorder? shape,
-}) {
-  final scheme = Theme.of(context).colorScheme;
-  return showMenu<StrategyCategory>(
-    context: context,
-    position: position,
-    initialValue: initialValue,
-    shape:
-        shape ??
-        RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-          side: BorderSide(color: scheme.outlineVariant.withOpacity(.35)),
-        ),
-    color: scheme.surface,
-    items: [
-      for (final c in items)
-        PopupMenuItem<StrategyCategory>(
-          value: c,
-          child: Row(
-            children: [
-              Icon(c.icon, size: 18, color: scheme.onSurfaceVariant),
-              const SizedBox(width: 10),
-              Text(
-                c.label,
-                style: const TextStyle(fontWeight: FontWeight.w600),
-              ),
-            ],
-          ),
-        ),
-    ],
-  );
 }
 
 /// Small utility to compute an anchor rect from a widget context.

@@ -94,14 +94,11 @@ class SudokuHomePage extends StatelessWidget {
           ),
         ),
         SafeArea(
-          child: Padding(
-            padding: EdgeInsets.all(24),
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 360),
-              switchInCurve: Curves.easeOutCubic,
-              switchOutCurve: Curves.easeInOutCubic,
-              child: content,
-            ),
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 360),
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeInOutCubic,
+            child: content,
           ),
         ),
       ],
@@ -118,7 +115,6 @@ class SudokuHomePage extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(child: _buildBoardCard(context)),
-              const SizedBox(height: 24),
               _buildControlsCard(context, board),
             ],
           ),
@@ -164,7 +160,7 @@ class SudokuHomePage extends StatelessWidget {
           ),
         );
       },
-      child: bottomBar,
+      child: Padding(padding: const EdgeInsets.all(24.0), child: bottomBar),
     );
   }
 }

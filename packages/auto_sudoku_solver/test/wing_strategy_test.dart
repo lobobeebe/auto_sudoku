@@ -9,31 +9,30 @@ void main() {
   group('Wing Strategies', () {
     test('X-Wing (row-based): eliminates in columns outside the two rows', () {
       final cands = List<Set<int>>.generate(81, (_) => <int>{});
-      int i(int r, int c) => idx(r, c);
 
       const d = 6;
       // Row r1 has candidates in columns {2,7}
       final r1 = 1;
       final cA = 2;
       final cB = 7;
-      cands[i(r1, cA)] = {d};
-      cands[i(r1, cB)] = {d};
+      cands[idx(r1, cA)] = {d};
+      cands[idx(r1, cB)] = {d};
 
       // Row r2 has candidates in columns {2,6} (mismatch with r1)
       final r2 = 6;
       final cC = 6; // not equal to cB
-      cands[i(r2, cA)] = {d};
-      cands[i(r2, cC)] = {d};
+      cands[idx(r2, cA)] = {d};
+      cands[idx(r2, cC)] = {d};
 
       // Add some extra d-candidates elsewhere so a naive matcher might get confused
-      cands[i(0, cA)] = {d, 1};
-      cands[i(8, cB)] = {d, 9};
-      cands[i(3, cC)] = {d, 4};
+      cands[idx(0, cA)] = {d, 1};
+      cands[idx(8, cB)] = {d, 9};
+      cands[idx(3, cC)] = {d, 4};
 
       final h = SudokuTestHarness.make(cands);
       final strat = XWingStrategy();
 
-      final hint = strat.findHint(h.s, h.cand);
+      final hint = strat.findHint(h.s);
       expect(
         hint,
         isNull,
@@ -78,7 +77,7 @@ void main() {
       final h = SudokuTestHarness.make(cands);
       final strat = XWingStrategy();
 
-      var hint = strat.findHint(h.s, h.cand);
+      var hint = strat.findHint(h.s);
       expect(hint, isNotNull);
       expect(hint!.strategy, StrategyType.xWing);
       expect(hint.digits, [7]);
@@ -86,7 +85,7 @@ void main() {
       expect(hint.eliminations.length, 1);
       expect(hint.eliminations[idx(6, c0)], {7});
 
-      hint = strat.getHintFromClues(h.s, h.cand, [a, b, c, x]);
+      hint = strat.getHintFromClues(h.s, [a, b, c, x]);
       expect(hint, isNotNull);
       expect(hint!.strategy, StrategyType.xWing);
       expect(hint.digits, [7]);
@@ -118,7 +117,7 @@ void main() {
       final h = SudokuTestHarness.make(cands);
       final strat = XYWingStrategy();
 
-      final hint = strat.findHint(h.s, h.cand);
+      final hint = strat.findHint(h.s);
       expect(hint, isNotNull);
       expect(hint!.strategy, StrategyType.xyWing);
       expect(hint.cells.toSet(), containsAll({pivot, p1, p2}));
@@ -149,7 +148,7 @@ void main() {
       final h = SudokuTestHarness.make(cands);
       final strat = WWingStrategy();
 
-      final hint = strat.findHint(h.s, h.cand);
+      final hint = strat.findHint(h.s);
       expect(hint, isNotNull);
       expect(hint!.strategy, StrategyType.wWing);
       expect(hint.digits.toSet(), containsAll({4, 7}));

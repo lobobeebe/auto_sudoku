@@ -1,4 +1,3 @@
-import '../candidate_map.dart';
 import '../difficulty.dart';
 import '../hint.dart';
 import '../sudoku.dart';
@@ -28,7 +27,7 @@ int _boxOf(int i) => (_rowOf(i) ~/ 3) * 3 + (_colOf(i) ~/ 3);
 /// `indices` must be ≥1 cells in the same box and all in the same row OR column.
 /// We infer the digit by requiring that, within that box, only these cells are
 /// candidates for the digit. If multiple digits fit, the first is used.
-Hint? _pointingFromClues(Sudoku s, CandidateMap cand, List<int> indices) {
+Hint? _pointingFromClues(Sudoku s, List<int> indices) {
   if (indices.isEmpty) return null;
   final box = _boxOf(indices.first);
   if (!indices.every((i) => _boxOf(i) == box)) return null;
@@ -41,7 +40,7 @@ Hint? _pointingFromClues(Sudoku s, CandidateMap cand, List<int> indices) {
     // candidates for d inside this box
     final inBox = <int>[];
     for (final i in s.boxIndices(box)) {
-      if (s.cells[i] == 0 && cand[i].contains(d)) inBox.add(i);
+      if (s.cells[i] == 0 && s.notes[i].contains(d)) inBox.add(i);
     }
     if (inBox.isEmpty) continue;
     final set = inBox.toSet();
@@ -55,7 +54,7 @@ Hint? _pointingFromClues(Sudoku s, CandidateMap cand, List<int> indices) {
       final r = _rowOf(indices.first);
       for (final i in s.rowIndices(r)) {
         if (_boxOf(i) == box) continue;
-        if (s.cells[i] == 0 && cand[i].contains(d)) {
+        if (s.cells[i] == 0 && s.notes[i].contains(d)) {
           elim.putIfAbsent(i, () => {});
           elim[i]!.add(d);
         }
@@ -72,7 +71,7 @@ Hint? _pointingFromClues(Sudoku s, CandidateMap cand, List<int> indices) {
       final c = _colOf(indices.first);
       for (final i in s.colIndices(c)) {
         if (_boxOf(i) == box) continue;
-        if (s.cells[i] == 0 && cand[i].contains(d)) {
+        if (s.cells[i] == 0 && s.notes[i].contains(d)) {
           elim.putIfAbsent(i, () => {});
           elim[i]!.add(d);
         }
@@ -94,7 +93,7 @@ Hint? _pointingFromClues(Sudoku s, CandidateMap cand, List<int> indices) {
 /// `indices` must be ≥1 cells in the same row OR column and all in the same box.
 /// We infer the digit by requiring that, within that line, all candidates of the digit
 /// lie inside that single box and match the indices.
-Hint? _claimingFromClues(Sudoku s, CandidateMap cand, List<int> indices) {
+Hint? _claimingFromClues(Sudoku s, List<int> indices) {
   if (indices.isEmpty) return null;
   final sameRow = indices.every((i) => _rowOf(i) == _rowOf(indices.first));
   final sameCol = indices.every((i) => _colOf(i) == _colOf(indices.first));
@@ -108,16 +107,17 @@ Hint? _claimingFromClues(Sudoku s, CandidateMap cand, List<int> indices) {
       final r = _rowOf(indices.first);
       final inRow = <int>[];
       for (final i in s.rowIndices(r)) {
-        if (s.cells[i] == 0 && cand[i].contains(d)) inRow.add(i);
+        if (s.cells[i] == 0 && s.notes[i].contains(d)) inRow.add(i);
       }
       if (inRow.isEmpty) continue;
-      if (!inRow.every((i) => _boxOf(i) == box && indexSet.contains(i)))
+      if (!inRow.every((i) => _boxOf(i) == box && indexSet.contains(i))) {
         continue;
+      }
 
       final elim = <int, Set<int>>{};
       for (final i in s.boxIndices(box)) {
         if (_rowOf(i) == r) continue;
-        if (s.cells[i] == 0 && cand[i].contains(d)) {
+        if (s.cells[i] == 0 && s.notes[i].contains(d)) {
           elim.putIfAbsent(i, () => {});
           elim[i]!.add(d);
         }
@@ -135,16 +135,17 @@ Hint? _claimingFromClues(Sudoku s, CandidateMap cand, List<int> indices) {
       final c = _colOf(indices.first);
       final inCol = <int>[];
       for (final i in s.colIndices(c)) {
-        if (s.cells[i] == 0 && cand[i].contains(d)) inCol.add(i);
+        if (s.cells[i] == 0 && s.notes[i].contains(d)) inCol.add(i);
       }
       if (inCol.isEmpty) continue;
-      if (!inCol.every((i) => _boxOf(i) == box && indexSet.contains(i)))
+      if (!inCol.every((i) => _boxOf(i) == box && indexSet.contains(i))) {
         continue;
+      }
 
       final elim = <int, Set<int>>{};
       for (final i in s.boxIndices(box)) {
         if (_colOf(i) == c) continue;
-        if (s.cells[i] == 0 && cand[i].contains(d)) {
+        if (s.cells[i] == 0 && s.notes[i].contains(d)) {
           elim.putIfAbsent(i, () => {});
           elim[i]!.add(d);
         }
@@ -173,13 +174,13 @@ class PointingStrategy extends Strategy {
   Difficulty get difficulty => Difficulty.easy;
 
   @override
-  Hint? findHint(Sudoku s, CandidateMap cand) {
+  Hint? findHint(Sudoku s) {
     // Scan each box and digit
     for (var b = 0; b < 9; b++) {
       final boxCells = s.boxIndices(b).toList();
       for (var d = 1; d <= 9; d++) {
         final inBox = boxCells
-            .where((i) => s.cells[i] == 0 && cand[i].contains(d))
+            .where((i) => s.cells[i] == 0 && s.notes[i].contains(d))
             .toList();
         if (inBox.isEmpty) continue;
         final rows = inBox.map(_rowOf).toSet();
@@ -188,7 +189,7 @@ class PointingStrategy extends Strategy {
           final elim = <int, Set<int>>{};
           for (final i in s.rowIndices(r)) {
             if (_boxOf(i) == b) continue;
-            if (s.cells[i] == 0 && cand[i].contains(d)) {
+            if (s.cells[i] == 0 && s.notes[i].contains(d)) {
               elim.putIfAbsent(i, () => {});
               elim[i]!.add(d);
             }
@@ -210,7 +211,7 @@ class PointingStrategy extends Strategy {
           final elim = <int, Set<int>>{};
           for (final i in s.colIndices(c)) {
             if (_boxOf(i) == b) continue;
-            if (s.cells[i] == 0 && cand[i].contains(d)) {
+            if (s.cells[i] == 0 && s.notes[i].contains(d)) {
               elim.putIfAbsent(i, () => {});
               elim[i]!.add(d);
             }
@@ -232,8 +233,8 @@ class PointingStrategy extends Strategy {
   }
 
   @override
-  Hint? getHintFromClues(Sudoku s, CandidateMap cand, List<int> indices) {
-    return _pointingFromClues(s, cand, indices);
+  Hint? getHintFromClues(Sudoku s, List<int> indices) {
+    return _pointingFromClues(s, indices);
   }
 }
 
@@ -247,13 +248,13 @@ class ClaimingStrategy extends Strategy {
   Difficulty get difficulty => Difficulty.easy;
 
   @override
-  Hint? findHint(Sudoku s, CandidateMap cand) {
+  Hint? findHint(Sudoku s) {
     // Row → Box
     for (var r = 0; r < 9; r++) {
       for (var d = 1; d <= 9; d++) {
         final rowCells = s
             .rowIndices(r)
-            .where((i) => s.cells[i] == 0 && cand[i].contains(d))
+            .where((i) => s.cells[i] == 0 && s.notes[i].contains(d))
             .toList();
         if (rowCells.isEmpty) continue;
         final boxes = rowCells.map(_boxOf).toSet();
@@ -262,7 +263,7 @@ class ClaimingStrategy extends Strategy {
           final elim = <int, Set<int>>{};
           for (final i in s.boxIndices(b)) {
             if (_rowOf(i) == r) continue;
-            if (s.cells[i] == 0 && cand[i].contains(d)) {
+            if (s.cells[i] == 0 && s.notes[i].contains(d)) {
               elim.putIfAbsent(i, () => {});
               elim[i]!.add(d);
             }
@@ -286,7 +287,7 @@ class ClaimingStrategy extends Strategy {
       for (var d = 1; d <= 9; d++) {
         final colCells = s
             .colIndices(c)
-            .where((i) => s.cells[i] == 0 && cand[i].contains(d))
+            .where((i) => s.cells[i] == 0 && s.notes[i].contains(d))
             .toList();
         if (colCells.isEmpty) continue;
         final boxes = colCells.map(_boxOf).toSet();
@@ -295,7 +296,7 @@ class ClaimingStrategy extends Strategy {
           final elim = <int, Set<int>>{};
           for (final i in s.boxIndices(b)) {
             if (_colOf(i) == c) continue;
-            if (s.cells[i] == 0 && cand[i].contains(d)) {
+            if (s.cells[i] == 0 && s.notes[i].contains(d)) {
               elim.putIfAbsent(i, () => {});
               elim[i]!.add(d);
             }
@@ -318,7 +319,7 @@ class ClaimingStrategy extends Strategy {
   }
 
   @override
-  Hint? getHintFromClues(Sudoku s, CandidateMap cand, List<int> indices) {
-    return _claimingFromClues(s, cand, indices);
+  Hint? getHintFromClues(Sudoku s, List<int> indices) {
+    return _claimingFromClues(s, indices);
   }
 }

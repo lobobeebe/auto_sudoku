@@ -19,13 +19,13 @@ void main() {
       final h = SudokuTestHarness.make(cands);
       final strat = HiddenSingleStrategy();
 
-      final hint = strat.findHint(h.s, h.cand);
+      final hint = strat.findHint(h.s);
       expect(hint, isNotNull);
       expect(hint!.strategy, StrategyType.hiddenSingle);
       expect(hint.placements, isNotNull);
       expect(hint.placements[cell], 5);
 
-      final hintFromClues = strat.getHintFromClues(h.s, h.cand, [cell]);
+      final hintFromClues = strat.getHintFromClues(h.s, [cell]);
       expect(hintFromClues, isNotNull);
       expect(hintFromClues!.placements[cell], 5);
     });
@@ -50,7 +50,7 @@ void main() {
       final h = SudokuTestHarness.make(cands);
       final strat = HiddenPairStrategy();
 
-      final hint = strat.findHint(h.s, h.cand);
+      final hint = strat.findHint(h.s);
       expect(hint, isNotNull, reason: 'Should find a Hidden Pair in the row');
       expect(hint!.strategy, StrategyType.hiddenPair);
       expect(hint.unit, HintUnit.row);
@@ -64,7 +64,7 @@ void main() {
       expect(elim[b], {1});
 
       // getHintFromClues path mirrors the same outcome
-      final fromClues = strat.getHintFromClues(h.s, h.cand, [a, b]);
+      final fromClues = strat.getHintFromClues(h.s, [a, b]);
       expect(fromClues, isNotNull);
       expect(fromClues!.digits.toSet(), {3, 7});
     });
@@ -91,7 +91,7 @@ void main() {
       final h = SudokuTestHarness.make(cands);
       final strat = HiddenTripleStrategy();
 
-      final hint = strat.findHint(h.s, h.cand);
+      final hint = strat.findHint(h.s);
       expect(hint, isNotNull);
       expect(hint!.strategy, StrategyType.hiddenTriple);
       expect(hint.unit, HintUnit.column);
@@ -103,7 +103,7 @@ void main() {
       expect(elim[a], {9});
       expect(elim[c], {8});
 
-      final fromClues = strat.getHintFromClues(h.s, h.cand, [a, b, c]);
+      final fromClues = strat.getHintFromClues(h.s, [a, b, c]);
       expect(fromClues, isNotNull);
       expect(fromClues!.digits.toSet(), {1, 4, 6});
     });
@@ -134,7 +134,7 @@ void main() {
       final h = SudokuTestHarness.make(cands);
       final strat = HiddenQuadStrategy();
 
-      final hint = strat.findHint(h.s, h.cand);
+      final hint = strat.findHint(h.s);
       expect(hint, isNotNull);
       expect(hint!.strategy, StrategyType.hiddenQuad);
       expect(hint.unit, HintUnit.box);
@@ -145,7 +145,7 @@ void main() {
       expect(elim[a], {8});
       expect(elim[d], {1});
 
-      final fromClues = strat.getHintFromClues(h.s, h.cand, [a, b, c, d]);
+      final fromClues = strat.getHintFromClues(h.s, [a, b, c, d]);
       expect(fromClues, isNotNull);
       expect(fromClues!.digits.toSet(), {2, 4, 6, 9});
     });

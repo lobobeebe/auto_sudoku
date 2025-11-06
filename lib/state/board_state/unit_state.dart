@@ -8,19 +8,13 @@ import 'package:flutter/material.dart';
 
 class UnitMode extends BoardMode {
   final Map<StrategyCategory, Solver> _categorySolverMap = {
-    StrategyCategory.naked: Solver(
+    StrategyCategory.nakedHidden: Solver(
       settings: SolverSettings(
         allowed: {
           StrategyType.nakedSingle,
           StrategyType.nakedPair,
           StrategyType.nakedTriple,
           StrategyType.nakedQuad,
-        },
-      ),
-    ),
-    StrategyCategory.hidden: Solver(
-      settings: SolverSettings(
-        allowed: {
           StrategyType.hiddenSingle,
           StrategyType.hiddenPair,
           StrategyType.hiddenTriple,
@@ -100,7 +94,7 @@ class UnitMode extends BoardMode {
 
     board.pushSnapshot(snapshot: snapshot);
     board.selectedIndices.clear();
-    board.strategyCategory = StrategyCategory.naked;
+    board.strategyCategory = StrategyCategory.nakedHidden;
 
     final result = board.evaluateResult();
     if (result != null) {

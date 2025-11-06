@@ -40,7 +40,6 @@ import 'generator.dart';
 import 'strategy/strategy.dart';
 import 'sudoku.dart';
 
-export 'candidate_map.dart';
 export 'classified_puzzle.dart';
 export 'difficulty.dart';
 export 'generator.dart';
@@ -205,6 +204,6 @@ void main(List<String> args) {
 
   // Write JSON array to file
   final file = File(outPath);
-  file.writeAsStringSync(jsonEncode(outList) + '\n');
+  file.writeAsStringSync('${jsonEncode(outList)}\n');
   print('Wrote ${outList.length} puzzle(s) to $outPath');
 }

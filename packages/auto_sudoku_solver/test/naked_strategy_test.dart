@@ -28,7 +28,7 @@ void main() {
       final h = SudokuTestHarness.make(cands);
 
       final strat = NakedTripleStrategy();
-      final hint = strat.getHintFromClues(h.s, h.cand, [a, b, c]);
+      final hint = strat.getHintFromClues(h.s, [a, b, c]);
 
       expect(hint, isNotNull, reason: 'Should detect a Naked Triple');
       expect(hint!.strategy, StrategyType.nakedTriple);
@@ -65,7 +65,7 @@ void main() {
       final h = SudokuTestHarness.make(cands);
 
       final strat = NakedPairStrategy();
-      final hint = strat.getHintFromClues(h.s, h.cand, [p1, p2]);
+      final hint = strat.getHintFromClues(h.s, [p1, p2]);
 
       expect(hint, isNotNull, reason: 'Should detect a Naked Pair');
       expect(hint!.strategy, StrategyType.nakedPair);
@@ -102,7 +102,7 @@ void main() {
       final h = SudokuTestHarness.make(cands);
 
       final strat = NakedQuadStrategy();
-      final hint = strat.getHintFromClues(h.s, h.cand, [q1, q2, q3, q4]);
+      final hint = strat.getHintFromClues(h.s, [q1, q2, q3, q4]);
 
       expect(hint, isNotNull, reason: 'Should detect a Naked Quad');
       expect(hint!.strategy, StrategyType.nakedQuad);
@@ -140,7 +140,7 @@ void main() {
       final h = SudokuTestHarness.make(cands);
 
       final strat = NakedTripleStrategy();
-      final hint = strat.findHint(h.s, h.cand);
+      final hint = strat.findHint(h.s);
 
       expect(hint, isNotNull, reason: 'Should find a Naked Triple in the row');
       expect(hint!.strategy, StrategyType.nakedTriple);
@@ -173,7 +173,7 @@ void main() {
 
       final h = SudokuTestHarness.make(cands);
       final strat = NakedPairStrategy();
-      final hint = strat.findHint(h.s, h.cand);
+      final hint = strat.findHint(h.s);
 
       expect(hint, isNotNull, reason: 'Should find a Naked Pair in the column');
       expect(hint!.strategy, StrategyType.nakedPair);
@@ -208,7 +208,7 @@ void main() {
 
       final h = SudokuTestHarness.make(cands);
       final strat = NakedQuadStrategy();
-      final hint = strat.findHint(h.s, h.cand);
+      final hint = strat.findHint(h.s);
 
       expect(hint, isNotNull, reason: 'Should find a Naked Quad in the box');
       expect(hint!.strategy, StrategyType.nakedQuad);

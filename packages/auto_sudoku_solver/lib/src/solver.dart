@@ -3,7 +3,6 @@ import 'package:auto_sudoku_solver/src/strategy/locked_strategy.dart';
 import 'package:auto_sudoku_solver/src/strategy/naked_strategy.dart';
 import 'package:auto_sudoku_solver/src/strategy/wing_strategy.dart';
 
-import 'candidate_map.dart';
 import 'difficulty.dart';
 import 'hint.dart';
 import 'rating.dart';
@@ -61,16 +60,15 @@ class Solver {
     : settings = settings ?? SolverSettings.all();
 
   Hint? getHintByClues(Sudoku s, List<int> clueIndices) {
-    final cand = CandidateMap.fromBoard(s);
-    return _getHintByClues(s, cand, clueIndices);
+    return _getHintByClues(s, clueIndices);
   }
 
-  Hint? _getHintByClues(Sudoku s, CandidateMap cand, List<int> clueIndices) {
+  Hint? _getHintByClues(Sudoku s, List<int> clueIndices) {
     for (final strat in strategyOrder) {
       if (!settings.allows(strat.type)) {
         continue;
       }
-      final hint = strat.getHintFromClues(s, cand, clueIndices);
+      final hint = strat.getHintFromClues(s, clueIndices);
       if (hint != null) return hint;
     }
 
@@ -78,198 +76,26 @@ class Solver {
   }
 
   Hint? nextHint(Sudoku s) {
-    final cand = CandidateMap.fromBoard(s);
-    return _nextHintInternal(s, cand);
-  }
-
-  Hint? _nextHintInternal(Sudoku s, CandidateMap cand) {
     for (final strat in strategyOrder) {
       if (!settings.allows(strat.type)) {
         continue;
       }
-      final hint = strat.findHint(s, cand);
+      final hint = strat.findHint(s);
       if (hint != null) return hint;
     }
 
     return null;
   }
 
-  // Hint? _findNakedSingleHint(Sudoku s, CandidateMap cand) {
-  //   for (var i = 0; i < 81; i++) {
-  //     if (s.cells[i] != 0) continue;
-  //     if (cand[i].length != 1) continue;
-  //     final value = cand[i].first;
-  //     return Hint(
-  //       StrategyType.nakedSingle,
-  //       placements: [(i, value)],
-  //       cells: [i],
-  //       digits: [value],
-  //     );
-  //   }
-  //   return null;
-  // }
-
-  // Hint? _findHiddenSingleHint(Sudoku s, CandidateMap cand) {
-  //   Hint? checkUnit(Iterable<int> unit, HintUnit unitType) {
-  //     final spots = List.generate(10, (_) => <int>[]);
-  //     for (final cell in unit) {
-  //       if (s.cells[cell] != 0) continue;
-  //       for (final digit in cand[cell]) {
-  //         spots[digit].add(cell);
-  //       }
-  //     }
-  //     for (var digit = 1; digit <= 9; digit++) {
-  //       final positions = spots[digit];
-  //       if (positions.length == 1) {
-  //         final cell = positions.first;
-  //         return Hint(
-  //           StrategyType.hiddenSingle,
-  //           placements: [(cell, digit)],
-  //           cells: [cell],
-  //           digits: [digit],
-  //           unit: unitType,
-  //         );
-  //       }
-  //     }
-  //     return null;
-  //   }
-
-  //   for (var r = 0; r < 9; r++) {
-  //     final hint = checkUnit(s.rowIndices(r), HintUnit.row);
-  //     if (hint != null) return hint;
-  //   }
-  //   for (var c = 0; c < 9; c++) {
-  //     final hint = checkUnit(s.colIndices(c), HintUnit.column);
-  //     if (hint != null) return hint;
-  //   }
-  //   for (var b = 0; b < 9; b++) {
-  //     final hint = checkUnit(s.boxIndices(b), HintUnit.box);
-  //     if (hint != null) return hint;
-  //   }
-  //   return null;
-  // }
-
-  // Hint? _findXWingHint(Sudoku s, CandidateMap cand) {
-  //   for (var d = 1; d <= 9; d++) {
-  //     final rowsCols = <int, Set<int>>{};
-  //     for (var r = 0; r < 9; r++) {
-  //       final cols = <int>{};
-  //       for (var c = 0; c < 9; c++) {
-  //         final i = s.idx(r, c);
-  //         if (s.cells[i] == 0 && cand[i].contains(d)) cols.add(c);
-  //       }
-  //       if (cols.length == 2) rowsCols[r] = cols;
-  //     }
-  //     final rows = rowsCols.keys.toList();
-  //     for (var i = 0; i < rows.length; i++) {
-  //       for (var j = i + 1; j < rows.length; j++) {
-  //         final r1 = rows[i], r2 = rows[j];
-  //         final cset1 = rowsCols[r1]!;
-  //         final cset2 = rowsCols[r2]!;
-  //         if (cset1.length == 2 && cset1.containsAll(cset2)) {
-  //           final cols = cset1.toList();
-  //           final c1 = cols[0], c2 = cols[1];
-  //           final eliminations = <(int, int)>[];
-  //           for (var r = 0; r < 9; r++) {
-  //             if (r == r1 || r == r2) continue;
-  //             final i1 = s.idx(r, c1);
-  //             final i2 = s.idx(r, c2);
-  //             if (s.cells[i1] == 0 && cand[i1].contains(d)) {
-  //               eliminations.add((i1, d));
-  //             }
-  //             if (s.cells[i2] == 0 && cand[i2].contains(d)) {
-  //               eliminations.add((i2, d));
-  //             }
-  //           }
-  //           final evidCells = [
-  //             s.idx(r1, c1),
-  //             s.idx(r1, c2),
-  //             s.idx(r2, c1),
-  //             s.idx(r2, c2),
-  //           ];
-  //           if (eliminations.isNotEmpty) {
-  //             return Hint(
-  //               StrategyType.xWing,
-  //               eliminations: eliminations,
-  //               cells: evidCells,
-  //               digits: [d],
-  //             );
-  //           }
-  //         }
-  //       }
-  //     }
-  //     // Column-based (transpose)
-  //     final colsRows = <int, Set<int>>{};
-  //     for (var c = 0; c < 9; c++) {
-  //       final rowsSet = <int>{};
-  //       for (var r = 0; r < 9; r++) {
-  //         final i = s.idx(r, c);
-  //         if (s.cells[i] == 0 && cand[i].contains(d)) rowsSet.add(r);
-  //       }
-  //       if (rowsSet.length == 2) colsRows[c] = rowsSet;
-  //     }
-  //     final cols = colsRows.keys.toList();
-  //     for (var i = 0; i < cols.length; i++) {
-  //       for (var j = i + 1; j < cols.length; j++) {
-  //         final c1 = cols[i], c2 = cols[j];
-  //         final rset1 = colsRows[c1]!;
-  //         final rset2 = colsRows[c2]!;
-  //         if (rset1.length == 2 && rset1.containsAll(rset2)) {
-  //           final rowsPair = rset1.toList();
-  //           final r1 = rowsPair[0], r2 = rowsPair[1];
-  //           final eliminations = <(int, int)>[];
-  //           for (var c = 0; c < 9; c++) {
-  //             if (c == c1 || c == c2) continue;
-  //             final i1 = s.idx(r1, c);
-  //             final i2 = s.idx(r2, c);
-  //             if (s.cells[i1] == 0 && cand[i1].contains(d)) {
-  //               eliminations.add((i1, d));
-  //             }
-  //             if (s.cells[i2] == 0 && cand[i2].contains(d)) {
-  //               eliminations.add((i2, d));
-  //             }
-  //           }
-  //           final evidCells = [
-  //             s.idx(r1, c1),
-  //             s.idx(r2, c1),
-  //             s.idx(r1, c2),
-  //             s.idx(r2, c2),
-  //           ];
-  //           if (eliminations.isNotEmpty) {
-  //             return Hint(
-  //               StrategyType.xWing,
-  //               eliminations: eliminations,
-  //               cells: evidCells,
-  //               digits: [d],
-  //             );
-  //           }
-  //         }
-  //       }
-  //     }
-  //   }
-  //   return null;
-  // }
-
   SolveResult solveLogical(Sudoku s) {
     final steps = <StrategyType>[];
-    final cand = CandidateMap.fromBoard(s);
 
     while (!s.isSolved) {
-      if (!cand.isNotesDriven) {
-        for (var i = 0; i < 81; i++) {
-          if (s.cells[i] != 0 || cand[i].isNotEmpty) continue;
-          for (var d = 1; d <= 9; d++) {
-            if (s.isValidPlacement(i, d)) {
-              cand[i].add(d);
-            }
-          }
-        }
-      }
-      final hint = _nextHintInternal(s, cand);
+      final hint = nextHint(s);
       if (hint == null) {
         break;
       }
-      final mutated = _applyHint(s, cand, hint);
+      final mutated = _applyHint(s, hint);
       if (!mutated) {
         break;
       }
@@ -279,7 +105,7 @@ class Solver {
     return SolveResult(s.isSolved, !s.isSolved, steps);
   }
 
-  bool _applyHint(Sudoku s, CandidateMap cand, Hint hint) {
+  bool _applyHint(Sudoku s, Hint hint) {
     var changed = false;
 
     for (final entry in hint.placements.entries) {
@@ -291,8 +117,8 @@ class Solver {
         s.cells[index] = digit;
         changed = true;
       }
-      cand[index].clear();
-      cand.removeFromPeers(s, index, digit);
+      s.notes[index].clear();
+      s.removeFromPeers(index, digit);
     }
 
     for (final entry in hint.eliminations.entries) {
@@ -301,7 +127,7 @@ class Solver {
         if (index < 0 || index >= 81) continue;
         if (digit < 1 || digit > 9) continue;
         if (s.cells[index] != 0) continue;
-        if (cand[index].remove(digit)) {
+        if (s.notes[index].remove(digit)) {
           changed = true;
         }
       }
@@ -310,17 +136,17 @@ class Solver {
     return changed;
   }
 
-  // Hint? _findXYWingHint(Sudoku s, CandidateMap cand) {
+  // Hint? _findXYWingHint(Sudoku s, CandidateMap s.notes) {
   //   final peers = List.generate(81, (i) => s.peersOf(i));
   //   for (var pivot = 0; pivot < 81; pivot++) {
-  //     if (s.cells[pivot] != 0 || cand[pivot].length != 2) continue;
-  //     final digits = cand[pivot].toList()..sort();
+  //     if (s.cells[pivot] != 0 || s.notes[pivot].length != 2) continue;
+  //     final digits = s.notes[pivot].toList()..sort();
   //     final a = digits[0], b = digits[1];
   //     final wingsA = <int, int>{};
   //     final wingsB = <int, int>{};
   //     for (final peer in peers[pivot]) {
-  //       if (s.cells[peer] != 0 || cand[peer].length != 2) continue;
-  //       final values = cand[peer].toList();
+  //       if (s.cells[peer] != 0 || s.notes[peer].length != 2) continue;
+  //       final values = s.notes[peer].toList();
   //       if (values.contains(a) && !values.contains(b)) {
   //         final z = values.firstWhere((v) => v != a);
   //         wingsA[peer] = z;
@@ -340,7 +166,7 @@ class Solver {
   //         final eliminations = <(int, int)>[];
   //         for (final idx in intersection) {
   //           if (s.cells[idx] != 0) continue;
-  //           if (!cand[idx].contains(z)) continue;
+  //           if (!s.notes[idx].contains(z)) continue;
   //           eliminations.add((idx, z));
   //         }
   //         if (eliminations.isEmpty) continue;
@@ -358,7 +184,7 @@ class Solver {
   //   return null;
   // }
 
-  // Hint? _findColoringHint(Sudoku s, CandidateMap cand) {
+  // Hint? _findColoringHint(Sudoku s, CandidateMap s.notes) {
   //   final peers = List.generate(81, (i) => s.peersOf(i));
   //   for (var digit = 1; digit <= 9; digit++) {
   //     final edges = <int, Set<int>>{};
@@ -371,7 +197,7 @@ class Solver {
   //       final cells = <int>[];
   //       for (var c = 0; c < 9; c++) {
   //         final idx = s.idx(r, c);
-  //         if (s.cells[idx] == 0 && cand[idx].contains(digit)) cells.add(idx);
+  //         if (s.cells[idx] == 0 && s.notes[idx].contains(digit)) cells.add(idx);
   //       }
   //       if (cells.length == 2) addEdge(cells[0], cells[1]);
   //     }
@@ -379,14 +205,14 @@ class Solver {
   //       final cells = <int>[];
   //       for (var r = 0; r < 9; r++) {
   //         final idx = s.idx(r, c);
-  //         if (s.cells[idx] == 0 && cand[idx].contains(digit)) cells.add(idx);
+  //         if (s.cells[idx] == 0 && s.notes[idx].contains(digit)) cells.add(idx);
   //       }
   //       if (cells.length == 2) addEdge(cells[0], cells[1]);
   //     }
   //     for (var b = 0; b < 9; b++) {
   //       final cells = <int>[];
   //       for (final idx in s.boxIndices(b)) {
-  //         if (s.cells[idx] == 0 && cand[idx].contains(digit)) cells.add(idx);
+  //         if (s.cells[idx] == 0 && s.notes[idx].contains(digit)) cells.add(idx);
   //       }
   //       if (cells.length == 2) addEdge(cells[0], cells[1]);
   //     }
@@ -422,7 +248,7 @@ class Solver {
   //       final eliminations = <(int, int)>[];
   //       for (var idx = 0; idx < 81; idx++) {
   //         if (s.cells[idx] != 0) continue;
-  //         if (!cand[idx].contains(digit)) continue;
+  //         if (!s.notes[idx].contains(digit)) continue;
   //         if (coloredSet.contains(idx)) continue;
   //         final peerSet = peers[idx];
   //         final seesFalse = peerSet.any(falseColor.contains);
@@ -445,14 +271,14 @@ class Solver {
   //   return null;
   // }
 
-  // Hint? _findSwordfishHint(Sudoku s, CandidateMap cand) {
+  // Hint? _findSwordfishHint(Sudoku s, CandidateMap s.notes) {
   //   Hint? rowFish(int digit) {
   //     final rowCols = <int, Set<int>>{};
   //     for (var r = 0; r < 9; r++) {
   //       final cols = <int>{};
   //       for (var c = 0; c < 9; c++) {
   //         final idx = s.idx(r, c);
-  //         if (s.cells[idx] == 0 && cand[idx].contains(digit)) cols.add(c);
+  //         if (s.cells[idx] == 0 && s.notes[idx].contains(digit)) cols.add(c);
   //       }
   //       if (cols.length >= 2 && cols.length <= 3) {
   //         rowCols[r] = cols;
@@ -471,7 +297,7 @@ class Solver {
   //             if (r == r1 || r == r2 || r == r3) continue;
   //             for (final col in columns) {
   //               final idx = s.idx(r, col);
-  //               if (s.cells[idx] == 0 && cand[idx].contains(digit)) {
+  //               if (s.cells[idx] == 0 && s.notes[idx].contains(digit)) {
   //                 eliminations.add((idx, digit));
   //               }
   //             }
@@ -504,7 +330,7 @@ class Solver {
   //       final rows = <int>{};
   //       for (var r = 0; r < 9; r++) {
   //         final idx = s.idx(r, c);
-  //         if (s.cells[idx] == 0 && cand[idx].contains(digit)) rows.add(r);
+  //         if (s.cells[idx] == 0 && s.notes[idx].contains(digit)) rows.add(r);
   //       }
   //       if (rows.length >= 2 && rows.length <= 3) {
   //         colRows[c] = rows;
@@ -523,7 +349,7 @@ class Solver {
   //             if (col == c1 || col == c2 || col == c3) continue;
   //             for (final row in rows) {
   //               final idx = s.idx(row, col);
-  //               if (s.cells[idx] == 0 && cand[idx].contains(digit)) {
+  //               if (s.cells[idx] == 0 && s.notes[idx].contains(digit)) {
   //                 eliminations.add((idx, digit));
   //               }
   //             }
@@ -559,7 +385,7 @@ class Solver {
   //   return null;
   // }
 
-  // Hint? _findSkyscraperHint(Sudoku s, CandidateMap cand) {
+  // Hint? _findSkyscraperHint(Sudoku s, CandidateMap s.notes) {
   //   final peers = List.generate(81, (i) => s.peersOf(i));
   //   Set<int> commonPeers(int a, int b) => peers[a].intersection(peers[b]);
 
@@ -569,7 +395,7 @@ class Solver {
   //       final cols = <int>[];
   //       for (var c = 0; c < 9; c++) {
   //         final idx = s.idx(r, c);
-  //         if (s.cells[idx] == 0 && cand[idx].contains(digit)) cols.add(c);
+  //         if (s.cells[idx] == 0 && s.notes[idx].contains(digit)) cols.add(c);
   //       }
   //       if (cols.length == 2) rowLinks[r] = cols;
   //     }
@@ -591,7 +417,7 @@ class Solver {
   //         if (s.cells[end1] != 0 || s.cells[end2] != 0) continue;
   //         final eliminations = <(int, int)>[];
   //         for (final idx in commonPeers(end1, end2)) {
-  //           if (s.cells[idx] == 0 && cand[idx].contains(digit)) {
+  //           if (s.cells[idx] == 0 && s.notes[idx].contains(digit)) {
   //             eliminations.add((idx, digit));
   //           }
   //         }
@@ -611,7 +437,7 @@ class Solver {
   //       final rowsSet = <int>[];
   //       for (var r = 0; r < 9; r++) {
   //         final idx = s.idx(r, c);
-  //         if (s.cells[idx] == 0 && cand[idx].contains(digit)) rowsSet.add(r);
+  //         if (s.cells[idx] == 0 && s.notes[idx].contains(digit)) rowsSet.add(r);
   //       }
   //       if (rowsSet.length == 2) colLinks[c] = rowsSet;
   //     }
@@ -633,7 +459,7 @@ class Solver {
   //         if (s.cells[end1] != 0 || s.cells[end2] != 0) continue;
   //         final eliminations = <(int, int)>[];
   //         for (final idx in commonPeers(end1, end2)) {
-  //           if (s.cells[idx] == 0 && cand[idx].contains(digit)) {
+  //           if (s.cells[idx] == 0 && s.notes[idx].contains(digit)) {
   //             eliminations.add((idx, digit));
   //           }
   //         }
@@ -651,7 +477,7 @@ class Solver {
   //   return null;
   // }
 
-  // Hint? _findTwoStringKiteHint(Sudoku s, CandidateMap cand) {
+  // Hint? _findTwoStringKiteHint(Sudoku s, CandidateMap s.notes) {
   //   for (var digit = 1; digit <= 9; digit++) {
   //     final rowLinks = <int, List<int>>{};
   //     final colLinks = <int, List<int>>{};
@@ -659,7 +485,7 @@ class Solver {
   //       final cols = <int>[];
   //       for (var c = 0; c < 9; c++) {
   //         final idx = s.idx(r, c);
-  //         if (s.cells[idx] == 0 && cand[idx].contains(digit)) cols.add(c);
+  //         if (s.cells[idx] == 0 && s.notes[idx].contains(digit)) cols.add(c);
   //       }
   //       if (cols.length == 2) rowLinks[r] = cols;
   //     }
@@ -667,7 +493,7 @@ class Solver {
   //       final rows = <int>[];
   //       for (var r = 0; r < 9; r++) {
   //         final idx = s.idx(r, c);
-  //         if (s.cells[idx] == 0 && cand[idx].contains(digit)) rows.add(r);
+  //         if (s.cells[idx] == 0 && s.notes[idx].contains(digit)) rows.add(r);
   //       }
   //       if (rows.length == 2) colLinks[c] = rows;
   //     }
@@ -698,7 +524,7 @@ class Solver {
   //           }
   //         }
   //         if (hits != 1 || elimCell < 0) continue;
-  //         if (s.cells[elimCell] != 0 || !cand[elimCell].contains(digit)) {
+  //         if (s.cells[elimCell] != 0 || !s.notes[elimCell].contains(digit)) {
   //           continue;
   //         }
   //         final cells = <int>{p1, p2, q1, q2}.toList()..sort();
@@ -714,11 +540,11 @@ class Solver {
   //   return null;
   // }
 
-  // Hint? _findTurbotFishHint(Sudoku s, CandidateMap cand) => null;
+  // Hint? _findTurbotFishHint(Sudoku s, CandidateMap s.notes) => null;
 
-  // Hint? _findXYZWingHint(Sudoku s, CandidateMap cand) => null;
+  // Hint? _findXYZWingHint(Sudoku s, CandidateMap s.notes) => null;
 
-  // Hint? _findWWingHint(Sudoku s, CandidateMap cand) {
+  // Hint? _findWWingHint(Sudoku s, CandidateMap s.notes) {
   //   final strongRow = List.generate(10, (_) => <(int, int)>[]);
   //   final strongCol = List.generate(10, (_) => <(int, int)>[]);
   //   for (var digit = 1; digit <= 9; digit++) {
@@ -726,7 +552,7 @@ class Solver {
   //       final cols = <int>[];
   //       for (var c = 0; c < 9; c++) {
   //         final idx = s.idx(r, c);
-  //         if (s.cells[idx] == 0 && cand[idx].contains(digit)) cols.add(c);
+  //         if (s.cells[idx] == 0 && s.notes[idx].contains(digit)) cols.add(c);
   //       }
   //       if (cols.length == 2) {
   //         strongRow[digit].add((r, (cols[0] << 4) | cols[1]));
@@ -736,7 +562,7 @@ class Solver {
   //       final rows = <int>[];
   //       for (var r = 0; r < 9; r++) {
   //         final idx = s.idx(r, c);
-  //         if (s.cells[idx] == 0 && cand[idx].contains(digit)) rows.add(r);
+  //         if (s.cells[idx] == 0 && s.notes[idx].contains(digit)) rows.add(r);
   //       }
   //       if (rows.length == 2) {
   //         strongCol[digit].add((c, (rows[0] << 4) | rows[1]));
@@ -746,8 +572,8 @@ class Solver {
 
   //   final bivalue = <int, List<int>>{};
   //   for (var idx = 0; idx < 81; idx++) {
-  //     if (s.cells[idx] == 0 && cand[idx].length == 2) {
-  //       bivalue[idx] = cand[idx].toList()..sort();
+  //     if (s.cells[idx] == 0 && s.notes[idx].length == 2) {
+  //       bivalue[idx] = s.notes[idx].toList()..sort();
   //     }
   //   }
 
@@ -793,7 +619,7 @@ class Solver {
   //           final inter = peers[i1].intersection(peers[i2]);
   //           final eliminations = <(int, int)>[];
   //           for (final idx in inter) {
-  //             if (s.cells[idx] == 0 && cand[idx].contains(y)) {
+  //             if (s.cells[idx] == 0 && s.notes[idx].contains(y)) {
   //               eliminations.add((idx, y));
   //             }
   //           }
@@ -819,7 +645,7 @@ class Solver {
   //   return null;
   // }
 
-  // Hint? _findUniqueRectangleHint(Sudoku s, CandidateMap cand) {
+  // Hint? _findUniqueRectangleHint(Sudoku s, CandidateMap s.notes) {
   //   for (var r1 = 0; r1 < 9; r1++) {
   //     for (var r2 = r1 + 1; r2 < 9; r2++) {
   //       for (var c1 = 0; c1 < 9; c1++) {
@@ -841,7 +667,7 @@ class Solver {
   //               var subsetCount = 0;
   //               final supers = <int>[];
   //               for (final cell in corners) {
-  //                 final candidates = cand[cell];
+  //                 final candidates = s.notes[cell];
   //                 if (candidates.isEmpty) continue;
   //                 if (candidates.every(pair.contains)) subsetCount++;
   //                 if (candidates.contains(a) &&
@@ -853,8 +679,8 @@ class Solver {
   //               if (subsetCount >= 3 && supers.isNotEmpty) {
   //                 final eliminations = <(int, int)>[];
   //                 for (final cell in supers) {
-  //                   if (cand[cell].contains(a)) eliminations.add((cell, a));
-  //                   if (cand[cell].contains(b)) eliminations.add((cell, b));
+  //                   if (s.notes[cell].contains(a)) eliminations.add((cell, a));
+  //                   if (s.notes[cell].contains(b)) eliminations.add((cell, b));
   //                 }
   //                 if (eliminations.isEmpty) continue;
   //                 final cells = corners.toSet().toList()..sort();
@@ -875,17 +701,17 @@ class Solver {
   //   return null;
   // }
 
-  // Hint? _findBugHint(Sudoku s, CandidateMap cand) => null;
+  // Hint? _findBugHint(Sudoku s, CandidateMap s.notes) => null;
 
-  // Hint? _findRemotePairsHint(Sudoku s, CandidateMap cand) => null;
+  // Hint? _findRemotePairsHint(Sudoku s, CandidateMap s.notes) => null;
 
-  // Hint? _findXYChainHint(Sudoku s, CandidateMap cand) => null;
+  // Hint? _findXYChainHint(Sudoku s, CandidateMap s.notes) => null;
 
-  // Hint? _findALSHint(Sudoku s, CandidateMap cand) => null;
+  // Hint? _findALSHint(Sudoku s, CandidateMap s.notes) => null;
 
-  // Hint? _findALSXyWingHint(Sudoku s, CandidateMap cand) => null;
+  // Hint? _findALSXyWingHint(Sudoku s, CandidateMap s.notes) => null;
 
-  // Hint? _findAICHint(Sudoku s, CandidateMap cand) => null;
+  // Hint? _findAICHint(Sudoku s, CandidateMap s.notes) => null;
 
   // Backtracking solver (for uniqueness & classification) -- bitmask version
   bool solveBacktracking(Sudoku s) {

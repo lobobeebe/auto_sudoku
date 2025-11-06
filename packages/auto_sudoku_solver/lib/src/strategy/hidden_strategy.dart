@@ -1,4 +1,3 @@
-import '../candidate_map.dart';
 import '../difficulty.dart';
 import '../hint.dart';
 import '../sudoku.dart';
@@ -20,20 +19,20 @@ abstract class HiddenStrategy extends Strategy {
   StrategyType get subsetType;
 
   @override
-  Hint? findHint(Sudoku s, CandidateMap cand) {
+  Hint? findHint(Sudoku s) {
     // Rows
     for (var r = 0; r < 9; r++) {
-      final h = _processUnitHidden(s, cand, s.rowIndices(r), HintUnit.row);
+      final h = _processUnitHidden(s, s.rowIndices(r), HintUnit.row);
       if (h != null) return h;
     }
     // Columns
     for (var c = 0; c < 9; c++) {
-      final h = _processUnitHidden(s, cand, s.colIndices(c), HintUnit.column);
+      final h = _processUnitHidden(s, s.colIndices(c), HintUnit.column);
       if (h != null) return h;
     }
     // Boxes
     for (var b = 0; b < 9; b++) {
-      final h = _processUnitHidden(s, cand, s.boxIndices(b), HintUnit.box);
+      final h = _processUnitHidden(s, s.boxIndices(b), HintUnit.box);
       if (h != null) return h;
     }
     return null;
@@ -46,7 +45,7 @@ abstract class HiddenStrategy extends Strategy {
   /// elimination exists, we return a Hint.
   Hint? getHintFromCluesCommon(
     Sudoku s,
-    CandidateMap cand,
+
     List<int> indices,
     int k,
     StrategyType type,
@@ -87,7 +86,7 @@ abstract class HiddenStrategy extends Strategy {
       var seenAny = false;
       for (final i in unit) {
         if (s.cells[i] != 0) continue;
-        if (cand[i].contains(d)) {
+        if (s.notes[i].contains(d)) {
           seenAny = true;
           if (!indexSet.contains(i)) {
             ok = false;
@@ -103,7 +102,7 @@ abstract class HiddenStrategy extends Strategy {
     final elim = <int, Set<int>>{};
     final digitSet = targetDigits.toSet();
     for (final i in indices) {
-      for (final cnd in cand[i]) {
+      for (final cnd in s.notes[i]) {
         if (!digitSet.contains(cnd)) {
           elim.putIfAbsent(i, () => {});
           elim[i]!.add((cnd));
@@ -122,19 +121,14 @@ abstract class HiddenStrategy extends Strategy {
     );
   }
 
-  Hint? _processUnitHidden(
-    Sudoku s,
-    CandidateMap cand,
-    Iterable<int> unit,
-    HintUnit unitType,
-  ) {
+  Hint? _processUnitHidden(Sudoku s, Iterable<int> unit, HintUnit unitType) {
     final empties = unit.where((i) => s.cells[i] == 0).toList();
     if (empties.length < k) return null;
 
     // Candidate locations per digit (in this unit).
     final locs = List.generate(10, (_) => <int>[]);
     for (final i in empties) {
-      for (final d in cand[i]) {
+      for (final d in s.notes[i]) {
         locs[d].add(i);
       }
     }
@@ -149,7 +143,6 @@ abstract class HiddenStrategy extends Strategy {
 
     return _chooseDigitsAndBuildHint(
       s,
-      cand,
       locs,
       candidateDigits,
       unitType,
@@ -160,7 +153,7 @@ abstract class HiddenStrategy extends Strategy {
 
   Hint? _chooseDigitsAndBuildHint(
     Sudoku s,
-    CandidateMap cand,
+
     List<List<int>> locs,
     List<int> digits,
     HintUnit unitType,
@@ -184,7 +177,7 @@ abstract class HiddenStrategy extends Strategy {
         final elim = <int, Set<int>>{};
         final digitSet = pick.toSet();
         for (final i in posSet) {
-          for (final cnd in cand[i]) {
+          for (final cnd in s.notes[i]) {
             if (!digitSet.contains(cnd)) {
               elim.putIfAbsent(i, () => {});
               elim[i]!.add(cnd);
@@ -225,12 +218,12 @@ class HiddenSingleStrategy extends Strategy {
   Difficulty get difficulty => Difficulty.easy;
 
   @override
-  Hint? findHint(Sudoku s, CandidateMap cand) {
+  Hint? findHint(Sudoku s) {
     Hint? scan(Iterable<int> unit, HintUnit unitType) {
       final spots = List.generate(10, (_) => <int>[]);
       for (final i in unit) {
         if (s.cells[i] != 0) continue;
-        for (final d in cand[i]) {
+        for (final d in s.notes[i]) {
           spots[d].add(i);
         }
       }
@@ -266,7 +259,7 @@ class HiddenSingleStrategy extends Strategy {
   }
 
   @override
-  Hint? getHintFromClues(Sudoku s, CandidateMap cand, List<int> indices) {
+  Hint? getHintFromClues(Sudoku s, List<int> indices) {
     if (indices.length != 1) return null;
     final i = indices.first;
     if (s.cells[i] != 0) return null;
@@ -277,7 +270,7 @@ class HiddenSingleStrategy extends Strategy {
         var onlyHere = false;
         for (final u in unit) {
           if (s.cells[u] != 0) continue;
-          if (cand[u].contains(d)) {
+          if (s.notes[u].contains(d)) {
             count++;
             if (u == i) onlyHere = true;
             if (count > 1) break;
@@ -317,8 +310,8 @@ class HiddenPairStrategy extends HiddenStrategy {
   Difficulty get difficulty => Difficulty.easy;
 
   @override
-  Hint? getHintFromClues(Sudoku s, CandidateMap cand, List<int> indices) {
-    return getHintFromCluesCommon(s, cand, indices, 2, StrategyType.hiddenPair);
+  Hint? getHintFromClues(Sudoku s, List<int> indices) {
+    return getHintFromCluesCommon(s, indices, 2, StrategyType.hiddenPair);
   }
 }
 
@@ -336,14 +329,8 @@ class HiddenTripleStrategy extends HiddenStrategy {
   Difficulty get difficulty => Difficulty.easy;
 
   @override
-  Hint? getHintFromClues(Sudoku s, CandidateMap cand, List<int> indices) {
-    return getHintFromCluesCommon(
-      s,
-      cand,
-      indices,
-      3,
-      StrategyType.hiddenTriple,
-    );
+  Hint? getHintFromClues(Sudoku s, List<int> indices) {
+    return getHintFromCluesCommon(s, indices, 3, StrategyType.hiddenTriple);
   }
 }
 
@@ -361,7 +348,7 @@ class HiddenQuadStrategy extends HiddenStrategy {
   Difficulty get difficulty => Difficulty.medium;
 
   @override
-  Hint? getHintFromClues(Sudoku s, CandidateMap cand, List<int> indices) {
-    return getHintFromCluesCommon(s, cand, indices, 4, StrategyType.hiddenQuad);
+  Hint? getHintFromClues(Sudoku s, List<int> indices) {
+    return getHintFromCluesCommon(s, indices, 4, StrategyType.hiddenQuad);
   }
 }
