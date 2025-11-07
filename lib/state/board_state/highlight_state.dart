@@ -13,11 +13,21 @@ class HighlightMode extends BoardMode {
 
   @override
   void onRequestSelectCell(int row, int col) {
+    final oldIndex = board.selectedIndices.firstOrNull;
     final newIndex = board.getIndex(row, col);
 
     board.selectedIndices.clear();
+
+    // Same cell selected - just unselect and move out of the highlight mode.
+    if (oldIndex == newIndex) {
+      board.setMode(lastMode);
+      return;
+    }
+
+    // New Cell selected
     board.selectedIndices.add(newIndex);
 
+    // If new cell is empty, transition out. Otherwise, just update the highlight.
     if (board.sudoku.isEmpty(newIndex)) {
       board.setMode(lastMode);
     } else {
@@ -28,16 +38,18 @@ class HighlightMode extends BoardMode {
   @override
   CellViewModel buildCellViewModel(int index, SudokuTheme theme) {
     bool isSelected = board.isIndexSelected(index);
-    bool isPeer = board.isPeersWithAnyMatching(index);
     bool isMatching = board.matchesAnySelected(index);
     bool isEmpty = board.sudoku.isEmpty(index);
+    bool hasSelectedNote = board.selectedValues.any(
+      (selected) => board.sudoku.hasNote(index, selected),
+    );
 
     Color bg = theme.boardSurface;
     if (isSelected) {
       bg = theme.selectedCellBackground;
     } else if (isMatching) {
       bg = theme.matchingValueBackground;
-    } else if (isPeer || !isEmpty) {
+    } else if (!hasSelectedNote || !isEmpty) {
       bg = theme.peerCellBackground;
     }
 

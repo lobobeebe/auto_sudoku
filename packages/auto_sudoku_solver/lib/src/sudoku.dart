@@ -66,8 +66,8 @@ class Sudoku {
       for (final entry in hint.placements.entries) {
         final i = entry.key;
         final d = entry.value;
-        if (i < 0 || i >= numIndices) continue;
-        if (d < 1 || d > 9) continue;
+        if (!isValidIndex(i)) continue;
+        if (!isValidDigit(d)) continue;
 
         final beforeVal = valueAt(i);
         final beforeMask = notesMaskAt(i);
@@ -91,10 +91,10 @@ class Sudoku {
     if (hint.eliminations.isNotEmpty) {
       for (final entry in hint.eliminations.entries) {
         final i = entry.key;
-        if (i < 0 || i >= numIndices) continue;
+        if (!isValidIndex(i)) continue;
         if (!isEmpty(i)) continue;
         for (final d in entry.value) {
-          if (d < 1 || d > 9) continue;
+          if (!isValidDigit(d)) continue;
           if (setNote(i, d, false)) changed.add(i);
         }
       }

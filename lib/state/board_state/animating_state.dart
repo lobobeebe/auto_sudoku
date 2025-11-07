@@ -10,7 +10,7 @@ class AnimatingMode extends BoardMode {
   final BoardMode nextMode;
   int? _animatingIndex;
 
-  final Duration _autoFillStepDelay = const Duration(milliseconds: 160);
+  final Duration _autoFillStepDelay = const Duration(milliseconds: 120);
 
   AnimatingMode(super.board, this.nextMode);
   @override
