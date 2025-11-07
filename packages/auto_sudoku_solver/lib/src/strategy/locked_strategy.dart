@@ -40,7 +40,7 @@ Hint? _pointingFromClues(Sudoku s, List<int> indices) {
     // candidates for d inside this box
     final inBox = <int>[];
     for (final i in s.boxIndices(box)) {
-      if (s.cells[i] == 0 && s.notes[i].contains(d)) inBox.add(i);
+      if (s.isEmpty(i) && s.hasNote(i, d)) inBox.add(i);
     }
     if (inBox.isEmpty) continue;
     final set = inBox.toSet();
@@ -54,8 +54,8 @@ Hint? _pointingFromClues(Sudoku s, List<int> indices) {
       final r = _rowOf(indices.first);
       for (final i in s.rowIndices(r)) {
         if (_boxOf(i) == box) continue;
-        if (s.cells[i] == 0 && s.notes[i].contains(d)) {
-          elim.putIfAbsent(i, () => {});
+        if (s.isEmpty(i) && s.hasNote(i, d)) {
+          elim.putIfAbsent(i, () => <int>{});
           elim[i]!.add(d);
         }
       }
@@ -71,8 +71,8 @@ Hint? _pointingFromClues(Sudoku s, List<int> indices) {
       final c = _colOf(indices.first);
       for (final i in s.colIndices(c)) {
         if (_boxOf(i) == box) continue;
-        if (s.cells[i] == 0 && s.notes[i].contains(d)) {
-          elim.putIfAbsent(i, () => {});
+        if (s.isEmpty(i) && s.hasNote(i, d)) {
+          elim.putIfAbsent(i, () => <int>{});
           elim[i]!.add(d);
         }
       }
@@ -90,7 +90,7 @@ Hint? _pointingFromClues(Sudoku s, List<int> indices) {
 }
 
 /// Build a Claiming hint from explicit clue indices.
-/// `indices` must be ≥1 cells in the same row OR column and all in the same box.
+/// `indices` must be ≥2 cells in the same row OR column and all in the same box.
 /// We infer the digit by requiring that, within that line, all candidates of the digit
 /// lie inside that single box and match the indices.
 Hint? _claimingFromClues(Sudoku s, List<int> indices) {
@@ -100,6 +100,7 @@ Hint? _claimingFromClues(Sudoku s, List<int> indices) {
   if (!(sameRow || sameCol)) return null;
   final box = _boxOf(indices.first);
   if (!indices.every((i) => _boxOf(i) == box)) return null;
+  if (indices.length < 2) return null; // avoid hidden-single style degenerate claims
 
   final indexSet = indices.toSet();
   for (var d = 1; d <= 9; d++) {
@@ -107,7 +108,7 @@ Hint? _claimingFromClues(Sudoku s, List<int> indices) {
       final r = _rowOf(indices.first);
       final inRow = <int>[];
       for (final i in s.rowIndices(r)) {
-        if (s.cells[i] == 0 && s.notes[i].contains(d)) inRow.add(i);
+        if (s.isEmpty(i) && s.hasNote(i, d)) inRow.add(i);
       }
       if (inRow.isEmpty) continue;
       if (!inRow.every((i) => _boxOf(i) == box && indexSet.contains(i))) {
@@ -117,11 +118,10 @@ Hint? _claimingFromClues(Sudoku s, List<int> indices) {
       final elim = <int, Set<int>>{};
       for (final i in s.boxIndices(box)) {
         if (_rowOf(i) == r) continue;
-        if (s.cells[i] == 0 && s.notes[i].contains(d)) {
-          elim.putIfAbsent(i, () => {});
+        if (s.isEmpty(i) && s.hasNote(i, d)) {
+          elim.putIfAbsent(i, () => <int>{});
           elim[i]!.add(d);
         }
-        ;
       }
       if (elim.isEmpty) continue;
       return Hint(
@@ -135,7 +135,7 @@ Hint? _claimingFromClues(Sudoku s, List<int> indices) {
       final c = _colOf(indices.first);
       final inCol = <int>[];
       for (final i in s.colIndices(c)) {
-        if (s.cells[i] == 0 && s.notes[i].contains(d)) inCol.add(i);
+        if (s.isEmpty(i) && s.hasNote(i, d)) inCol.add(i);
       }
       if (inCol.isEmpty) continue;
       if (!inCol.every((i) => _boxOf(i) == box && indexSet.contains(i))) {
@@ -145,11 +145,10 @@ Hint? _claimingFromClues(Sudoku s, List<int> indices) {
       final elim = <int, Set<int>>{};
       for (final i in s.boxIndices(box)) {
         if (_colOf(i) == c) continue;
-        if (s.cells[i] == 0 && s.notes[i].contains(d)) {
-          elim.putIfAbsent(i, () => {});
+        if (s.isEmpty(i) && s.hasNote(i, d)) {
+          elim.putIfAbsent(i, () => <int>{});
           elim[i]!.add(d);
         }
-        ;
       }
       if (elim.isEmpty) continue;
       return Hint(
@@ -180,7 +179,7 @@ class PointingStrategy extends Strategy {
       final boxCells = s.boxIndices(b).toList();
       for (var d = 1; d <= 9; d++) {
         final inBox = boxCells
-            .where((i) => s.cells[i] == 0 && s.notes[i].contains(d))
+            .where((i) => s.isEmpty(i) && s.hasNote(i, d))
             .toList();
         if (inBox.isEmpty) continue;
         final rows = inBox.map(_rowOf).toSet();
@@ -189,11 +188,10 @@ class PointingStrategy extends Strategy {
           final elim = <int, Set<int>>{};
           for (final i in s.rowIndices(r)) {
             if (_boxOf(i) == b) continue;
-            if (s.cells[i] == 0 && s.notes[i].contains(d)) {
-              elim.putIfAbsent(i, () => {});
+            if (s.isEmpty(i) && s.hasNote(i, d)) {
+              elim.putIfAbsent(i, () => <int>{});
               elim[i]!.add(d);
             }
-            ;
           }
           if (elim.isNotEmpty) {
             return Hint(
@@ -211,11 +209,10 @@ class PointingStrategy extends Strategy {
           final elim = <int, Set<int>>{};
           for (final i in s.colIndices(c)) {
             if (_boxOf(i) == b) continue;
-            if (s.cells[i] == 0 && s.notes[i].contains(d)) {
-              elim.putIfAbsent(i, () => {});
+            if (s.isEmpty(i) && s.hasNote(i, d)) {
+              elim.putIfAbsent(i, () => <int>{});
               elim[i]!.add(d);
             }
-            ;
           }
           if (elim.isNotEmpty) {
             return Hint(
@@ -254,20 +251,19 @@ class ClaimingStrategy extends Strategy {
       for (var d = 1; d <= 9; d++) {
         final rowCells = s
             .rowIndices(r)
-            .where((i) => s.cells[i] == 0 && s.notes[i].contains(d))
+            .where((i) => s.isEmpty(i) && s.hasNote(i, d))
             .toList();
-        if (rowCells.isEmpty) continue;
+        if (rowCells.length < 2) continue; // claiming needs ≥2 in the line
         final boxes = rowCells.map(_boxOf).toSet();
         if (boxes.length == 1) {
           final b = boxes.first;
           final elim = <int, Set<int>>{};
           for (final i in s.boxIndices(b)) {
             if (_rowOf(i) == r) continue;
-            if (s.cells[i] == 0 && s.notes[i].contains(d)) {
-              elim.putIfAbsent(i, () => {});
+            if (s.isEmpty(i) && s.hasNote(i, d)) {
+              elim.putIfAbsent(i, () => <int>{});
               elim[i]!.add(d);
             }
-            ;
           }
           if (elim.isNotEmpty) {
             return Hint(
@@ -287,20 +283,19 @@ class ClaimingStrategy extends Strategy {
       for (var d = 1; d <= 9; d++) {
         final colCells = s
             .colIndices(c)
-            .where((i) => s.cells[i] == 0 && s.notes[i].contains(d))
+            .where((i) => s.isEmpty(i) && s.hasNote(i, d))
             .toList();
-        if (colCells.isEmpty) continue;
+        if (colCells.length < 2) continue; // claiming needs ≥2 in the line
         final boxes = colCells.map(_boxOf).toSet();
         if (boxes.length == 1) {
           final b = boxes.first;
           final elim = <int, Set<int>>{};
           for (final i in s.boxIndices(b)) {
             if (_colOf(i) == c) continue;
-            if (s.cells[i] == 0 && s.notes[i].contains(d)) {
-              elim.putIfAbsent(i, () => {});
+            if (s.isEmpty(i) && s.hasNote(i, d)) {
+              elim.putIfAbsent(i, () => <int>{});
               elim[i]!.add(d);
             }
-            ;
           }
           if (elim.isNotEmpty) {
             return Hint(

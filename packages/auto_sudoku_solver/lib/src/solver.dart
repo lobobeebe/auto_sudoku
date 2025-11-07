@@ -113,21 +113,21 @@ class Solver {
       int digit = entry.value;
       if (index < 0 || index >= 81) continue;
       if (digit < 1 || digit > 9) continue;
-      if (s.cells[index] != digit) {
-        s.cells[index] = digit;
+      if (s.valueAt(index) != digit) {
+        s.setValue(index, digit);
         changed = true;
       }
-      s.notes[index].clear();
+      s.resetNotes(index);
       s.removeFromPeers(index, digit);
     }
 
     for (final entry in hint.eliminations.entries) {
       final index = entry.key;
       for (final digit in entry.value) {
-        if (index < 0 || index >= 81) continue;
-        if (digit < 1 || digit > 9) continue;
-        if (s.cells[index] != 0) continue;
-        if (s.notes[index].remove(digit)) {
+        if (Sudoku.isValidIndex(index)) continue;
+        if (Sudoku.isValidDigit(digit)) continue;
+        if (!s.isEmpty(index)) continue;
+        if (s.setNote(index, digit, false)) {
           changed = true;
         }
       }
@@ -139,13 +139,13 @@ class Solver {
   // Hint? _findXYWingHint(Sudoku s, CandidateMap s.notes) {
   //   final peers = List.generate(81, (i) => s.peersOf(i));
   //   for (var pivot = 0; pivot < 81; pivot++) {
-  //     if (s.cells[pivot] != 0 || s.notes[pivot].length != 2) continue;
+  //     if (!s.isEmpty(pivot) || s.notes[pivot].length != 2) continue;
   //     final digits = s.notes[pivot].toList()..sort();
   //     final a = digits[0], b = digits[1];
   //     final wingsA = <int, int>{};
   //     final wingsB = <int, int>{};
   //     for (final peer in peers[pivot]) {
-  //       if (s.cells[peer] != 0 || s.notes[peer].length != 2) continue;
+  //       if (!s.isEmpty(peer) || s.notes[peer].length != 2) continue;
   //       final values = s.notes[peer].toList();
   //       if (values.contains(a) && !values.contains(b)) {
   //         final z = values.firstWhere((v) => v != a);
@@ -165,7 +165,7 @@ class Solver {
   //         final intersection = peers[cellA].intersection(peers[cellB]);
   //         final eliminations = <(int, int)>[];
   //         for (final idx in intersection) {
-  //           if (s.cells[idx] != 0) continue;
+  //           if (!s.isEmpty(idx)) continue;
   //           if (!s.notes[idx].contains(z)) continue;
   //           eliminations.add((idx, z));
   //         }
@@ -247,7 +247,7 @@ class Solver {
   //       final coloredSet = {...falseColor, ...trueColor};
   //       final eliminations = <(int, int)>[];
   //       for (var idx = 0; idx < 81; idx++) {
-  //         if (s.cells[idx] != 0) continue;
+  //         if (!s.isEmpty(idx)) continue;
   //         if (!s.notes[idx].contains(digit)) continue;
   //         if (coloredSet.contains(idx)) continue;
   //         final peerSet = peers[idx];
@@ -414,7 +414,7 @@ class Solver {
   //         final base2 = s.idx(r2, sharedCol);
   //         final end1 = s.idx(r1, c1);
   //         final end2 = s.idx(r2, c2);
-  //         if (s.cells[end1] != 0 || s.cells[end2] != 0) continue;
+  //         if (!s.isEmpty(end1] != 0 || s.cells[end2)) continue;
   //         final eliminations = <(int, int)>[];
   //         for (final idx in commonPeers(end1, end2)) {
   //           if (s.cells[idx] == 0 && s.notes[idx].contains(digit)) {
@@ -456,7 +456,7 @@ class Solver {
   //         final base2 = s.idx(sharedRow, c2);
   //         final end1 = s.idx(r1, c1);
   //         final end2 = s.idx(r2, c2);
-  //         if (s.cells[end1] != 0 || s.cells[end2] != 0) continue;
+  //         if (!s.isEmpty(end1] != 0 || s.cells[end2)) continue;
   //         final eliminations = <(int, int)>[];
   //         for (final idx in commonPeers(end1, end2)) {
   //           if (s.cells[idx] == 0 && s.notes[idx].contains(digit)) {
@@ -524,7 +524,7 @@ class Solver {
   //           }
   //         }
   //         if (hits != 1 || elimCell < 0) continue;
-  //         if (s.cells[elimCell] != 0 || !s.notes[elimCell].contains(digit)) {
+  //         if (!s.isEmpty(elimCell) || !s.notes[elimCell].contains(digit)) {
   //           continue;
   //         }
   //         final cells = <int>{p1, p2, q1, q2}.toList()..sort();
@@ -654,10 +654,10 @@ class Solver {
   //           final i2 = s.idx(r1, c2);
   //           final i3 = s.idx(r2, c1);
   //           final i4 = s.idx(r2, c2);
-  //           if (s.cells[i1] != 0 ||
-  //               s.cells[i2] != 0 ||
-  //               s.cells[i3] != 0 ||
-  //               s.cells[i4] != 0) {
+  //           if (!s.isEmpty(i1) ||
+  //               !s.isEmpty(i2) ||
+  //               !s.isEmpty(i3) ||
+  //               !s.isEmpty(i4)) {
   //             continue;
   //           }
   //           final corners = [i1, i2, i3, i4];
@@ -721,7 +721,7 @@ class Solver {
     final box = List<int>.filled(9, 0);
     for (var r = 0; r < 9; r++) {
       for (var c = 0; c < 9; c++) {
-        final v = s.cells[r * 9 + c];
+        final v = s.valueAt(r * 9 + c);
         if (v != 0) {
           final b = (r ~/ 3) * 3 + (c ~/ 3);
           final bit = 1 << v;
@@ -738,7 +738,7 @@ class Solver {
     }
     List<int> empties = [];
     for (var i = 0; i < 81; i++) {
-      if (s.cells[i] == 0) empties.add(i);
+      if (s.isEmpty(i)) empties.add(i);
     }
     bool dfs(int k) {
       if (k == empties.length) return true;
@@ -777,7 +777,7 @@ class Solver {
       for (var d = 1; d <= 9; d++) {
         final bit = 1 << d;
         if ((mask & bit) == 0) continue;
-        s.cells[i] = d;
+        s.setValue(i, d);
         row[r] |= bit;
         col[c] |= bit;
         box[b] |= bit;
@@ -785,7 +785,7 @@ class Solver {
         row[r] &= ~bit;
         col[c] &= ~bit;
         box[b] &= ~bit;
-        s.cells[i] = 0;
+        s.setValue(i, 0);
       }
       return false;
     }
@@ -799,8 +799,9 @@ class Solver {
     final box = List<int>.filled(9, 0);
     for (var r = 0; r < 9; r++) {
       for (var c = 0; c < 9; c++) {
-        final v = s.cells[r * 9 + c];
-        if (v != 0) {
+        final index = r * 9 + c;
+        if (!s.isEmpty(index)) {
+          final v = s.valueAt(index);
           final b = (r ~/ 3) * 3 + (c ~/ 3);
           final bit = 1 << v;
           if ((row[r] & bit) != 0 ||
@@ -816,7 +817,7 @@ class Solver {
     }
     List<int> empties = [];
     for (var i = 0; i < 81; i++) {
-      if (s.cells[i] == 0) empties.add(i);
+      if (s.isEmpty(i)) empties.add(i);
     }
     int solutions = 0;
     bool dfs(int k) {
@@ -852,7 +853,7 @@ class Solver {
       for (var d = 1; d <= 9; d++) {
         final bit = 1 << d;
         if ((used & bit) != 0) continue;
-        s.cells[i] = d;
+        s.setValue(i, d);
         row[r] |= bit;
         col[c] |= bit;
         box[b] |= bit;
@@ -860,7 +861,7 @@ class Solver {
         row[r] &= ~bit;
         col[c] &= ~bit;
         box[b] &= ~bit;
-        s.cells[i] = 0;
+        s.resetValue(i);
       }
       return false;
     }
@@ -869,8 +870,8 @@ class Solver {
     return solutions;
   }
 
-  Rating rateLogical(Sudoku s) {
-    final copy = Sudoku(List<int>.from(s.cells));
+  Rating rateLogical(List<int> s) {
+    final copy = Sudoku(List<int>.from(s));
     final res = solveLogical(copy);
     final counts = <StrategyType, int>{};
     final first = <StrategyType, int>{};

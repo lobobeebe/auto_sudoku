@@ -66,11 +66,14 @@ class HintMode extends BoardMode {
           ? theme.noteEliminationTextColor
           : (isClueNote ? theme.noteClueTextColor : null);
 
-      // TODO Put scale / font sizes / weights in theme
       return CellNoteViewModel(
-        scale: (isEliminationNote || isClueNote) ? 1.25 : 1,
+        scale: (isEliminationNote || isClueNote)
+            ? theme.noteEmphasisScale
+            : theme.noteDefaultScale,
         textColor: textColor,
-        fontWeight: (isEliminationNote || isClueNote) ? FontWeight.w600 : null,
+        fontWeight: (isEliminationNote || isClueNote)
+            ? theme.noteEmphasisFontWeight
+            : null,
       );
     });
 

@@ -47,10 +47,8 @@ class UnitMode extends BoardMode {
   @override
   void onRequestSelectCell(int row, int col) {
     final index = board.getIndex(row, col);
-    final cell = board.getCellAtIndex(index);
-    if (cell == null) return;
 
-    if (cell.value != null) {
+    if (!board.sudoku.isEmpty(index)) {
       board.selectedIndices.clear();
       board.selectedIndices.add(index);
       board.setMode(HighlightMode(board, this));
@@ -76,10 +74,7 @@ class UnitMode extends BoardMode {
       return;
     }
 
-    final hint = solver.getHintByClues(
-      Sudoku(board.toValueList(), notes: board.toNotesList()),
-      board.selectedIndices,
-    );
+    final hint = solver.getHintByClues(board.sudoku, board.selectedIndices);
 
     if (hint == null) {
       return;

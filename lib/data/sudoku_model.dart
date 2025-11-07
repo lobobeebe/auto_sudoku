@@ -1,13 +1,13 @@
 import 'package:auto_sudoku_solver/auto_sudoku_solver.dart';
 
 // Model class for reading Sudoku Puzzles from data
-class SudokuPuzzleModel {
+class SudokuModel {
   final String puzzle;
   final String solution;
   final Difficulty difficulty;
   final List<String> techniques;
 
-  SudokuPuzzleModel({
+  SudokuModel({
     required this.puzzle,
     required this.solution,
     required this.difficulty,
@@ -15,11 +15,11 @@ class SudokuPuzzleModel {
   }) : assert(puzzle.length == 81),
        assert(solution.length == 81);
 
-  factory SudokuPuzzleModel.fromJson(Map<String, dynamic> json) {
+  factory SudokuModel.fromJson(Map<String, dynamic> json) {
     final rawDifficulty = (json['difficulty'] as String?)?.trim() ?? "";
     final difficulty = Difficulty.fromString(rawDifficulty) ?? Difficulty.easy;
 
-    return SudokuPuzzleModel(
+    return SudokuModel(
       puzzle: json['puzzle'] as String,
       solution: json['solution'] as String,
       difficulty: difficulty,

@@ -29,15 +29,15 @@ abstract class NakedStrategy extends Strategy {
 
     // Reject filled cells and candidates that are not 2..k in size.
     for (final i in indices) {
-      if (s.cells[i] != 0) return null;
-      final len = s.notes[i].length;
+      if (!s.isEmpty(i)) return null;
+      final len = s.notesSet(i).length;
       if (len < 2 || len > k) return null;
     }
 
     // Union must be exactly k digits.
     final union = <int>{};
     for (final i in indices) {
-      union.addAll(s.notes[i]);
+      union.addAll(s.notesSet(i));
     }
     if (union.length != k) return null;
 
@@ -70,8 +70,8 @@ abstract class NakedStrategy extends Strategy {
         if (indices.contains(i)) {
           continue; // never eliminate from the triple/pair/quad cells
         }
-        if (s.cells[i] != 0) continue;
-        final cands = s.notes[i];
+        if (!s.isEmpty(i)) continue;
+        final cands = s.notesSet(i);
         for (final d in union) {
           if (cands.contains(d)) {
             eliminationsMap.putIfAbsent(i, () => <int>{}).add(d);
@@ -105,12 +105,12 @@ abstract class NakedStrategy extends Strategy {
     Iterable<int> unit,
     HintUnit unitType,
   ) {
-    final empties = unit.where((i) => s.cells[i] == 0).toList();
+    final empties = unit.where((i) => s.isEmpty(i)).toList();
     if (empties.length < k) return null;
 
     // Consider only cells with 2..k candidates
     final subsetPool = empties.where((i) {
-      final len = s.notes[i].length;
+      final len = s.notesSet(i).length;
       return len >= 2 && len <= k;
     }).toList();
     if (subsetPool.length < k) return null;
@@ -120,12 +120,12 @@ abstract class NakedStrategy extends Strategy {
       final union = <int>{};
       var validSize = true;
       for (final idx in combo) {
-        final len = s.notes[idx].length;
+        final len = s.numNotesAt(idx);
         if (len > k || len < 2) {
           validSize = false;
           break;
         }
-        union.addAll(s.notes[idx]);
+        union.addAll(s.notesSet(idx));
       }
       if (!validSize || union.length != k) continue;
 
@@ -134,7 +134,7 @@ abstract class NakedStrategy extends Strategy {
       for (final i in empties) {
         if (combo.contains(i)) continue;
         for (final d in union) {
-          if (s.notes[i].contains(d)) {
+          if (s.hasNote(i, d)) {
             eliminations.putIfAbsent(i, () => {}).add(d);
           }
         }
@@ -254,13 +254,21 @@ class NakedSingleStrategy extends Strategy {
   Hint? findHint(Sudoku s) {
     // Find the first empty cell that has exactly one candidate.
     for (var i = 0; i < 81; i++) {
-      if (s.cells[i] != 0) continue;
-      final cands = s.notes[i];
+      if (!s.isEmpty(i)) continue;
+      final cands = s.notesSet(i);
       if (cands.length == 1) {
         final d = cands.first;
+        // Build eliminations: remove the placed digit from all peers
+        final eliminations = <int, Set<int>>{};
+        for (final p in s.peersOf(i)) {
+          if (!s.isEmpty(p)) continue;
+          if (s.hasNote(p, d)) {
+            eliminations.putIfAbsent(p, () => <int>{}).add(d);
+          }
+        }
         return Hint(
           StrategyType.nakedSingle,
-          eliminations: const <int, Set<int>>{},
+          eliminations: eliminations,
           placements: {i: d},
           cells: [i],
           digits: [d],
@@ -275,13 +283,21 @@ class NakedSingleStrategy extends Strategy {
   Hint? getHintFromClues(Sudoku s, List<int> indices) {
     if (indices.length != 1) return null;
     final i = indices.first;
-    if (s.cells[i] != 0) return null;
-    final cands = s.notes[i];
+    if (!s.isEmpty(i)) return null;
+    final cands = s.notesSet(i);
     if (cands.length != 1) return null;
     final d = cands.first;
+    // Build eliminations: remove the placed digit from all peers
+    final eliminations = <int, Set<int>>{};
+    for (final p in s.peersOf(i)) {
+      if (!s.isEmpty(p)) continue;
+      if (s.hasNote(p, d)) {
+        eliminations.putIfAbsent(p, () => <int>{}).add(d);
+      }
+    }
     return Hint(
       StrategyType.nakedSingle,
-      eliminations: const <int, Set<int>>{},
+      eliminations: eliminations,
       placements: {i: d},
       cells: [i],
       digits: [d],

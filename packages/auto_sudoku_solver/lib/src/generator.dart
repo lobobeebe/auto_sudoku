@@ -55,7 +55,7 @@ class Generator {
       // Choose cell with fewest valid options (MRV)
       int best = -1, bestCount = 10;
       for (var i = 0; i < 81; i++) {
-        if (s.cells[i] == 0) {
+        if (s.isEmpty(i)) {
           int c = 0;
           for (var d = 1; d <= 9; d++) {
             if (s.isValidPlacement(i, d)) c++;
@@ -70,21 +70,21 @@ class Generator {
       final ds = List<int>.generate(9, (i) => i + 1)..shuffle(rng);
       for (final d in ds) {
         if (s.isValidPlacement(best, d)) {
-          s.cells[best] = d;
+          s.setValue(best, d);
           if (fillSmart()) return true;
-          s.cells[best] = 0;
+          s.resetValue(best);
         }
       }
       return false;
     }
 
     fillSmart();
-    return s.cells;
+    return s.grid;
   }
 
   int _distanceToTarget(Difficulty targetDiff, List<int> grid) {
     // Compute rating with broad logical flags enabled
-    final r = solver.rateLogical(Sudoku(List<int>.from(grid)));
+    final r = solver.rateLogical(grid);
 
     int idx(Difficulty d) => Difficulty.values.indexOf(d);
     final targetIdx = idx(targetDiff);
@@ -194,16 +194,6 @@ class Generator {
 
     // (Local _State class removed; now using top-level _State)
 
-    // Helper: compare two grids for equality
-    bool gridsEqual(List<int> a, List<int> b) {
-      if (identical(a, b)) return true;
-      if (a.length != b.length) return false;
-      for (var i = 0; i < a.length; i++) {
-        if (a[i] != b[i]) return false;
-      }
-      return true;
-    }
-
     // start from the full solution and dig
     List<_State> beam = [
       _State(List<int>.from(full), _distanceToTarget(target, full)),
@@ -268,7 +258,7 @@ class Generator {
       final best = beam.first;
       if (lastBestGrid != null &&
           best.dist == lastBestDist &&
-          gridsEqual(best.grid, lastBestGrid)) {
+          Sudoku.gridEquals(best.grid, lastBestGrid)) {
         stagnant++;
       } else {
         stagnant = 0;
@@ -285,7 +275,7 @@ class Generator {
       if (diff == target) {
         final sol = Sudoku(List<int>.from(best.grid));
         solver.solveBacktracking(sol);
-        return ClassifiedPuzzle(best.grid, sol.cells, diff);
+        return ClassifiedPuzzle(best.grid, sol.grid, diff);
       }
       // stop if puzzle is too empty
       final clues = best.grid.where((v) => v != 0).length;
@@ -299,7 +289,7 @@ class Generator {
       // If we timed out or stagnated, return the best-so-far (if it has a valid solution)
       final sol = Sudoku(List<int>.from(best.grid));
       if (solver.solveBacktracking(sol)) {
-        return ClassifiedPuzzle(best.grid, sol.cells, diff);
+        return ClassifiedPuzzle(best.grid, sol.grid, diff);
       }
     }
 
@@ -328,7 +318,7 @@ class Generator {
         Difficulty.impossible,
       );
     }
-    return ClassifiedPuzzle(greedy, sol.cells, classification);
+    return ClassifiedPuzzle(greedy, sol.grid, classification);
   }
 
   Difficulty classify(List<int> grid) {

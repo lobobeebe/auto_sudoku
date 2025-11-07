@@ -21,5 +21,5 @@ class CellNoteViewModel {
   final double? scale;
   final FontWeight? fontWeight;
 
-  CellNoteViewModel({this.textColor, this.scale, required this.fontWeight});
+  CellNoteViewModel({this.textColor, this.scale, this.fontWeight});
 }

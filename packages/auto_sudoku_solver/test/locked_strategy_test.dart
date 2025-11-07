@@ -73,19 +73,44 @@ void main() {
     test(
       'findHint: Row→Box claiming eliminates inside the box outside the row',
       () {
-        // Row 4 has all candidates for digit d=3 located within a single box (cols 3..5).
-        // Therefore, eliminate 3 from other cells in that same box not in row 4.
+        // 0-based indexing:
+        // Put all 3s in row 4 within the center box (cols 3..5).
+        // Then eliminate 3 from other cells in that box but NOT in row 4.
+
         final cands = List<Set<int>>.generate(81, (_) => <int>{});
 
-        final r = 4;
-        final a = idx(r, 3); // inside the target box (center box)
-        final b = idx(r, 4); // inside the same box
+        int idx(int r, int c) => r * 9 + c;
+
+        final r = 4; // row 4 (0-based)
+        final a = idx(r, 3); // r4c3 (center box)
+        final b = idx(r, 4); // r4c4 (center box)
         cands[a] = {3, 8};
         cands[b] = {1, 3};
 
-        // A peer inside the same box but DIFFERENT row: should eliminate 3
-        final peer = idx(3, 5); // row 3, col 5 (same box as a/b)
+        // Make it explicit: no other 3s in row 4
+        for (var c = 0; c < 9; c++) {
+          if (c == 3 || c == 4) continue;
+          cands[idx(r, c)] = {}; // ensure no candidate 3 elsewhere in the row
+        }
+
+        // A peer in the same box but a different row: should be eliminated
+        final peer = idx(3, 5); // r3c5 (still center box)
         cands[peer] = {3, 9};
+
+        // Ensure no other 3s exist in the same box outside row 4, so only one elimination
+        // Also avoid creating competing claims by not repeating the same digit twice
+        // in any remaining row within the box.
+        // Row 3 (r=3), cols 3..5 except peer (r3c5): use distinct non-3 digits
+        final r3c3 = idx(3, 3);
+        final r3c4 = idx(3, 4);
+        if (r3c3 != peer) cands[r3c3] = {4};
+        if (r3c4 != peer) cands[r3c4] = {5};
+        // r3c5 is `peer` and already set to {3,9}
+
+        // Row 5 (r=5), cols 3..5: use distinct non-3 digits
+        cands[idx(5, 3)] = {6};
+        cands[idx(5, 4)] = {7};
+        cands[idx(5, 5)] = {8};
 
         final h = SudokuTestHarness.make(cands);
         final strat = ClaimingStrategy();
@@ -94,10 +119,13 @@ void main() {
         expect(hint, isNotNull, reason: 'Should find claiming from row→box');
         expect(hint!.strategy, StrategyType.claiming);
         expect(hint.unit, HintUnit.row);
-        expect(hint.digits, [3]);
-        // eliminations include peer cell removing 3
+        expect(hint.digits, unorderedEquals([3]));
+
+        // Exactly one elimination, and it is {peer: {3}}
         expect(hint.eliminations.length, 1);
         expect(hint.eliminations[peer], {3});
+
+        // Base cells in the row used to claim are included
         expect(hint.cells.toSet().containsAll({a, b}), isTrue);
       },
     );

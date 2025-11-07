@@ -52,7 +52,7 @@ abstract class HiddenStrategy extends Strategy {
   ) {
     if (indices.length != k) return null;
     for (final i in indices) {
-      if (s.cells[i] != 0) return null;
+      if (!s.isEmpty(i)) return null;
     }
 
     int rowOf(int i) => i ~/ 9;
@@ -85,8 +85,8 @@ abstract class HiddenStrategy extends Strategy {
       var ok = true;
       var seenAny = false;
       for (final i in unit) {
-        if (s.cells[i] != 0) continue;
-        if (s.notes[i].contains(d)) {
+        if (!s.isEmpty(i)) continue;
+        if (s.hasNote(i, d)) {
           seenAny = true;
           if (!indexSet.contains(i)) {
             ok = false;
@@ -102,7 +102,7 @@ abstract class HiddenStrategy extends Strategy {
     final elim = <int, Set<int>>{};
     final digitSet = targetDigits.toSet();
     for (final i in indices) {
-      for (final cnd in s.notes[i]) {
+      for (final cnd in s.notesSet(i)) {
         if (!digitSet.contains(cnd)) {
           elim.putIfAbsent(i, () => {});
           elim[i]!.add((cnd));
@@ -122,13 +122,13 @@ abstract class HiddenStrategy extends Strategy {
   }
 
   Hint? _processUnitHidden(Sudoku s, Iterable<int> unit, HintUnit unitType) {
-    final empties = unit.where((i) => s.cells[i] == 0).toList();
+    final empties = unit.where((i) => s.isEmpty(i)).toList();
     if (empties.length < k) return null;
 
     // Candidate locations per digit (in this unit).
     final locs = List.generate(10, (_) => <int>[]);
     for (final i in empties) {
-      for (final d in s.notes[i]) {
+      for (final d in s.notesSet(i)) {
         locs[d].add(i);
       }
     }
@@ -177,7 +177,7 @@ abstract class HiddenStrategy extends Strategy {
         final elim = <int, Set<int>>{};
         final digitSet = pick.toSet();
         for (final i in posSet) {
-          for (final cnd in s.notes[i]) {
+          for (final cnd in s.notesSet(i)) {
             if (!digitSet.contains(cnd)) {
               elim.putIfAbsent(i, () => {});
               elim[i]!.add(cnd);
@@ -222,8 +222,8 @@ class HiddenSingleStrategy extends Strategy {
     Hint? scan(Iterable<int> unit, HintUnit unitType) {
       final spots = List.generate(10, (_) => <int>[]);
       for (final i in unit) {
-        if (s.cells[i] != 0) continue;
-        for (final d in s.notes[i]) {
+        if (!s.isEmpty(i)) continue;
+        for (final d in s.notesSet(i)) {
           spots[d].add(i);
         }
       }
@@ -262,15 +262,15 @@ class HiddenSingleStrategy extends Strategy {
   Hint? getHintFromClues(Sudoku s, List<int> indices) {
     if (indices.length != 1) return null;
     final i = indices.first;
-    if (s.cells[i] != 0) return null;
+    if (!s.isEmpty(i)) return null;
 
     Hint? uniqueIn(Iterable<int> unit, HintUnit unitType) {
       for (var d = 1; d <= 9; d++) {
         var count = 0;
         var onlyHere = false;
         for (final u in unit) {
-          if (s.cells[u] != 0) continue;
-          if (s.notes[u].contains(d)) {
+          if (!s.isEmpty(u)) continue;
+          if (s.hasNote(u, d)) {
             count++;
             if (u == i) onlyHere = true;
             if (count > 1) break;

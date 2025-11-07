@@ -34,11 +34,12 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:auto_sudoku_solver/auto_sudoku_solver.dart';
+
 import 'classified_puzzle.dart';
 import 'difficulty.dart';
 import 'generator.dart';
 import 'strategy/strategy.dart';
-import 'sudoku.dart';
 
 export 'classified_puzzle.dart';
 export 'difficulty.dart';

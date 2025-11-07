@@ -91,6 +91,11 @@ class SudokuTheme {
   final Color numberPadForeground;
   final TextStyle numberPadTextStyle;
 
+  // Note appearance
+  final double noteDefaultScale = 1.0;
+  final double noteEmphasisScale = 1.25;
+  final FontWeight noteEmphasisFontWeight = FontWeight.w600;
+
   static SudokuTheme of(BuildContext context) {
     final theme = Theme.of(context);
     return SudokuTheme._(theme.colorScheme, theme.textTheme);

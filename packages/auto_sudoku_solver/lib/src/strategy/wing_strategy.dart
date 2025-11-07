@@ -46,7 +46,7 @@ class XWingStrategy extends Strategy {
     for (var r = 0; r < 9; r++) {
       final cols = <int>[];
       for (final idx in s.rowIndices(r)) {
-        if (s.cells[idx] == 0 && s.notes[idx].contains(d)) {
+        if (s.isEmpty(idx) && s.hasNote(idx, d)) {
           cols.add(s.colOf(idx));
         }
       }
@@ -69,10 +69,10 @@ class XWingStrategy extends Strategy {
             if (r == r1 || r == r2) continue;
             final iA = r * 9 + cA;
             final iB = r * 9 + cB;
-            if (s.cells[iA] == 0 && s.notes[iA].contains(d)) {
+            if (s.isEmpty(iA) && s.hasNote(iA, d)) {
               _elimMapAdd(elim, iA, d);
             }
-            if (s.cells[iB] == 0 && s.notes[iB].contains(d)) {
+            if (s.isEmpty(iB) && s.hasNote(iB, d)) {
               _elimMapAdd(elim, iB, d);
             }
           }
@@ -102,7 +102,7 @@ class XWingStrategy extends Strategy {
     for (var c = 0; c < 9; c++) {
       final rows = <int>[];
       for (final idx in s.colIndices(c)) {
-        if (s.cells[idx] == 0 && s.notes[idx].contains(d)) {
+        if (s.isEmpty(idx) && s.hasNote(idx, d)) {
           rows.add(s.rowOf(idx));
         }
       }
@@ -125,10 +125,10 @@ class XWingStrategy extends Strategy {
             if (c == c1 || c == c2) continue;
             final iA = rA * 9 + c;
             final iB = rB * 9 + c;
-            if (s.cells[iA] == 0 && s.notes[iA].contains(d)) {
+            if (s.isEmpty(iA) && s.hasNote(iA, d)) {
               _elimMapAdd(elim, iA, d);
             }
-            if (s.cells[iB] == 0 && s.notes[iB].contains(d)) {
+            if (s.isEmpty(iB) && s.hasNote(iB, d)) {
               _elimMapAdd(elim, iB, d);
             }
           }
@@ -163,9 +163,9 @@ class XWingStrategy extends Strategy {
     if (rows.length != 2 || cols.length != 2) return null;
 
     // Consider only digits present in all four corners.
-    Set<int> common = s.notes[indices[0]].toSet();
+    Set<int> common = s.notesSet(indices[0]);
     for (final i in indices.skip(1)) {
-      common = common.intersection(s.notes[i]);
+      common = common.intersection(s.notesSet(i));
     }
     if (common.isEmpty) return null;
 
@@ -175,7 +175,7 @@ class XWingStrategy extends Strategy {
         final colsWithD = <int>[];
         for (final c in Iterable<int>.generate(9)) {
           final idx = r * 9 + c;
-          if (s.cells[idx] == 0 && s.notes[idx].contains(d)) colsWithD.add(c);
+          if (s.isEmpty(idx) && s.hasNote(idx, d)) colsWithD.add(c);
         }
         colsWithD.sort();
         final wanted = [...cols]..sort();
@@ -193,7 +193,7 @@ class XWingStrategy extends Strategy {
         final rowsWithD = <int>[];
         for (final r in Iterable<int>.generate(9)) {
           final idx = r * 9 + c;
-          if (s.cells[idx] == 0 && s.notes[idx].contains(d)) rowsWithD.add(r);
+          if (s.isEmpty(idx) && s.hasNote(idx, d)) rowsWithD.add(r);
         }
         rowsWithD.sort();
         final wanted = [...rows]..sort();
@@ -215,7 +215,7 @@ class XWingStrategy extends Strategy {
           if (r == rows[0] || r == rows[1]) continue;
           for (final c in cols) {
             final idx = r * 9 + c;
-            if (s.cells[idx] == 0 && s.notes[idx].contains(d)) {
+            if (s.isEmpty(idx) && s.hasNote(idx, d)) {
               (elim[idx] ??= <int>{}).add(d);
             }
           }
@@ -244,7 +244,7 @@ class XWingStrategy extends Strategy {
           if (c == cols[0] || c == cols[1]) continue;
           for (final r in rows) {
             final idx = r * 9 + c;
-            if (s.cells[idx] == 0 && s.notes[idx].contains(d)) {
+            if (s.isEmpty(idx) && s.hasNote(idx, d)) {
               (elim[idx] ??= <int>{}).add(d);
             }
           }
@@ -285,14 +285,10 @@ class XYWingStrategy extends Strategy {
     // For each pivot (bivalue), look for two pincers (bivalue) that see the pivot
     // with patterns {a,b} (pivot), {a,c} and {b,c}. Eliminate c from cells that
     // see both pincers.
-    final bivals = <int>[];
-    for (var i = 0; i < 81; i++) {
-      if (s.cells[i] != 0) continue;
-      if (s.notes[i].length == 2) bivals.add(i);
-    }
+    final bivals = s.bivalIndices();
 
     for (final pivot in bivals) {
-      final pv = s.notes[pivot].toList()..sort();
+      final pv = s.notesSet(pivot).toList()..sort();
       final a = pv[0], b = pv[1];
       final pivotPeers = s.peersOf(pivot);
 
@@ -301,8 +297,8 @@ class XYWingStrategy extends Strategy {
       final pincersB = <int, List<int>>{};
 
       for (final q in pivotPeers) {
-        if (s.cells[q] != 0) continue;
-        final qs = s.notes[q];
+        if (!s.isEmpty(q)) continue;
+        final qs = s.notesSet(q);
         if (qs.length == 2) {
           if (qs.contains(a)) {
             final c = (qs.firstWhere((d) => d != a));
@@ -326,7 +322,7 @@ class XYWingStrategy extends Strategy {
             final elim = <int, Set<int>>{};
             final peersBoth = s.peersOf(p1).intersection(s.peersOf(p2));
             for (final idx in peersBoth) {
-              if (s.cells[idx] == 0 && s.notes[idx].contains(c)) {
+              if (s.isEmpty(idx) && s.hasNote(idx, c)) {
                 _elimMapAdd(elim, idx, c);
               }
             }
@@ -366,14 +362,14 @@ class XYWingStrategy extends Strategy {
       final p2 = indices[p[2]];
 
       // Must be unsolved
-      if (s.cells[pivot] != 0 || s.cells[p1] != 0 || s.cells[p2] != 0) {
+      if (!s.isEmpty(pivot) || !s.isEmpty(p1) || !s.isEmpty(p2)) {
         continue;
       }
 
       // Must be bivalue
-      final pv = s.notes[pivot];
-      final s1 = s.notes[p1];
-      final s2 = s.notes[p2];
+      final pv = s.notesSet(pivot);
+      final s1 = s.notesSet(p1);
+      final s2 = s.notesSet(p2);
       if (pv.length != 2 || s1.length != 2 || s2.length != 2) {
         continue;
       }
@@ -413,7 +409,7 @@ class XYWingStrategy extends Strategy {
       final peersBoth = s.peersOf(p1).intersection(s.peersOf(p2));
       final elim = <int, Set<int>>{};
       for (final idx in peersBoth) {
-        if (s.cells[idx] == 0 && s.notes[idx].contains(c)) {
+        if (s.isEmpty(idx) && s.hasNote(idx, c)) {
           _elimMapAdd(elim, idx, c);
         }
       }
@@ -475,7 +471,7 @@ class WWingStrategy extends Strategy {
     for (var i = 0; i < bivals.length; i++) {
       for (var j = i + 1; j < bivals.length; j++) {
         final a = bivals[i], b = bivals[j];
-        final sA = s.notes[a], sB = s.notes[b];
+        final sA = s.notesSet(a), sB = s.notesSet(b);
         if (sA.length != 2 || sB.length != 2) continue;
         if (!sA.containsAll(sB)) continue;
 
@@ -537,7 +533,7 @@ class WWingStrategy extends Strategy {
           final col = startCol + c;
           final idx = row * 9 + col;
 
-          if (s.cells[idx] == 0 && s.notes[idx].contains(d)) {
+          if (s.isEmpty(idx) && s.hasNote(idx, d)) {
             locs.add(idx);
           }
         }
@@ -564,7 +560,7 @@ class WWingStrategy extends Strategy {
       for (var r = 0; r < 9; r++) {
         final cells = <int>[];
         for (final i in s.rowIndices(r)) {
-          if (s.cells[i] == 0 && s.notes[i].contains(d)) cells.add(i);
+          if (s.isEmpty(i) && s.hasNote(i, d)) cells.add(i);
         }
         if (cells.length == 2) result.add(cells);
       }
@@ -572,7 +568,7 @@ class WWingStrategy extends Strategy {
       for (var c = 0; c < 9; c++) {
         final cells = <int>[];
         for (final i in s.colIndices(c)) {
-          if (s.cells[i] == 0 && s.notes[i].contains(d)) cells.add(i);
+          if (s.isEmpty(i) && s.hasNote(i, d)) cells.add(i);
         }
         if (cells.length == 2) result.add(cells);
       }
@@ -584,7 +580,7 @@ class WWingStrategy extends Strategy {
     final elim = <int, Set<int>>{};
     final common = s.peersOf(a).intersection(s.peersOf(b));
     for (final idx in common) {
-      if (s.cells[idx] == 0 && s.notes[idx].contains(eliminateDigit)) {
+      if (s.isEmpty(idx) && s.hasNote(idx, eliminateDigit)) {
         _elimMapAdd(elim, idx, eliminateDigit);
       }
     }
@@ -597,7 +593,7 @@ class WWingStrategy extends Strategy {
     if (indices.length < 2) return null;
 
     // Keep only unsolved cells from clues.
-    final clues = indices.where((i) => s.cells[i] == 0).toList();
+    final clues = indices.where((i) => s.isEmpty(i)).toList();
     if (clues.length < 2) return null;
 
     // Find any pair among clues that are identical bivalue sets {x,y}.
@@ -605,11 +601,11 @@ class WWingStrategy extends Strategy {
     Set<int>? pairSet;
     for (var i = 0; i < clues.length; i++) {
       final ci = clues[i];
-      final si = s.notes[ci];
+      final si = s.notesSet(ci);
       if (si.length != 2) continue;
       for (var j = i + 1; j < clues.length; j++) {
         final cj = clues[j];
-        final sj = s.notes[cj];
+        final sj = s.notesSet(cj);
         if (sj.length != 2) continue;
         if (si.length == sj.length &&
             si.containsAll(sj) &&
@@ -630,9 +626,11 @@ class WWingStrategy extends Strategy {
 
     // Helper to validate two endpoints form a strong link on digit d.
     bool isStrongLink(int e1, int e2, int d) {
-      if (e1 == e2) return false;
-      if (s.cells[e1] != 0 || s.cells[e2] != 0) return false;
-      if (!s.notes[e1].contains(d) || !s.notes[e2].contains(d)) return false;
+      if (e1 == e2) return false; // Must not be same index
+      if (!s.isEmpty(e1) || !s.isEmpty(e2)) return false; // Both must be empty
+      if (!s.hasNote(e1, d) || !s.hasNote(e2, d)) {
+        return false; // Both cells must have d
+      }
       final r1 = s.rowOf(e1), c1 = s.colOf(e1);
       final r2 = s.rowOf(e2), c2 = s.colOf(e2);
       if (r1 == r2) {
@@ -640,7 +638,7 @@ class WWingStrategy extends Strategy {
         var cnt = 0;
         int last1 = -1, last2 = -1;
         for (final i in s.rowIndices(r1)) {
-          if (s.cells[i] == 0 && s.notes[i].contains(d)) {
+          if (s.isEmpty(i) && s.hasNote(i, d)) {
             cnt++;
             if (last1 == -1) {
               last1 = i;
@@ -658,7 +656,7 @@ class WWingStrategy extends Strategy {
         var cnt = 0;
         int last1 = -1, last2 = -1;
         for (final i in s.colIndices(c1)) {
-          if (s.cells[i] == 0 && s.notes[i].contains(d)) {
+          if (s.isEmpty(i) && s.hasNote(i, d)) {
             cnt++;
             if (last1 == -1) {
               last1 = i;

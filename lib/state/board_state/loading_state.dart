@@ -1,4 +1,4 @@
-import 'package:auto_sudoku/data/sudoku_puzzle_model.dart';
+import 'package:auto_sudoku/data/sudoku_model.dart';
 import 'package:auto_sudoku/state/board_mode.dart';
 import 'package:auto_sudoku/state/board_state/animating_state.dart';
 import 'package:auto_sudoku/state/board_state/error_state.dart';
@@ -12,7 +12,7 @@ class LoadingMode extends BoardMode {
   LoadingMode(super.board);
 
   @override
-  void onRequestInitPuzzle(SudokuPuzzleModel? puzzle, String? error) {
+  void onRequestInitPuzzle(SudokuModel? puzzle, String? error) {
     if (puzzle != null && error == null) {
       board.initPuzzle(puzzle);
       if (board.shouldAnimate) {

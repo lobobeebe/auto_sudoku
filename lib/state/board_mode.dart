@@ -1,7 +1,7 @@
 // --- Board State Machine ----------------------------------------------------
 
 import 'package:auto_sudoku/data/cell_view_model.dart';
-import 'package:auto_sudoku/data/sudoku_puzzle_model.dart';
+import 'package:auto_sudoku/data/sudoku_model.dart';
 import 'package:auto_sudoku/state/sudoku_board_state.dart';
 import 'package:auto_sudoku/ui/theme/sudoku_theme.dart';
 import 'package:auto_sudoku/ui/widgets/action_bar.dart';
@@ -24,7 +24,7 @@ abstract class BoardMode {
   void onExit() {}
 
   // Interaction hooks (override as needed)
-  void onRequestInitPuzzle(SudokuPuzzleModel? puzzle, String? error) {}
+  void onRequestInitPuzzle(SudokuModel? puzzle, String? error) {}
   void onRequestClearHint() {}
   void onRequestSetHint(Hint hint) {}
   bool onRequestApplyCurrentHint() => false;
@@ -50,14 +50,13 @@ abstract class BoardMode {
   bool isNoteMode() => false;
 
   CellViewModel buildCellViewModel(int index, SudokuTheme theme) {
-    SudokuCell cell = board.getCellAtIndex(index)!;
     bool isSelected = board.isIndexSelected(index);
     bool isPeer = board.isPeerWithAllSelected(index);
 
     bool isMatching = board.matchesAnySelected(index);
     Set<int> selectedNoteDigits = board.selectedIndices.fold(
       <int>{},
-      (set, index) => set..addAll(board.getCellAtIndex(index)?.notes ?? {}),
+      (set, index) => set..addAll(board.sudoku.notesSet(index)),
     );
 
     Color bg = theme.boardSurface;
@@ -69,11 +68,9 @@ abstract class BoardMode {
       bg = theme.matchingValueBackground;
     }
 
-    Color valueTextColor = cell.isGiven
-        ? theme.givenCellTextColor
-        : (isSelected
-              ? theme.valueHighlightColor
-              : theme.valueRegularTextColor);
+    Color valueTextColor = isSelected
+        ? theme.valueHighlightColor
+        : theme.valueRegularTextColor;
 
     final notes = List.generate(9, (digit) {
       bool digitSelected =
