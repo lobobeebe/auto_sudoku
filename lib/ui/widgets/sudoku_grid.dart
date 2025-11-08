@@ -115,6 +115,7 @@ class SudokuCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final board = Provider.of<SudokuBoardState>(context, listen: false);
     final value = context.select<CellState, int>((c) => c.value);
 
     return LayoutBuilder(
@@ -132,8 +133,11 @@ class SudokuCell extends StatelessWidget {
             ),
           );
         }
+        if (board.showNotes) {
+          return CellNotesWidget(index: index, viewModel: viewModel);
+        }
 
-        return CellNotesWidget(index: index, viewModel: viewModel);
+        return SizedBox.expand();
       },
     );
   }

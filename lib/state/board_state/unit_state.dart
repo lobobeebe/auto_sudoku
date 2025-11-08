@@ -88,7 +88,15 @@ class UnitMode extends BoardMode {
     }
 
     board.pushSnapshot(snapshot: snapshot);
+
     board.selectedIndices.clear();
+
+    if (hint.placements.isNotEmpty) {
+      board.selectedIndices.add(hint.placements.keys.first);
+      board.setMode(HighlightMode(board, this));
+      return;
+    }
+
     board.strategyCategory = StrategyCategory.nakedHidden;
 
     final result = board.evaluateResult();

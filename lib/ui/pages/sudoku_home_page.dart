@@ -6,7 +6,11 @@ import 'package:auto_sudoku/ui/widgets/sudoku_grid.dart';
 import 'package:provider/provider.dart';
 
 class SudokuHomePage extends StatelessWidget {
-  const SudokuHomePage({super.key});
+  final Widget? tutorialOverlay;
+  // Full-width panel shown as an overlay at the bottom, above the Action Bar
+  final Widget? tutorialPanelOverlay;
+
+  const SudokuHomePage({super.key, this.tutorialOverlay, this.tutorialPanelOverlay});
 
   @override
   Widget build(BuildContext context) {
@@ -101,6 +105,25 @@ class SudokuHomePage extends StatelessWidget {
             child: content,
           ),
         ),
+        if (tutorialPanelOverlay != null)
+          // Overlay panel floats above the controls/action bar
+          Positioned.fill(
+            child: IgnorePointer(
+              ignoring: false,
+              child: SafeArea(
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 1120),
+                      child: tutorialPanelOverlay!,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -136,7 +159,13 @@ class SudokuHomePage extends StatelessWidget {
           ),
         ],
       ),
-      child: const SudokuGrid(),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          const SudokuGrid(),
+          if (tutorialOverlay != null) tutorialOverlay!,
+        ],
+      ),
     );
   }
 

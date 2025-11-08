@@ -87,14 +87,15 @@ class StrategyPopupMenuButton extends StatelessWidget {
             ),
           ),
       ],
-      child: selected != null
-          ? _SelectedCategoryChip(category: selected, isEnabled: isEnabled)
-          : (icon ??
-                Icon(
-                  Icons.tune_rounded,
-                  color: scheme.primaryContainer,
-                  size: 22,
-                )),
+      child: IconButton.filledTonal(onPressed: () {}, icon: icon ?? SizedBox()),
+      // child: selected != null
+      //     ? _SelectedCategoryChip(category: selected, isEnabled: isEnabled)
+      //     : (icon ??
+      //           Icon(
+      //             Icons.tune_rounded,
+      //             color: scheme.primaryContainer,
+      //             size: 22,
+      //           )),
     );
   }
 }
@@ -137,15 +138,15 @@ class _SelectedCategoryChip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(category.icon, size: 24, color: fg),
-          const SizedBox(width: 8),
-          Text(
-            category.label,
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
-              color: fg,
-            ),
-          ),
+          // const SizedBox(width: 8),
+          // Text(
+          //   category.label,
+          //   style: TextStyle(
+          //     fontWeight: FontWeight.w600,
+          //     fontSize: 14,
+          //     color: fg,
+          //   ),
+          // ),
         ],
       ),
     );

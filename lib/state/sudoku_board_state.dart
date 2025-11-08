@@ -13,6 +13,7 @@ enum GameResult { playing, won, lost }
 class SudokuBoardState extends ChangeNotifier {
   static const int size = 9;
   final bool shouldAnimate = false;
+  bool showNotes = true;
 
   Sudoku _sudoku = Sudoku.empty();
   Sudoku get sudoku => _sudoku;
@@ -32,7 +33,7 @@ class SudokuBoardState extends ChangeNotifier {
     settings: SolverSettings(allowed: {StrategyType.nakedSingle}),
   );
 
-  SudokuBoardState() {
+  SudokuBoardState({bool? showNotes}) : showNotes = showNotes ?? true {
     _mode = LoadingMode(this);
   }
 
