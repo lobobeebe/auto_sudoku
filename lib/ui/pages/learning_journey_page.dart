@@ -375,19 +375,6 @@ class _LessonNode extends StatelessWidget {
       ),
     );
   }
-
-  String _badgeForStatus(LessonStatus status) {
-    switch (status) {
-      case LessonStatus.completed:
-        return 'DONE';
-      case LessonStatus.inProgress:
-        return 'IN PROGRESS';
-      case LessonStatus.locked:
-        return 'LOCKED';
-      case LessonStatus.comingSoon:
-        return 'COMING SOON';
-    }
-  }
 }
 
 void _openLesson1(BuildContext context) {
