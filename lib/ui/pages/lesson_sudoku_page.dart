@@ -36,7 +36,7 @@ class _LessonSudokuPageState extends State<LessonSudokuPage> {
         TutorialStep(
           title: 'Welcome to Sudoku!',
           body:
-              "Fill the grid so every \"Unit\" contains 1–9 without repeats. No math degree required - Auto Sudoku makes it simple! Let's get started!",
+              "The goal is to fill the grid so every \"Unit\" contains 1–9 without repeats. No math degree required - Auto Sudoku makes it simple!",
           centerDialog: true,
         ),
         TutorialStep(
@@ -78,7 +78,7 @@ class _LessonSudokuPageState extends State<LessonSudokuPage> {
           title: 'Tap a 2',
           body:
               'Tap any cell that already contains a 2. We\'ll use it to spot something sneaky.',
-          expectSelectValue: 2,
+          advanceOnValue: 2,
           selectedIndices: {},
           maskIndices: {3, 15, 29, 44, 50, 64},
           preventGridTaps: false,
@@ -96,20 +96,19 @@ class _LessonSudokuPageState extends State<LessonSudokuPage> {
           body:
               "See it? Tap the lone cell and Auto Sudoku fills it instantly — quick, easy, satisfying. Give it a tap!",
           solverSettings: SolverSettings(allowed: {StrategyType.hiddenSingle}),
+          advanceOnIndices: {18},
         ),
         TutorialStep(
           preventGridTaps: false,
-          title: 'Complete the Puzzle!',
+          centerDialog: true,
+          title: 'Complete the Puzzle',
           body:
               "Hidden Singles are just the beginning! Use them to finish this puzzle. Pro tip: tap filled cells to gray out the rest and spot more singles.",
           solverSettings: SolverSettings(allowed: {StrategyType.hiddenSingle}),
-          maskRows: {0, 1, 2, 3, 4, 5, 6, 7, 8},
         ),
       ],
       onDone: () {
         // Restore default solver behavior once tutorial finishes
-        final board = context.read<SudokuBoardState>();
-        board.applyTutorialSolverSettings(SolverSettings.all());
         setState(() => _showTutorial = false);
       },
     );

@@ -12,7 +12,7 @@ enum GameResult { playing, won, lost }
 
 class SudokuBoardState extends ChangeNotifier {
   static const int size = 9;
-  bool autoSingle = true;
+  bool autoSingle = false;
   bool autoFinish = true;
   bool showNotes = true;
 
@@ -68,7 +68,7 @@ class SudokuBoardState extends ChangeNotifier {
   SudokuBoardState({bool? showNotes, bool? autoFinish, bool? autoSingle})
     : showNotes = showNotes ?? true,
       autoFinish = autoFinish ?? true,
-      autoSingle = autoSingle ?? true {
+      autoSingle = autoSingle ?? false {
     _mode = LoadingMode(this);
   }
 

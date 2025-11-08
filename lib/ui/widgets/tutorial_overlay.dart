@@ -17,7 +17,7 @@ class TutorialStep {
   // If set, this step requires the user to tap a grid cell whose
   // filled-in value equals this digit; upon a valid tap, the tutorial
   // auto-advances. All other grid taps are blocked.
-  final int? expectSelectValue;
+  final int? advanceOnValue;
   // Whether the Action Bar should be enabled during this step.
   // Defaults to false so controls are disabled unless explicitly allowed.
   final bool enableActionBar;
@@ -30,6 +30,9 @@ class TutorialStep {
   // mask overlay for this step. When provided, this takes precedence over
   // rows/cols/boxes/cells for visual holes and tap allowance.
   final Set<int>? maskIndices;
+  // Optional: when provided, moving to the next step automatically if the
+  // user taps any of these indices.
+  final Set<int>? advanceOnIndices;
   // Optional per-step solver settings to apply on the board while
   // this step is active. If null, defaults to none (disable hints).
   final SolverSettings? solverSettings;
@@ -42,12 +45,13 @@ class TutorialStep {
     required this.title,
     required this.body,
     this.centerDialog = false,
-    this.expectSelectValue,
+    this.advanceOnValue,
     this.enableActionBar = false,
     this.selectedIndices,
     this.solverSettings,
     this.preventGridTaps = true,
     this.maskIndices,
+    this.advanceOnIndices,
   });
 
   bool get hasAnyAllow =>
@@ -191,7 +195,10 @@ class TutorialPanel extends StatelessWidget {
       animation: controller,
       builder: (context, _) {
         final step = controller.current;
-        final canGoNext = controller.hasNext && step.expectSelectValue == null;
+        final canGoNext =
+            controller.hasNext &&
+            step.advanceOnValue == null &&
+            (step.advanceOnIndices == null || step.advanceOnIndices!.isEmpty);
         return Card(
           elevation: 3,
           color: colors.surfaceContainerHighest,
@@ -365,7 +372,10 @@ class CenterDialogOverlay extends StatelessWidget {
                       hasPrev: controller.hasPrev,
                       hasNext: controller.hasNext,
                       onBack: controller.back,
-                      onNext: step.expectSelectValue == null
+                      onNext:
+                          (step.advanceOnValue == null &&
+                              (step.advanceOnIndices == null ||
+                                  step.advanceOnIndices!.isEmpty))
                           ? controller.next
                           : null,
                       showDoneLabel: true,
@@ -448,7 +458,12 @@ class _TutorialOverlayState extends State<TutorialOverlay> {
                   hasPrev: _index > 0,
                   hasNext: _index < widget.steps.length - 1,
                   onBack: _back,
-                  onNext: displayStep.expectSelectValue == null ? _next : null,
+                  onNext:
+                      (displayStep.advanceOnValue == null &&
+                          (displayStep.advanceOnIndices == null ||
+                              displayStep.advanceOnIndices!.isEmpty))
+                      ? _next
+                      : null,
                   showDoneLabel: true,
                   padding: const EdgeInsets.fromLTRB(16, 14, 12, 12),
                   elevation: 8,
@@ -546,17 +561,6 @@ TutorialStep _stepForMask(List<TutorialStep> steps, int index) {
   return steps[index];
 }
 
-// Helper: build a step that highlights all cells containing a given value
-TutorialStep _stepWithMatchingValue(SudokuBoardState board, int value) {
-  final cells = <int>{};
-  for (int i = 0; i < 81; i++) {
-    if (!board.sudoku.isEmpty(i) && board.sudoku.valueAt(i) == value) {
-      cells.add(i);
-    }
-  }
-  return TutorialStep(cells: cells, title: '', body: '');
-}
-
 Rect? _unionRect(List<RRect> rects) {
   if (rects.isEmpty) return null;
   Rect? u;
@@ -614,7 +618,7 @@ class _TouchShield extends StatelessWidget {
         step.maskCols.isNotEmpty ||
         step.maskBoxes.isNotEmpty ||
         step.cells.isNotEmpty ||
-        step.expectSelectValue != null;
+        step.advanceOnValue != null;
     if (!hasAny) return false;
 
     final w = size.width / 9;
@@ -638,8 +642,8 @@ class _TouchShield extends StatelessWidget {
 
     // If a specific selection value is required, further restrict to cells
     // whose filled value matches that digit.
-    if (step.expectSelectValue != null) {
-      final required = step.expectSelectValue!;
+    if (step.advanceOnValue != null) {
+      final required = step.advanceOnValue!;
       if (board.sudoku.isEmpty(idx) || board.sudoku.valueAt(idx) != required) {
         return false;
       }
@@ -669,8 +673,16 @@ class _TouchShield extends StatelessWidget {
         int col = (rel.dx ~/ cellW).clamp(0, 8);
         int row = (rel.dy ~/ cellH).clamp(0, 8);
         board.requestSelectCell(row, col);
-        if (step.expectSelectValue != null) {
+        // Auto-advance rules
+        final idx = row * 9 + col;
+        if (step.advanceOnIndices != null &&
+            step.advanceOnIndices!.contains(idx)) {
           controller?.next();
+          return;
+        }
+        if (step.advanceOnValue != null) {
+          controller?.next();
+          return;
         }
       },
     );

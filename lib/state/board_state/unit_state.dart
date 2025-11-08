@@ -4,7 +4,6 @@ import 'package:auto_sudoku/state/board_state/highlight_state.dart';
 import 'package:auto_sudoku/state/board_state/hint_state.dart';
 import 'package:auto_sudoku/ui/widgets/strategy_category_popup_menu.dart';
 import 'package:auto_sudoku_solver/auto_sudoku_solver.dart';
-import 'package:flutter/material.dart';
 
 class UnitMode extends BoardMode {
   UnitMode(super.board);
@@ -57,14 +56,6 @@ class UnitMode extends BoardMode {
     board.pushSnapshot(snapshot: snapshot);
     board.strategyCategory = StrategyCategory.nakedHidden;
 
-    final lastSelectedIndex = board.selectedIndices.lastOrNull;
-    board.selectedIndices.clear();
-    if (lastSelectedIndex != null && !board.sudoku.isEmpty(lastSelectedIndex)) {
-      board.selectedIndices.add(lastSelectedIndex);
-      board.setMode(HighlightMode(board, this));
-      return;
-    }
-
     final result = board.evaluateResult();
     if (result != null) {
       board.setMode(CompleteMode(board, result, this));
@@ -73,6 +64,15 @@ class UnitMode extends BoardMode {
 
     if (board.autoFinish && board.canWinBySingles()) {
       board.setMode(AnimatingMode(board, this));
+      return;
+    }
+
+    final lastSelectedIndex = board.selectedIndices.lastOrNull;
+    board.selectedIndices.clear();
+    if (lastSelectedIndex != null && !board.sudoku.isEmpty(lastSelectedIndex)) {
+      board.selectedIndices.add(lastSelectedIndex);
+      board.setMode(HighlightMode(board, this));
+      return;
     }
   }
 
