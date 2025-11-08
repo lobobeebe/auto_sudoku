@@ -25,7 +25,7 @@ class HintMode extends BoardMode {
 
     board.selectedIndices.clear();
 
-    if (board.shouldAnimate) {
+    if (board.autoSingle) {
       board.setMode(AnimatingMode(board, previousMode));
     } else {
       board.setMode(previousMode);

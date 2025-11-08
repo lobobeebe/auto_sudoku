@@ -12,7 +12,8 @@ enum GameResult { playing, won, lost }
 
 class SudokuBoardState extends ChangeNotifier {
   static const int size = 9;
-  final bool shouldAnimate = false;
+  bool autoSingle = true;
+  bool autoFinish = true;
   bool showNotes = true;
 
   Sudoku _sudoku = Sudoku.empty();
@@ -26,15 +27,68 @@ class SudokuBoardState extends ChangeNotifier {
 
   late BoardMode _mode;
   bool _hasBoardModeBuilt = false;
-  final Solver _hintSolver = Solver(settings: SolverSettings.all());
+  Solver _hintSolver = Solver(settings: SolverSettings.all());
 
   // Solver for finding singles
   final Solver _singleSolver = Solver(
     settings: SolverSettings(allowed: {StrategyType.nakedSingle}),
   );
 
-  SudokuBoardState({bool? showNotes}) : showNotes = showNotes ?? true {
+  // Optional override used by tutorials to control both hint and unit solvers
+  SolverSettings? _tutorialSolverOverride;
+
+  // Default category solvers used when no tutorial override is active
+  late final Map<StrategyCategory, Solver> _defaultCategorySolvers = {
+    StrategyCategory.nakedHidden: Solver(
+      settings: SolverSettings(
+        allowed: {
+          StrategyType.nakedSingle,
+          StrategyType.nakedPair,
+          StrategyType.nakedTriple,
+          StrategyType.nakedQuad,
+          StrategyType.hiddenSingle,
+          StrategyType.hiddenPair,
+          StrategyType.hiddenTriple,
+          StrategyType.hiddenQuad,
+        },
+      ),
+    ),
+    StrategyCategory.locked: Solver(
+      settings: SolverSettings(
+        allowed: {StrategyType.pointing, StrategyType.claiming},
+      ),
+    ),
+    StrategyCategory.wings: Solver(
+      settings: SolverSettings(
+        allowed: {StrategyType.xWing, StrategyType.xyWing},
+      ),
+    ),
+  };
+
+  SudokuBoardState({bool? showNotes, bool? autoFinish, bool? autoSingle})
+    : showNotes = showNotes ?? true,
+      autoFinish = autoFinish ?? true,
+      autoSingle = autoSingle ?? true {
     _mode = LoadingMode(this);
+  }
+
+  // Apply per-step solver settings for tutorials. If null, defaults to none.
+  void applyTutorialSolverSettings(SolverSettings? settings) {
+    final next = settings ?? const SolverSettings();
+    _tutorialSolverOverride = next;
+    _hintSolver = Solver(settings: next);
+  }
+
+  // Returns the solver that Unit mode should use for the current (or given)
+  // category, taking into account a tutorial override if present.
+  Solver getUnitSolverForCategory([StrategyCategory? category]) {
+    final override = _tutorialSolverOverride;
+    if (override != null) {
+      return Solver(settings: override);
+    }
+    final cat = category ?? strategyCategory ?? StrategyCategory.nakedHidden;
+    return _defaultCategorySolvers[cat] ??
+        Solver(settings: SolverSettings.all());
   }
 
   void setMode(BoardMode next) {

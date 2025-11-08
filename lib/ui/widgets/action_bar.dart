@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:auto_sudoku/state/sudoku_board_state.dart';
 import 'package:auto_sudoku/ui/utils/feedback.dart';
 import 'package:provider/provider.dart';
+import 'package:auto_sudoku/ui/widgets/tutorial_overlay.dart';
 
 class ActionBar extends StatelessWidget {
   const ActionBar({super.key});
@@ -11,7 +12,16 @@ class ActionBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final board = context.watch<SudokuBoardState>();
-    final isEnabled = board.allowControls;
+    // If a tutorial is active, enable only when the step allows it.
+    // Provider might not be present; fall back to enabled.
+    TutorialController? tutorial;
+    try {
+      tutorial = context.watch<TutorialController>();
+    } catch (_) {
+      tutorial = null;
+    }
+    final tutorialAllows = tutorial?.current.enableActionBar ?? true;
+    final isEnabled = board.allowControls && tutorialAllows;
 
     final leftControls = Row(
       mainAxisSize: MainAxisSize.min,

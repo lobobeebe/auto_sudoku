@@ -15,7 +15,7 @@ class LoadingMode extends BoardMode {
   void onRequestInitPuzzle(SudokuModel? puzzle, String? error) {
     if (puzzle != null && error == null) {
       board.initPuzzle(puzzle);
-      if (board.shouldAnimate) {
+      if (board.autoSingle) {
         board.setMode(AnimatingMode(board, UnitMode(board)));
       } else {
         board.setMode(UnitMode(board));

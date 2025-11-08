@@ -7,33 +7,6 @@ import 'package:auto_sudoku_solver/auto_sudoku_solver.dart';
 import 'package:flutter/material.dart';
 
 class UnitMode extends BoardMode {
-  final Map<StrategyCategory, Solver> _categorySolverMap = {
-    StrategyCategory.nakedHidden: Solver(
-      settings: SolverSettings(
-        allowed: {
-          StrategyType.nakedSingle,
-          StrategyType.nakedPair,
-          StrategyType.nakedTriple,
-          StrategyType.nakedQuad,
-          StrategyType.hiddenSingle,
-          StrategyType.hiddenPair,
-          StrategyType.hiddenTriple,
-          StrategyType.hiddenQuad,
-        },
-      ),
-    ),
-    StrategyCategory.locked: Solver(
-      settings: SolverSettings(
-        allowed: {StrategyType.pointing, StrategyType.claiming},
-      ),
-    ),
-    StrategyCategory.wings: Solver(
-      settings: SolverSettings(
-        allowed: {StrategyType.xWing, StrategyType.xyWing},
-      ),
-    ),
-  };
-
   UnitMode(super.board);
 
   @override
@@ -67,13 +40,7 @@ class UnitMode extends BoardMode {
   }
 
   void _trySolve() {
-    final solver = _categorySolverMap[board.strategyCategory];
-
-    if (solver == null) {
-      debugPrintStack(label: "No solver for ${board.strategyCategory}");
-      return;
-    }
-
+    final solver = board.getUnitSolverForCategory(board.strategyCategory);
     final hint = solver.getHintByClues(board.sudoku, board.selectedIndices);
 
     if (hint == null) {
@@ -88,10 +55,15 @@ class UnitMode extends BoardMode {
     }
 
     board.pushSnapshot(snapshot: snapshot);
-
-    board.selectedIndices.clear();
-
     board.strategyCategory = StrategyCategory.nakedHidden;
+
+    final lastSelectedIndex = board.selectedIndices.lastOrNull;
+    board.selectedIndices.clear();
+    if (lastSelectedIndex != null && !board.sudoku.isEmpty(lastSelectedIndex)) {
+      board.selectedIndices.add(lastSelectedIndex);
+      board.setMode(HighlightMode(board, this));
+      return;
+    }
 
     final result = board.evaluateResult();
     if (result != null) {
@@ -99,7 +71,7 @@ class UnitMode extends BoardMode {
       return;
     }
 
-    if (board.canWinBySingles()) {
+    if (board.autoFinish && board.canWinBySingles()) {
       board.setMode(AnimatingMode(board, this));
     }
   }
