@@ -589,12 +589,12 @@ class WWingStrategy extends Strategy {
 
   @override
   Hint? getHintFromClues(Sudoku s, List<int> indices) {
-    // Need at least the two bivalue cells; extras (up to two) may be link endpoints.
-    if (indices.length < 2) return null;
+    // REQUIREMENT: callers must supply two bivalue {x,y} cells *and* two endpoint cells that form a strong link on x or y.
+    if (indices.length < 4) return null;
 
     // Keep only unsolved cells from clues.
     final clues = indices.where((i) => s.isEmpty(i)).toList();
-    if (clues.length < 2) return null;
+    if (clues.length < 4) return null;
 
     // Find any pair among clues that are identical bivalue sets {x,y}.
     int? a, b; // the two bivalue cells
@@ -715,8 +715,8 @@ class WWingStrategy extends Strategy {
                 final unit = (s.rowOf(e1) == s.rowOf(e2))
                     ? HintUnit.row
                     : (s.colOf(e1) == s.colOf(e2))
-                        ? HintUnit.column
-                        : HintUnit.box;
+                    ? HintUnit.column
+                    : HintUnit.box;
                 return Hint(
                   StrategyType.wWing,
                   eliminations: elim,
@@ -739,8 +739,8 @@ class WWingStrategy extends Strategy {
                 final unit = (s.rowOf(e1) == s.rowOf(e2))
                     ? HintUnit.row
                     : (s.colOf(e1) == s.colOf(e2))
-                        ? HintUnit.column
-                        : HintUnit.box;
+                    ? HintUnit.column
+                    : HintUnit.box;
                 return Hint(
                   StrategyType.wWing,
                   eliminations: elim,
@@ -753,64 +753,8 @@ class WWingStrategy extends Strategy {
           }
         }
       }
-      // If explicit endpoints were provided but none validated, fall through to auto-discovery.
-    }
-
-    // Auto-discover a strong link on either digit (x first, then y), like findHint.
-    for (final d in [x, y]) {
-      final elimDigit = (d == x) ? y : x;
-      for (final line in _findStrongLinkOnLine(s, d, byRow: true)) {
-        final seesA =
-            s.peersOf(a).contains(line[0]) || s.peersOf(a).contains(line[1]);
-        final seesB =
-            s.peersOf(b).contains(line[0]) || s.peersOf(b).contains(line[1]);
-        if (!seesA || !seesB) continue;
-        final elim = elimFor(elimDigit);
-        if (elim.isNotEmpty) {
-          return Hint(
-            StrategyType.wWing,
-            eliminations: elim,
-            cells: [a, b, ...line],
-            digits: [x, y]..sort(),
-            unit: HintUnit.row,
-          );
-        }
-      }
-      for (final line in _findStrongLinkOnLine(s, d, byRow: false)) {
-        final seesA =
-            s.peersOf(a).contains(line[0]) || s.peersOf(a).contains(line[1]);
-        final seesB =
-            s.peersOf(b).contains(line[0]) || s.peersOf(b).contains(line[1]);
-        if (!seesA || !seesB) continue;
-        final elim = elimFor(elimDigit);
-        if (elim.isNotEmpty) {
-          return Hint(
-            StrategyType.wWing,
-            eliminations: elim,
-            cells: [a, b, ...line],
-            digits: [x, y]..sort(),
-            unit: HintUnit.column,
-          );
-        }
-      }
-      // Try box-based strong link discovery
-      for (final link in _findStrongLinkInBoxes(s, d)) {
-        final seesA =
-            s.peersOf(a).contains(link[0]) || s.peersOf(a).contains(link[1]);
-        final seesB =
-            s.peersOf(b).contains(link[0]) || s.peersOf(b).contains(link[1]);
-        if (!seesA || !seesB) continue;
-        final elim = elimFor(elimDigit);
-        if (elim.isNotEmpty) {
-          return Hint(
-            StrategyType.wWing,
-            eliminations: elim,
-            cells: [a, b, ...link],
-            digits: [x, y]..sort(),
-            unit: HintUnit.box,
-          );
-        }
-      }
+      // Endpoints required: do not auto-discover.
+      return null;
     }
 
     return null;

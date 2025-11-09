@@ -5,7 +5,6 @@ import 'package:auto_sudoku/state/board_state/loading_state.dart';
 import 'package:auto_sudoku/state/cell_state.dart';
 import 'package:auto_sudoku/ui/theme/sudoku_theme.dart';
 import 'package:auto_sudoku/ui/utils/feedback.dart';
-import 'package:auto_sudoku/ui/widgets/strategy_category_popup_menu.dart';
 import 'package:auto_sudoku_solver/auto_sudoku_solver.dart';
 import 'package:flutter/material.dart';
 
@@ -39,26 +38,24 @@ class SudokuBoardState extends ChangeNotifier {
   SolverSettings? _tutorialSolverOverride;
 
   // Default category solvers used when no tutorial override is active
-  late final Map<StrategyCategory, Solver> _defaultCategorySolvers = {
-    StrategyCategory.nakedHidden: Solver(
-      settings: SolverSettings(
-        allowed: {
-          StrategyType.nakedSingle,
-          StrategyType.nakedPair,
-          StrategyType.nakedTriple,
-          StrategyType.nakedQuad,
-          StrategyType.hiddenSingle,
-          StrategyType.hiddenPair,
-          StrategyType.hiddenTriple,
-          StrategyType.hiddenQuad,
-          StrategyType.pointing,
-          StrategyType.claiming,
-          StrategyType.xWing,
-          StrategyType.xyWing,
-        },
-      ),
+  final Solver _defaultSolver = Solver(
+    settings: SolverSettings(
+      allowed: {
+        StrategyType.nakedSingle,
+        StrategyType.nakedPair,
+        StrategyType.nakedTriple,
+        StrategyType.nakedQuad,
+        StrategyType.hiddenSingle,
+        StrategyType.hiddenPair,
+        StrategyType.hiddenTriple,
+        StrategyType.hiddenQuad,
+        StrategyType.pointing,
+        StrategyType.claiming,
+        StrategyType.xWing,
+        StrategyType.xyWing,
+      },
     ),
-  };
+  );
 
   SudokuBoardState({bool? showNotes, bool? autoFinish, bool? autoSingle})
     : showNotes = showNotes ?? true,
@@ -76,14 +73,12 @@ class SudokuBoardState extends ChangeNotifier {
 
   // Returns the solver that Unit mode should use for the current (or given)
   // category, taking into account a tutorial override if present.
-  Solver getUnitSolverForCategory([StrategyCategory? category]) {
+  Solver getUnitSolver() {
     final override = _tutorialSolverOverride;
     if (override != null) {
       return Solver(settings: override);
     }
-    final cat = category ?? strategyCategory ?? StrategyCategory.nakedHidden;
-    return _defaultCategorySolvers[cat] ??
-        Solver(settings: SolverSettings.all());
+    return _defaultSolver;
   }
 
   void setMode(BoardMode next) {
@@ -99,8 +94,6 @@ class SudokuBoardState extends ChangeNotifier {
       super.notifyListeners();
     }
   }
-
-  StrategyCategory? strategyCategory = StrategyCategory.nakedHidden;
 
   SudokuModel? get currentPuzzle => _currentPuzzle;
   List<int> get selectedIndices => _selectedIndices;
@@ -165,10 +158,6 @@ class SudokuBoardState extends ChangeNotifier {
 
   // Name of the most recently generated hint's strategy (for UI toasts)
   String? lastHintStrategyName;
-
-  void requestStrategyCategory(StrategyCategory category) {
-    return _mode.onRequestStrategyCategory(category);
-  }
 
   bool allowReset() => _mode.allowReset();
 

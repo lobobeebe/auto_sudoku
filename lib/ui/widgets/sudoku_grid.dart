@@ -337,7 +337,7 @@ class _CellNoteState extends State<_CellNote>
     super.initState();
     _burstCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 1100),
     );
     _scale = CurvedAnimation(parent: _burstCtrl, curve: Curves.easeOutBack);
     _fade = CurvedAnimation(

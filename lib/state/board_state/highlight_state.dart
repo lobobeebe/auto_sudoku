@@ -42,7 +42,7 @@ class HighlightMode extends BoardMode {
   }
 
   bool _trySolveEmpty() {
-    final solver = board.getUnitSolverForCategory(board.strategyCategory);
+    final solver = board.getUnitSolver();
     final hint = solver.getHintByClues(board.sudoku, board.selectedIndices);
 
     if (hint == null) {

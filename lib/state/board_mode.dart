@@ -7,7 +7,6 @@ import 'package:auto_sudoku/ui/theme/sudoku_theme.dart';
 import 'package:auto_sudoku/ui/widgets/action_bar.dart';
 import 'package:auto_sudoku/ui/widgets/common_container.dart';
 import 'package:auto_sudoku/ui/widgets/result_dialog.dart';
-import 'package:auto_sudoku/ui/widgets/strategy_category_popup_menu.dart';
 import 'package:auto_sudoku_solver/auto_sudoku_solver.dart';
 import 'package:flutter/material.dart';
 
@@ -36,8 +35,6 @@ abstract class BoardMode {
   void onRequestUndo() {
     if (allowUndo()) board.undo();
   }
-
-  void onRequestStrategyCategory(StrategyCategory category) {}
 
   // UI allowances
   bool allowReset() => true;

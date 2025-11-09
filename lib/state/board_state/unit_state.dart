@@ -2,7 +2,6 @@ import 'package:auto_sudoku/state/board_mode.dart';
 import 'package:auto_sudoku/state/board_state/animating_state.dart';
 import 'package:auto_sudoku/state/board_state/highlight_state.dart';
 import 'package:auto_sudoku/state/board_state/hint_state.dart';
-import 'package:auto_sudoku/ui/widgets/strategy_category_popup_menu.dart';
 import 'package:auto_sudoku_solver/auto_sudoku_solver.dart';
 
 class UnitMode extends BoardMode {
@@ -34,7 +33,7 @@ class UnitMode extends BoardMode {
   }
 
   void _trySolve() {
-    final solver = board.getUnitSolverForCategory(board.strategyCategory);
+    final solver = board.getUnitSolver();
     final hint = solver.getHintByClues(board.sudoku, board.selectedIndices);
 
     if (hint == null) {
@@ -52,7 +51,6 @@ class UnitMode extends BoardMode {
     board.showHintToastIfPossible(hint.strategy.toString());
 
     board.pushSnapshot(snapshot: snapshot);
-    board.strategyCategory = StrategyCategory.nakedHidden;
 
     board.selectedIndices.clear();
 
@@ -71,14 +69,5 @@ class UnitMode extends BoardMode {
   @override
   void onRequestSetHint(Hint hint) {
     board.setMode(HintMode(board, hint, this));
-  }
-
-  @override
-  void onRequestStrategyCategory(StrategyCategory category) {
-    board.strategyCategory = category;
-
-    _trySolve();
-
-    board.emitChange();
   }
 }
