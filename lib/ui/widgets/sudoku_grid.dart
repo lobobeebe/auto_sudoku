@@ -220,7 +220,7 @@ class _AnimatedCellValueState extends State<_AnimatedCellValue>
     super.initState();
     _ctrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 420),
+      duration: const Duration(milliseconds: 750),
     );
     _scale = CurvedAnimation(parent: _ctrl, curve: Curves.easeOutBack);
     _fade = CurvedAnimation(
@@ -248,6 +248,8 @@ class _AnimatedCellValueState extends State<_AnimatedCellValue>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Center(
       child: AnimatedBuilder(
         animation: _ctrl,
@@ -262,13 +264,13 @@ class _AnimatedCellValueState extends State<_AnimatedCellValue>
                 Opacity(
                   opacity: flashOpacity,
                   child: Transform.scale(
-                    scale: 1.0 + 0.5 * _scale.value,
+                    scale: 1.0 + 0.25 * _scale.value,
                     child: Text(
                       '${widget.digit}',
                       style: TextStyle(
                         fontSize: widget.fontSize,
                         fontWeight: FontWeight.w700,
-                        color: Colors.green,
+                        color: theme.primaryColor,
                       ),
                     ),
                   ),
@@ -335,7 +337,7 @@ class _CellNoteState extends State<_CellNote>
     super.initState();
     _burstCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 500),
+      duration: const Duration(milliseconds: 1500),
     );
     _scale = CurvedAnimation(parent: _burstCtrl, curve: Curves.easeOutBack);
     _fade = CurvedAnimation(

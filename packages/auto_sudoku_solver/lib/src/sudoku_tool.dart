@@ -19,7 +19,6 @@
 //   - --max-rounds N: abort beam digging after N rounds (default 400).
 //   - JSON output excludes Trivial and Impossible puzzles.
 //   - If --board is provided, it also prints the pretty board (difficulty, reason, grids) and progress messages.
-//   - If --steps is provided, it lists the logical solving steps used (excluding simple singles).
 //   - Use --max-attempts to cap the attempts when searching for an exact difficulty match (default 500).
 //
 // Implementation notes:
@@ -35,11 +34,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:auto_sudoku_solver/auto_sudoku_solver.dart';
-
-import 'classified_puzzle.dart';
-import 'difficulty.dart';
-import 'generator.dart';
-import 'strategy/strategy.dart';
 
 export 'classified_puzzle.dart';
 export 'difficulty.dart';
@@ -111,8 +105,6 @@ void main(List<String> args) {
   }
 
   final gen = Generator(seed: seed);
-  final bool showSteps = args.contains('--steps');
-
   final List<Map<String, dynamic>> outList = [];
 
   for (var n = 1; n <= count; n++) {
@@ -153,26 +145,6 @@ void main(List<String> args) {
       print(formatGrid(result.puzzle));
       print('Solution:');
       print(formatGrid(result.solution));
-    }
-
-    if (showSteps) {
-      print('Steps used to solve (excluding naked/hidden singles):');
-      final s = Sudoku(List<int>.from(result.puzzle));
-      final res = gen.solver.solveLogical(s);
-      final filtered = res.steps
-          .where(
-            (st) =>
-                st != StrategyType.nakedSingle &&
-                st != StrategyType.hiddenSingle,
-          )
-          .toList();
-      if (filtered.isEmpty) {
-        print('  (No advanced techniques used)');
-      } else {
-        for (var i = 0; i < filtered.length; i++) {
-          print('  ${i + 1}. ${filtered[i]}');
-        }
-      }
     }
 
     String diffOut = result.difficulty.name;

@@ -1,5 +1,7 @@
 import 'dart:math';
 
+import 'package:auto_sudoku_solver/auto_sudoku_solver.dart';
+
 import 'classified_puzzle.dart';
 import 'difficulty.dart';
 import 'solver.dart';
@@ -45,7 +47,7 @@ class Generator {
 
   Generator({int? seed, PrunePolicy? policy})
     : rng = Random(seed),
-      solver = Solver(),
+      solver = Solver(settings: SolverSettings.all()),
       policy = policy ?? const PrunePolicy();
 
   // Create a complete solved board by randomized backtracking

@@ -272,6 +272,6 @@ class Sudoku {
 
   static bool isGridSolved(List<int> grid) => grid.every((v) => v != 0);
 
-  static bool isValidIndex(int index) => index >= 0 && index <= numIndices;
+  static bool isValidIndex(int index) => index >= 0 && index < numIndices;
   static bool isValidDigit(int digit) => digit >= 1 && digit <= 9;
 }

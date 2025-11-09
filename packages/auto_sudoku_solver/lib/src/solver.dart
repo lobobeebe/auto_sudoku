@@ -124,8 +124,9 @@ class Solver {
     for (final entry in hint.eliminations.entries) {
       final index = entry.key;
       for (final digit in entry.value) {
-        if (Sudoku.isValidIndex(index)) continue;
-        if (Sudoku.isValidDigit(digit)) continue;
+        // Skip invalid indices/digits and already-filled cells
+        if (!Sudoku.isValidIndex(index)) continue;
+        if (!Sudoku.isValidDigit(digit)) continue;
         if (!s.isEmpty(index)) continue;
         if (s.setNote(index, digit, false)) {
           changed = true;

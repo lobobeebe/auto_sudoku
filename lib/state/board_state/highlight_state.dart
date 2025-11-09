@@ -56,6 +56,9 @@ class HighlightMode extends BoardMode {
       return false;
     }
 
+    // Toast the technique name when a hint is applied automatically
+    board.showHintToastIfPossible(hint.strategy.toString());
+
     board.pushSnapshot(snapshot: snapshot);
 
     final result = board.evaluateResult();

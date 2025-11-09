@@ -138,8 +138,9 @@ class SudokuHomePage extends StatelessWidget {
       constraints: const BoxConstraints(maxWidth: 1120),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          Expanded(child: _buildBoardCard(context)),
+          Flexible(child: _buildBoardCard(context)),
           _buildControlsCard(context, board),
         ],
       ),

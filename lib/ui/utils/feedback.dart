@@ -1,9 +1,19 @@
 import 'package:flutter/material.dart';
 
-OverlayEntry? _activeToast;
+class _ToastHandle {
+  final OverlayEntry entry;
+  final AnimationController controller;
+  _ToastHandle(this.entry, this.controller);
+}
+
+_ToastHandle? _activeToast;
 
 void _dismissActiveToast() {
-  _activeToast?.remove();
+  final handle = _activeToast;
+  if (handle != null) {
+    handle.entry.remove();
+    handle.controller.dispose();
+  }
   _activeToast = null;
 }
 
@@ -39,15 +49,20 @@ void showToast(
         child: IgnorePointer(
           child: SafeArea(
             child: Align(
-              alignment: Alignment.bottomCenter,
+              alignment: Alignment.topCenter,
               child: Padding(
-                padding: const EdgeInsets.only(bottom: 24),
+                // Offset below the AppBar (toolbar height) plus safe area
+                // to avoid overlapping the top bar in pages that extend
+                // body behind the AppBar.
+                padding: EdgeInsets.only(
+                  top: MediaQuery.of(ctx).padding.top + 12,
+                ),
                 child: FadeTransition(
                   opacity: curved,
                   child: SlideTransition(
                     position: curved.drive(
                       Tween<Offset>(
-                        begin: const Offset(0, 0.15),
+                        begin: const Offset(0, -0.15),
                         end: Offset.zero,
                       ),
                     ),
@@ -92,15 +107,18 @@ void showToast(
   );
 
   overlay.insert(entry);
-  _activeToast = entry;
+  final handle = _ToastHandle(entry, animationController);
+  _activeToast = handle;
   animationController.forward();
 
   Future.delayed(duration, () async {
-    try {
-      await animationController.reverse();
-    } catch (_) {}
-    _dismissActiveToast();
-    animationController.dispose();
+    // Only dismiss if this handle is still the active one
+    if (identical(_activeToast, handle)) {
+      try {
+        await animationController.reverse();
+      } catch (_) {}
+      _dismissActiveToast();
+    }
   });
 }
 
