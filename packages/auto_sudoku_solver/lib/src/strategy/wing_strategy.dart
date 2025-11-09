@@ -669,6 +669,25 @@ class WWingStrategy extends Strategy {
             ((last1 == e1 && last2 == e2) || (last1 == e2 && last2 == e1))) {
           return true;
         }
+      } else if (s.boxOf(e1) == s.boxOf(e2)) {
+        // same box: d must appear exactly twice in that box
+        var cnt = 0;
+        int last1 = -1, last2 = -1;
+        final box = s.boxOf(e1);
+        for (final i in s.boxIndices(box)) {
+          if (s.isEmpty(i) && s.hasNote(i, d)) {
+            cnt++;
+            if (last1 == -1) {
+              last1 = i;
+            } else {
+              last2 = i;
+            }
+          }
+        }
+        if (cnt == 2 &&
+            ((last1 == e1 && last2 == e2) || (last1 == e2 && last2 == e1))) {
+          return true;
+        }
       }
       return false;
     }
@@ -693,14 +712,17 @@ class WWingStrategy extends Strategy {
             if (seesA && seesB) {
               final elim = elimFor(y);
               if (elim.isNotEmpty) {
+                final unit = (s.rowOf(e1) == s.rowOf(e2))
+                    ? HintUnit.row
+                    : (s.colOf(e1) == s.colOf(e2))
+                        ? HintUnit.column
+                        : HintUnit.box;
                 return Hint(
                   StrategyType.wWing,
                   eliminations: elim,
                   cells: [a, b, e1, e2],
                   digits: [x, y]..sort(),
-                  unit: (s.rowOf(e1) == s.rowOf(e2))
-                      ? HintUnit.row
-                      : HintUnit.column,
+                  unit: unit,
                 );
               }
             }
@@ -714,14 +736,17 @@ class WWingStrategy extends Strategy {
             if (seesA && seesB) {
               final elim = elimFor(x);
               if (elim.isNotEmpty) {
+                final unit = (s.rowOf(e1) == s.rowOf(e2))
+                    ? HintUnit.row
+                    : (s.colOf(e1) == s.colOf(e2))
+                        ? HintUnit.column
+                        : HintUnit.box;
                 return Hint(
                   StrategyType.wWing,
                   eliminations: elim,
                   cells: [a, b, e1, e2],
                   digits: [x, y]..sort(),
-                  unit: (s.rowOf(e1) == s.rowOf(e2))
-                      ? HintUnit.row
-                      : HintUnit.column,
+                  unit: unit,
                 );
               }
             }
@@ -765,6 +790,24 @@ class WWingStrategy extends Strategy {
             cells: [a, b, ...line],
             digits: [x, y]..sort(),
             unit: HintUnit.column,
+          );
+        }
+      }
+      // Try box-based strong link discovery
+      for (final link in _findStrongLinkInBoxes(s, d)) {
+        final seesA =
+            s.peersOf(a).contains(link[0]) || s.peersOf(a).contains(link[1]);
+        final seesB =
+            s.peersOf(b).contains(link[0]) || s.peersOf(b).contains(link[1]);
+        if (!seesA || !seesB) continue;
+        final elim = elimFor(elimDigit);
+        if (elim.isNotEmpty) {
+          return Hint(
+            StrategyType.wWing,
+            eliminations: elim,
+            cells: [a, b, ...link],
+            digits: [x, y]..sort(),
+            unit: HintUnit.box,
           );
         }
       }
