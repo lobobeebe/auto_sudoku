@@ -59,11 +59,11 @@ abstract class BoardMode {
       (set, index) => set..addAll(board.sudoku.notesSet(index)),
     );
 
-    Color bg = theme.boardSurface;
+    Color bg = theme.peerCellBackground;
     if (isSelected) {
       bg = theme.selectedCellBackground;
-    } else if (isPeer) {
-      bg = theme.peerCellBackground;
+    } else if (isPeer || board.selectedIndices.isEmpty) {
+      bg = theme.boardSurface;
     } else if (isMatching) {
       bg = theme.matchingValueBackground;
     }

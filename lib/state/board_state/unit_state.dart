@@ -12,18 +12,13 @@ class UnitMode extends BoardMode {
   String get name => "Unit";
 
   @override
-  void onEnter() {
-    _trySolve();
-  }
-
-  @override
   void onRequestSelectCell(int row, int col) {
     final index = board.getIndex(row, col);
 
     if (!board.sudoku.isEmpty(index)) {
       board.selectedIndices.clear();
       board.selectedIndices.add(index);
-      board.setMode(HighlightMode(board, this));
+      board.setMode(HighlightMode(board));
       return;
     }
 
@@ -53,8 +48,13 @@ class UnitMode extends BoardMode {
       return;
     }
 
+    // Toast the technique name when a hint is applied automatically
+    board.showHintToastIfPossible(hint.strategy.toString());
+
     board.pushSnapshot(snapshot: snapshot);
     board.strategyCategory = StrategyCategory.nakedHidden;
+
+    board.selectedIndices.clear();
 
     final result = board.evaluateResult();
     if (result != null) {
@@ -64,14 +64,6 @@ class UnitMode extends BoardMode {
 
     if (board.autoFinish && board.canWinBySingles()) {
       board.setMode(AnimatingMode(board, this));
-      return;
-    }
-
-    final lastSelectedIndex = board.selectedIndices.lastOrNull;
-    board.selectedIndices.clear();
-    if (lastSelectedIndex != null && !board.sudoku.isEmpty(lastSelectedIndex)) {
-      board.selectedIndices.add(lastSelectedIndex);
-      board.setMode(HighlightMode(board, this));
       return;
     }
   }

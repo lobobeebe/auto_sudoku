@@ -33,6 +33,10 @@ class TutorialStep {
   // Optional: when provided, moving to the next step automatically if the
   // user taps any of these indices.
   final Set<int>? advanceOnIndices;
+  // Optional: when provided, only these indices are allowed to be tapped,
+  // even if the overlay/mask visually allows more. The overlay still
+  // prevents taps; this list adds an extra restriction.
+  final Set<int>? tappableIndices;
   // Optional per-step solver settings to apply on the board while
   // this step is active. If null, defaults to none (disable hints).
   final SolverSettings? solverSettings;
@@ -52,6 +56,7 @@ class TutorialStep {
     this.preventGridTaps = true,
     this.maskIndices,
     this.advanceOnIndices,
+    this.tappableIndices,
   });
 
   bool get hasAnyAllow =>
@@ -614,6 +619,7 @@ class _TouchShield extends StatelessWidget {
     // No targets -> block (unless expecting a specific value tap)
     final hasAny =
         (step.maskIndices != null && step.maskIndices!.isNotEmpty) ||
+        (step.tappableIndices != null && step.tappableIndices!.isNotEmpty) ||
         step.maskRows.isNotEmpty ||
         step.maskCols.isNotEmpty ||
         step.maskBoxes.isNotEmpty ||
@@ -628,17 +634,17 @@ class _TouchShield extends StatelessWidget {
     final box = (row ~/ 3) * 3 + (col ~/ 3);
     final idx = row * 9 + col;
 
-    // If explicit mask indices provided, restrict taps to those indices.
+    // Compute base allowance from masks/units
+    bool baseAllowed;
     if (step.maskIndices != null) {
-      if (!step.maskIndices!.contains(idx)) return false;
+      baseAllowed = step.maskIndices!.contains(idx);
     } else {
-      if (step.cells.contains(idx)) return true;
-      if (step.maskRows.contains(row)) return true;
-      if (step.maskCols.contains(col)) return true;
-      if (step.maskBoxes.contains(box)) return true;
-      // if none matched, reject
-      return false;
+      baseAllowed = step.cells.contains(idx) ||
+          step.maskRows.contains(row) ||
+          step.maskCols.contains(col) ||
+          step.maskBoxes.contains(box);
     }
+    if (!baseAllowed) return false;
 
     // If a specific selection value is required, further restrict to cells
     // whose filled value matches that digit.
@@ -647,6 +653,12 @@ class _TouchShield extends StatelessWidget {
       if (board.sudoku.isEmpty(idx) || board.sudoku.valueAt(idx) != required) {
         return false;
       }
+    }
+
+    // Further restrict with explicit tappable indices if provided.
+    if (step.tappableIndices != null &&
+        !step.tappableIndices!.contains(idx)) {
+      return false;
     }
 
     return true;

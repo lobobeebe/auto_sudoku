@@ -1,13 +1,14 @@
 import 'package:auto_sudoku/data/cell_view_model.dart';
 import 'package:auto_sudoku/state/board_mode.dart';
+import 'package:auto_sudoku/state/board_state/animating_state.dart';
 import 'package:auto_sudoku/state/board_state/hint_state.dart';
+import 'package:auto_sudoku/state/board_state/unit_state.dart';
 import 'package:auto_sudoku/ui/theme/sudoku_theme.dart';
 import 'package:auto_sudoku_solver/auto_sudoku_solver.dart';
 import 'package:flutter/material.dart';
 
 class HighlightMode extends BoardMode {
-  final BoardMode lastMode;
-  HighlightMode(super.board, this.lastMode);
+  HighlightMode(super.board);
   @override
   String get name => 'Highlight';
 
@@ -20,19 +21,55 @@ class HighlightMode extends BoardMode {
 
     // Same cell selected - just unselect and move out of the highlight mode.
     if (oldIndex == newIndex) {
-      board.setMode(lastMode);
+      board.setMode(UnitMode(board));
       return;
     }
 
     // New Cell selected
     board.selectedIndices.add(newIndex);
 
-    // If new cell is empty, transition out. Otherwise, just update the highlight.
+    // If new cell is empty, attempt to solve a hidden single to stay in Highlight mode.
     if (board.sudoku.isEmpty(newIndex)) {
-      board.setMode(lastMode);
-    } else {
-      board.emitChange();
+      if (!_trySolveEmpty()) // Attempt to solve a hidden single
+      {
+        // Enter Unit Mode
+        board.setMode(UnitMode(board));
+        return;
+      }
     }
+
+    board.emitChange(); // Notify the selection
+  }
+
+  bool _trySolveEmpty() {
+    final solver = board.getUnitSolverForCategory(board.strategyCategory);
+    final hint = solver.getHintByClues(board.sudoku, board.selectedIndices);
+
+    if (hint == null) {
+      return false;
+    }
+
+    final snapshot = board.makeSnapshot();
+    final applied = board.applyHintToBoard(hint);
+
+    if (!applied) {
+      return false;
+    }
+
+    board.pushSnapshot(snapshot: snapshot);
+
+    final result = board.evaluateResult();
+    if (result != null) {
+      board.setMode(CompleteMode(board, result, this));
+      return true;
+    }
+
+    if (board.autoFinish && board.canWinBySingles()) {
+      board.setMode(AnimatingMode(board, this));
+      return true;
+    }
+
+    return true;
   }
 
   @override

@@ -36,7 +36,7 @@ class _LessonSudokuPageState extends State<LessonSudokuPage> {
         TutorialStep(
           title: 'Welcome to Sudoku!',
           body:
-              "The goal is to fill the grid so every \"Unit\" contains 1–9 without repeats. No math degree required - Auto Sudoku makes it simple!",
+              "Fill each row, column, and 3×3 box with 1–9—no repeats. No math degree needed; Auto Sudoku keeps it fun!",
           centerDialog: true,
         ),
         TutorialStep(
@@ -45,30 +45,30 @@ class _LessonSudokuPageState extends State<LessonSudokuPage> {
           maskBoxes: {4},
           title: 'What is a Unit?',
           body:
-              "A unit is a row, a column, or a 3×3 box. Each unit must contain the digits 1–9 exactly once without repeats.",
+              "A unit is a row, column, or 3×3 box. Each must contain 1–9 exactly once—no repeats.",
         ),
         TutorialStep(
           maskRows: {4},
           title: 'Rows',
           body:
-              'Each row is a unit. The numbers 1–9 may only appear once across the row.',
+              'Each row is a unit. Digits 1–9 can appear only once across the row.',
         ),
         TutorialStep(
           maskCols: {3},
           title: 'Columns',
           body:
-              'Each column is also a unit. The numbers 1–9 may only appear once vertically.',
+              'Each column is a unit. Digits 1–9 can appear only once vertically.',
         ),
         TutorialStep(
           maskBoxes: {4},
           title: '3×3 Boxes',
           body:
-              'Each 3×3 box is a unit. Make sure each digit 1–9 appears exactly once within each box.',
+              'Each 3×3 box is a unit. Make sure digits 1–9 appear exactly once inside.',
         ),
         TutorialStep(
           title: 'Selection Tip',
           body:
-              'When you select a filled-in cell, the cells that cannot contain that value are softly greyed out. It helps your eyes focus where that number could go. Give it a shot!',
+              'Tap a filled cell and we softly gray out where that number can’t go — perfect for focusing your search. Give it a try!',
           // Allow selection anywhere on the grid for this step
           maskRows: {0, 1, 2, 3, 4, 5, 6, 7, 8},
           preventGridTaps: false,
@@ -76,8 +76,7 @@ class _LessonSudokuPageState extends State<LessonSudokuPage> {
         // Hidden Single mini-lesson
         TutorialStep(
           title: 'Tap a 2',
-          body:
-              'Tap any cell that already contains a 2. We\'ll use it to spot something sneaky.',
+          body: 'Tap any filled 2 — we’ll use it to spot something sneaky.',
           advanceOnValue: 2,
           selectedIndices: {},
           maskIndices: {3, 15, 29, 44, 50, 64},
@@ -85,18 +84,42 @@ class _LessonSudokuPageState extends State<LessonSudokuPage> {
         ),
         TutorialStep(
           maskBoxes: {0},
-          title: 'Hidden Single',
-          body:
-              "Spot the standout? Only one cell stays lit in this box—that's a hidden single. 2s in other boxes block the rest, so this 3×3 box has exactly one home for the 2.",
-        ),
-        TutorialStep(
-          maskIndices: {18},
+          maskCols: {1, 2},
+          maskRows: {0, 1},
           preventGridTaps: false,
-          title: 'Auto Hidden Single',
-          body:
-              "See it? Tap the lone cell and Auto Sudoku fills it instantly — quick, easy, satisfying. Give it a tap!",
+          tappableIndices: {18},
           solverSettings: SolverSettings(allowed: {StrategyType.hiddenSingle}),
           advanceOnIndices: {18},
+          title: 'Hidden Single',
+          body:
+              "Spot the standout? Only one cell stays lit in the top-left box — a hidden single. 2s in the lit rows and columns block the rest, so there’s exactly one home for the 2. Give it a tap!",
+        ),
+        TutorialStep(
+          maskBoxes: {0},
+          maskCols: {1, 2},
+          maskRows: {0, 1},
+          title: 'First Hidden Single Done!',
+          body:
+              "Nice job! We've filled in the 2 in this box - let's keep looking for more.",
+        ),
+        TutorialStep(
+          maskRows: {8},
+          preventGridTaps: false,
+          title: 'Next Hidden Single',
+          body: "Spot another lonely home for a 2 in this row? Give it a tap!",
+          solverSettings: SolverSettings(allowed: {StrategyType.hiddenSingle}),
+          advanceOnIndices: {79},
+          tappableIndices: {79},
+        ),
+        TutorialStep(
+          maskCols: {4},
+          preventGridTaps: false,
+          title: 'Last Hidden Single',
+          body:
+              "This column has one cozy spot left for a 2 — finish the set by tapping it!",
+          solverSettings: SolverSettings(allowed: {StrategyType.hiddenSingle}),
+          advanceOnIndices: {58},
+          tappableIndices: {58},
         ),
         TutorialStep(
           preventGridTaps: false,

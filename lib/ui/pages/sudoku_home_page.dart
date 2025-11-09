@@ -10,7 +10,11 @@ class SudokuHomePage extends StatelessWidget {
   // Full-width panel shown as an overlay at the bottom, above the Action Bar
   final Widget? tutorialPanelOverlay;
 
-  const SudokuHomePage({super.key, this.tutorialOverlay, this.tutorialPanelOverlay});
+  const SudokuHomePage({
+    super.key,
+    this.tutorialOverlay,
+    this.tutorialPanelOverlay,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -129,20 +133,16 @@ class SudokuHomePage extends StatelessWidget {
   }
 
   Widget _buildPuzzleContent(BuildContext context, SudokuBoardState board) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return ConstrainedBox(
-          key: const ValueKey('puzzle'),
-          constraints: const BoxConstraints(maxWidth: 1120),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(child: _buildBoardCard(context)),
-              _buildControlsCard(context, board),
-            ],
-          ),
-        );
-      },
+    return ConstrainedBox(
+      key: const ValueKey('puzzle'),
+      constraints: const BoxConstraints(maxWidth: 1120),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(child: _buildBoardCard(context)),
+          _buildControlsCard(context, board),
+        ],
+      ),
     );
   }
 

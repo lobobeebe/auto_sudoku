@@ -119,7 +119,10 @@ class Sudoku {
   int valueAt(int i) => _values[i];
   int notesMaskAt(int i) => _notesMask[i];
   bool isEmpty(int i) => _values[i] == 0;
-  bool hasNote(int i, int d) => (_notesMask[i] & (1 << (d - 1))) != 0;
+  bool hasNote(int i, int d) {
+    if (!isValidIndex(i) || !isValidDigit(d)) return false;
+    return (_notesMask[i] & (1 << (d - 1))) != 0;
+  }
 
   /// Returns the number of active notes (bits set to 1) for cell [i].
   int numNotesAt(int i) {

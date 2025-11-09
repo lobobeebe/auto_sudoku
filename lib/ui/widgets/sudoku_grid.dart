@@ -122,15 +122,11 @@ class SudokuCell extends StatelessWidget {
       builder: (context, constraints) {
         if (value != 0) {
           final fontSize = constraints.maxHeight * 0.65;
-          return Center(
-            child: Text(
-              '$value',
-              style: TextStyle(
-                fontSize: fontSize,
-                fontWeight: viewModel.valueFontWeight,
-                color: viewModel.valueTextColor,
-              ),
-            ),
+          return _AnimatedCellValue(
+            digit: value,
+            fontSize: fontSize,
+            color: viewModel.valueTextColor,
+            fontWeight: viewModel.valueFontWeight,
           );
         }
         if (board.showNotes) {
@@ -193,6 +189,108 @@ class CellNotesWidget extends StatelessWidget {
           }),
         );
       },
+    );
+  }
+}
+
+class _AnimatedCellValue extends StatefulWidget {
+  final int digit;
+  final double fontSize;
+  final Color? color;
+  final FontWeight? fontWeight;
+  const _AnimatedCellValue({
+    required this.digit,
+    required this.fontSize,
+    this.color,
+    this.fontWeight,
+  });
+
+  @override
+  State<_AnimatedCellValue> createState() => _AnimatedCellValueState();
+}
+
+class _AnimatedCellValueState extends State<_AnimatedCellValue>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _scale;
+  late final Animation<double> _fade;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 420),
+    );
+    _scale = CurvedAnimation(parent: _ctrl, curve: Curves.easeOutBack);
+    _fade = CurvedAnimation(
+      parent: _ctrl,
+      curve: const Interval(0.0, 1.0, curve: Curves.easeOutCubic),
+    );
+    // Animate on first paint to visualize newly placed values
+    _ctrl.forward(from: 0);
+  }
+
+  @override
+  void didUpdateWidget(covariant _AnimatedCellValue oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Trigger entrance when the digit changes (e.g., from 0 -> x or replacing value)
+    if (oldWidget.digit != widget.digit) {
+      _ctrl.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: AnimatedBuilder(
+        animation: _ctrl,
+        builder: (context, _) {
+          // Faint green flash overlay (like notes) that fades quickly
+          final flashOpacity = (1.0 - _fade.value); // subtle
+
+          return Stack(
+            alignment: Alignment.center,
+            children: [
+              if (flashOpacity > 0.001)
+                Opacity(
+                  opacity: flashOpacity,
+                  child: Transform.scale(
+                    scale: 1.0 + 0.5 * _scale.value,
+                    child: Text(
+                      '${widget.digit}',
+                      style: TextStyle(
+                        fontSize: widget.fontSize,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.green,
+                      ),
+                    ),
+                  ),
+                ),
+              Opacity(
+                opacity: _fade.value,
+                child: Transform.scale(
+                  scale: 0.9 + 0.1 * _scale.value,
+                  child: Text(
+                    '${widget.digit}',
+                    style: TextStyle(
+                      fontSize: widget.fontSize,
+                      fontWeight: widget.fontWeight,
+                      color: widget.color,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 }

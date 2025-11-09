@@ -53,7 +53,7 @@ class _HintStepsPanelState extends State<HintStepsPanel> {
                 onPressed: () {
                   final applied = board.requestApplyCurrentHint();
                   if (!applied) {
-                    showFeedback(context, 'Unable to apply hint.');
+                    showToast(context, Text('Unable to apply hint.'));
                   }
                 },
                 icon: const Icon(Icons.check),

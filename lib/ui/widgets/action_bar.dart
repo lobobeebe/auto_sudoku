@@ -37,7 +37,7 @@ class ActionBar extends StatelessWidget {
           onPressed: isEnabled && board.allowRequestHint
               ? () {
                   if (!board.requestNewHint()) {
-                    showFeedback(context, 'No logical hint available.');
+                    showToast(context, Text('No logical hint available.'));
                   }
                 }
               : null,

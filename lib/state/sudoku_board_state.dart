@@ -4,6 +4,7 @@ import 'package:auto_sudoku/state/board_mode.dart';
 import 'package:auto_sudoku/state/board_state/loading_state.dart';
 import 'package:auto_sudoku/state/cell_state.dart';
 import 'package:auto_sudoku/ui/theme/sudoku_theme.dart';
+import 'package:auto_sudoku/ui/utils/feedback.dart';
 import 'package:auto_sudoku/ui/widgets/strategy_category_popup_menu.dart';
 import 'package:auto_sudoku_solver/auto_sudoku_solver.dart';
 import 'package:flutter/material.dart';
@@ -50,17 +51,11 @@ class SudokuBoardState extends ChangeNotifier {
           StrategyType.hiddenPair,
           StrategyType.hiddenTriple,
           StrategyType.hiddenQuad,
+          StrategyType.pointing,
+          StrategyType.claiming,
+          StrategyType.xWing,
+          StrategyType.xyWing,
         },
-      ),
-    ),
-    StrategyCategory.locked: Solver(
-      settings: SolverSettings(
-        allowed: {StrategyType.pointing, StrategyType.claiming},
-      ),
-    ),
-    StrategyCategory.wings: Solver(
-      settings: SolverSettings(
-        allowed: {StrategyType.xWing, StrategyType.xyWing},
       ),
     ),
   };
@@ -168,6 +163,9 @@ class SudokuBoardState extends ChangeNotifier {
     return _mode.onRequestApplyCurrentHint();
   }
 
+  // Name of the most recently generated hint's strategy (for UI toasts)
+  String? lastHintStrategyName;
+
   void requestStrategyCategory(StrategyCategory category) {
     return _mode.onRequestStrategyCategory(category);
   }
@@ -189,6 +187,8 @@ class SudokuBoardState extends ChangeNotifier {
       _mode.onFirstBuild(context);
       _hasBoardModeBuilt = true;
     }
+    // Keep a context handy for lightweight UI toasts
+    _toastContext = context;
   }
 
   Widget buildBottomBar() => _mode.buildBottomBar();
@@ -197,6 +197,15 @@ class SudokuBoardState extends ChangeNotifier {
       _mode.buildCellViewModel(index, theme);
 
   bool canPressDigit(int digit) => _mode.canPressDigit(digit);
+
+  // Context reference for UI feedback (toast). Set during onBuild.
+  BuildContext? _toastContext;
+  void showHintToastIfPossible(String strategyName) {
+    final ctx = _toastContext;
+    if (ctx != null) {
+      showHintToast(ctx, strategyName);
+    }
+  }
 
   bool isDigitSolved(int digit) {
     if (digit < 1 || digit > size) {
@@ -440,6 +449,7 @@ class SudokuBoardState extends ChangeNotifier {
     final mutatedIndices = _sudoku.applyHint(hint);
 
     if (mutatedIndices.isNotEmpty) {
+      lastHintStrategyName = hint.strategy.toString();
       _syncFromSudoku(mutatedIndices: mutatedIndices);
       return true;
     }
