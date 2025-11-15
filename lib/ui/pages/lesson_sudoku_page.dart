@@ -1,4 +1,3 @@
-import 'package:auto_sudoku/data/sudoku_model.dart';
 import 'package:auto_sudoku/state/sudoku_board_state.dart';
 import 'package:auto_sudoku/ui/pages/sudoku_home_page.dart';
 import 'package:auto_sudoku_solver/auto_sudoku_solver.dart';
@@ -36,7 +35,7 @@ class _LessonSudokuPageState extends State<LessonSudokuPage> {
         TutorialStep(
           title: 'Welcome to Sudoku!',
           body:
-              "Fill each row, column, and 3×3 box with 1–9—no repeats. No math degree needed; Auto Sudoku keeps it fun!",
+              "The goal is to fill each 'Unit' with 1–9 — no repeats. Auto Sudoku makes it easy!",
           centerDialog: true,
         ),
         TutorialStep(
@@ -57,18 +56,26 @@ class _LessonSudokuPageState extends State<LessonSudokuPage> {
           maskCols: {3},
           title: 'Columns',
           body:
-              'Each column is a unit. Digits 1–9 can appear only once vertically.',
+              'Each column is also a unit. Digits 1–9 can appear only once vertically.',
         ),
         TutorialStep(
           maskBoxes: {4},
           title: '3×3 Boxes',
           body:
-              'Each 3×3 box is a unit. Make sure digits 1–9 appear exactly once inside.',
+              '3×3 boxes are also units. Make sure digits 1–9 appear exactly once inside.',
         ),
         TutorialStep(
-          title: 'Selection Tip',
+          title: 'Filled Cells',
           body:
               'Tap a filled cell and we softly gray out where that number can’t go — perfect for focusing your search. Give it a try!',
+          // Allow selection anywhere on the grid for this step
+          maskRows: {0, 1, 2, 3, 4, 5, 6, 7, 8},
+          preventGridTaps: false,
+        ),
+        TutorialStep(
+          title: 'Empty Cells',
+          body:
+              'Tap an empty cell and we softly gray out where that number can\'t "see". The peers in the selected cell\'s row, column and box will stay lit.',
           // Allow selection anywhere on the grid for this step
           maskRows: {0, 1, 2, 3, 4, 5, 6, 7, 8},
           preventGridTaps: false,
@@ -92,7 +99,7 @@ class _LessonSudokuPageState extends State<LessonSudokuPage> {
           advanceOnIndices: {18},
           title: 'Hidden Single',
           body:
-              "Spot the standout? Only one cell stays lit in the top-left box — a hidden single. 2s in the lit rows and columns block the rest, so there’s exactly one home for the 2. Give it a tap!",
+              "Spot the standout? Only one cell stays lit in the top-left box — a hidden single. Give it a tap!",
         ),
         TutorialStep(
           maskBoxes: {0},
@@ -100,7 +107,7 @@ class _LessonSudokuPageState extends State<LessonSudokuPage> {
           maskRows: {0, 1},
           title: 'First Hidden Single Done!',
           body:
-              "Nice job! We've filled in the 2 in this box - let's keep looking for more.",
+              "Nice job! We've filled in the 2 in this box. A hidden single says 'There is only one spot available for a digit in this unit, so it must go here!' Let's keep looking for more!",
         ),
         TutorialStep(
           maskRows: {8},
@@ -126,7 +133,7 @@ class _LessonSudokuPageState extends State<LessonSudokuPage> {
           centerDialog: true,
           title: 'Complete the Puzzle',
           body:
-              "Hidden Singles are just the beginning! Use them to finish this puzzle. Pro tip: tap filled cells to gray out the rest and spot more singles.",
+              "Hidden Singles are just the beginning! Tap on more filled cells to find Hidden Singles and finish this puzzle. Happy tapping!",
           solverSettings: SolverSettings(allowed: {StrategyType.hiddenSingle}),
         ),
       ],

@@ -6,30 +6,12 @@ enum StrategyType {
   // Pairs
   nakedPair,
   hiddenPair,
-  //nakedPairRow,
-  //hiddenPairRow,
-  //nakedPairCol,
-  //hiddenPairCol,
-  //nakedPairBox,
-  //hiddenPairBox,
   // Triples
   nakedTriple,
   hiddenTriple,
-  // nakedTripleRow,
-  // hiddenTripleRow,
-  // nakedTripleCol,
-  // hiddenTripleCol,
-  // nakedTripleBox,
-  // hiddenTripleBox,
   // Quads
   nakedQuad,
   hiddenQuad,
-  // nakedQuadRow,
-  // hiddenQuadRow,
-  // nakedQuadCol,
-  // hiddenQuadCol,
-  // nakedQuadBox,
-  // hiddenQuadBox,
   // Locked Candidates
   pointing,
   claiming,
@@ -70,50 +52,14 @@ enum StrategyType {
         return 'Naked Pair';
       case StrategyType.hiddenPair:
         return 'Hidden Pair';
-      // case StrategyUsed.nakedPairRow:
-      //   return 'Naked Pair (Row)';
-      // case StrategyUsed.hiddenPairRow:
-      //   return 'Hidden Pair (Row)';
-      // case StrategyUsed.nakedPairCol:
-      //   return 'Naked Pair (Col)';
-      // case StrategyUsed.hiddenPairCol:
-      //   return 'Hidden Pair (Col)';
-      // case StrategyUsed.nakedPairBox:
-      //   return 'Naked Pair (Box)';
-      // case StrategyUsed.hiddenPairBox:
-      //   return 'Hidden Pair (Box)';
       case StrategyType.nakedTriple:
         return 'Naked Triple';
       case StrategyType.hiddenTriple:
         return 'Hidden Triple';
-      // case StrategyUsed.nakedTripleRow:
-      //   return 'Naked Triple (Row)';
-      // case StrategyUsed.hiddenTripleRow:
-      //   return 'Hidden Triple (Row)';
-      // case StrategyUsed.nakedTripleCol:
-      //   return 'Naked Triple (Col)';
-      // case StrategyUsed.hiddenTripleCol:
-      //   return 'Hidden Triple (Col)';
-      // case StrategyUsed.nakedTripleBox:
-      //   return 'Naked Triple (Box)';
-      // case StrategyUsed.hiddenTripleBox:
-      //   return 'Hidden Triple (Box)';
       case StrategyType.nakedQuad:
         return 'Naked Quad';
       case StrategyType.hiddenQuad:
         return 'Hidden Quad';
-      // case StrategyUsed.nakedQuadRow:
-      //   return 'Naked Quad (Row)';
-      // case StrategyUsed.hiddenQuadRow:
-      //   return 'Hidden Quad (Row)';
-      // case StrategyUsed.nakedQuadCol:
-      //   return 'Naked Quad (Col)';
-      // case StrategyUsed.hiddenQuadCol:
-      //   return 'Hidden Quad (Col)';
-      // case StrategyUsed.nakedQuadBox:
-      //   return 'Naked Quad (Box)';
-      // case StrategyUsed.hiddenQuadBox:
-      //   return 'Hidden Quad (Box)';
       case StrategyType.xWing:
         return 'X-Wing';
       case StrategyType.xyWing:

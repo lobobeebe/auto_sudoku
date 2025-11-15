@@ -28,4 +28,11 @@ class SudokuModel {
           .toList(growable: false),
     );
   }
+
+  Map<String, dynamic> toData() => {
+    'puzzle': puzzle,
+    'solution': solution,
+    'difficulty': difficulty.toString(),
+    'techniques': techniques,
+  };
 }

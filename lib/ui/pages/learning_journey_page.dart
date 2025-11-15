@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:auto_sudoku/data/sudoku_model.dart';
 import 'package:auto_sudoku/ui/pages/lesson_sudoku_page.dart';
 import 'package:auto_sudoku/ui/pages/lesson_naked_singles_page.dart';
 import 'package:auto_sudoku_solver/auto_sudoku_solver.dart';

@@ -39,7 +39,24 @@ class Sudoku {
 
   factory Sudoku.empty() => Sudoku(List.filled(81, 0));
 
-  Sudoku clone() => Sudoku._(List<int>.from(_values), List<int>.from(_notesMask));
+  factory Sudoku.fromString(String puzzle) {
+    // Read in Given cells
+    List<int> values = List.generate(81, (index) {
+      final char = puzzle[index];
+      final parsed = int.tryParse(char);
+
+      if (parsed == null) {
+        throw ArgumentError("Cannot assigned $parsed to cell value");
+      }
+
+      return parsed;
+    });
+
+    return Sudoku(values);
+  }
+
+  Sudoku clone() =>
+      Sudoku._(List<int>.from(_values), List<int>.from(_notesMask));
 
   void overwrite(Sudoku other) {
     for (int i = 0; i < 81; ++i) {

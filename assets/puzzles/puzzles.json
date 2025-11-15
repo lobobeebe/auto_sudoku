@@ -106,50 +106,11 @@
     },
     {
         "difficulty": "medium",
-        "puzzle": "600570149001600085000000002100240506000000000302068001200000000590006200816023004",
-        "solution": "683572149721694385945831672178249536469315827352768491234157968597486213816923754",
-        "techniques": [
-            "Hidden Single",
-            "Locked Candidates (Pointing)",
-            "Naked Pair",
-            "Naked Single",
-            "Naked Triple",
-            "Simple Coloring",
-            "XY-Wing"
-        ]
-    },
-    {
-        "difficulty": "medium",
         "puzzle": "360481092070300600000000301047908030100000007090107420409000000006002010710695043",
         "solution": "365481792271359684984276351647928135128534967593167428459813276836742519712695843",
         "techniques": [
             "Hidden Single",
             "Naked Single",
-            "XY-Wing"
-        ]
-    },
-    {
-        "difficulty": "medium",
-        "puzzle": "800549000040000008603720040080000009027103680100000020010032806900000030000961007",
-        "solution": "871549263542316978693728541386254719427193685159687324715432896964875132238961457",
-        "techniques": [
-            "Hidden Single",
-            "Naked Pair",
-            "Naked Single",
-            "Simple Coloring"
-        ]
-    },
-    {
-        "difficulty": "medium",
-        "puzzle": "100482050005000000000956100704100009019000520500007304003568000000000600080241005",
-        "solution": "167482953895713246342956178734125869619834527528697314273568491451379682986241735",
-        "techniques": [
-            "Hidden Pair",
-            "Hidden Single",
-            "Naked Pair",
-            "Naked Single",
-            "Simple Coloring",
-            "X-Wing",
             "XY-Wing"
         ]
     },

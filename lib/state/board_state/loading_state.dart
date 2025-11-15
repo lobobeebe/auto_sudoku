@@ -1,8 +1,8 @@
-import 'package:auto_sudoku/data/sudoku_model.dart';
 import 'package:auto_sudoku/state/board_mode.dart';
 import 'package:auto_sudoku/state/board_state/animating_state.dart';
 import 'package:auto_sudoku/state/board_state/error_state.dart';
 import 'package:auto_sudoku/state/board_state/unit_state.dart';
+import 'package:auto_sudoku_solver/data/sudoku_model.dart';
 import 'package:flutter/material.dart';
 
 class LoadingMode extends BoardMode {

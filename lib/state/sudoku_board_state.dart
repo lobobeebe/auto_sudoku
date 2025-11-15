@@ -1,5 +1,4 @@
 import 'package:auto_sudoku/data/cell_view_model.dart';
-import 'package:auto_sudoku/data/sudoku_model.dart';
 import 'package:auto_sudoku/state/board_mode.dart';
 import 'package:auto_sudoku/state/board_state/loading_state.dart';
 import 'package:auto_sudoku/state/cell_state.dart';
@@ -220,20 +219,7 @@ class SudokuBoardState extends ChangeNotifier {
     _currentPuzzle = puzzle;
     _history.clear();
 
-    // TODO - Should this be part of the puzzle object init?
-    // Read in Given cells
-    List<int> values = List.generate(81, (index) {
-      final char = puzzle.puzzle[index];
-      final parsed = int.tryParse(char);
-
-      if (parsed == null) {
-        throw ArgumentError("Cannot assigned $parsed to cell value");
-      }
-
-      return parsed;
-    });
-
-    _sudoku = Sudoku(values);
+    _sudoku = Sudoku.fromString(puzzle.puzzle);
     _syncFromSudoku();
     emitChange();
   }

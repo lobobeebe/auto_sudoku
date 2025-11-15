@@ -1,4 +1,3 @@
-import 'package:auto_sudoku/data/sudoku_model.dart';
 import 'package:auto_sudoku/state/sudoku_board_state.dart';
 import 'package:auto_sudoku/ui/pages/sudoku_home_page.dart';
 import 'package:auto_sudoku/ui/widgets/tutorial_overlay.dart';
@@ -26,7 +25,7 @@ class _LessonNakedSinglesPageState extends State<LessonNakedSinglesPage> {
           maskRows: {0, 1, 2, 3, 4, 5, 6, 7, 8},
           title: 'What are those smaller numbers?',
           body:
-              "Those numbers are called notes — the possible values for each empty cell. We'll use them to learn a new strategy called 'Naked Singles'.",
+              "Those numbers are called candidates — the possible values for each empty cell. We'll use them to learn a new strategy called 'Naked Singles'.",
         ),
         TutorialStep(
           maskRows: {5},
@@ -55,16 +54,16 @@ class _LessonNakedSinglesPageState extends State<LessonNakedSinglesPage> {
           solverSettings: SolverSettings(allowed: {StrategyType.nakedSingle}),
           title: 'Naked Singles',
           body:
-              'In Auto-Sudoku, when you identify a Naked Single, you need only tap it to fill it in. Go ahead and tap the cell with the Naked Single 6 now!',
+              'A Naked Single can be found quickly by findng a cell with only one candidate, like this one! Go ahead and tap the cell with the Naked Single 6 now!',
         ),
 
         TutorialStep(
           maskRows: {2},
           maskBoxes: {1},
           maskCols: {4},
-          title: 'How to use notes',
+          title: 'How to use candidates',
           body:
-              "As you place numbers, notes shrink automatically by removing impossible digits from peers. Use the left arrow button to replay the last move to see the difference once or twice before moving to the next step.",
+              "As you place numbers, candidates shrink automatically by removing impossible digits from peers. Use the left arrow button to replay the last move to see the difference once or twice before moving to the next step.",
         ),
         TutorialStep(
           centerDialog: true,

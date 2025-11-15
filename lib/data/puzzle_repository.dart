@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:math';
 
-import 'package:auto_sudoku/data/sudoku_model.dart';
 import 'package:auto_sudoku_solver/auto_sudoku_solver.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';

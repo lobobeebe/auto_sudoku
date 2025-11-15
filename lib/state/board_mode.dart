@@ -1,7 +1,6 @@
 // --- Board State Machine ----------------------------------------------------
 
 import 'package:auto_sudoku/data/cell_view_model.dart';
-import 'package:auto_sudoku/data/sudoku_model.dart';
 import 'package:auto_sudoku/state/sudoku_board_state.dart';
 import 'package:auto_sudoku/ui/theme/sudoku_theme.dart';
 import 'package:auto_sudoku/ui/widgets/action_bar.dart';
