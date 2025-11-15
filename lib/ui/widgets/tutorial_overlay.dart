@@ -117,6 +117,8 @@ class GridMaskOverlay extends StatefulWidget {
 
 class _GridMaskOverlayState extends State<GridMaskOverlay> {
   int _lastIndex = -1;
+  // Snapshot of the board at the time each step is first entered.
+  final List<BoardSnapshot?> _stepSnapshots = <BoardSnapshot?>[];
 
   @override
   Widget build(BuildContext context) {
@@ -124,11 +126,35 @@ class _GridMaskOverlayState extends State<GridMaskOverlay> {
       animation: widget.controller,
       builder: (context, _) {
         final board = Provider.of<SudokuBoardState>(context, listen: false);
+        // Ensure we can store snapshots for all tutorial steps
+        final stepsLen = widget.controller.steps.length;
+        if (_stepSnapshots.length < stepsLen) {
+          _stepSnapshots.length = stepsLen;
+        }
 
         // Step-change hook: run enter behaviors once when index changes
         if (_lastIndex != widget.controller.index) {
-          _lastIndex = widget.controller.index;
+          final newIndex = widget.controller.index;
+
+          // If navigating backward, restore to the saved snapshot for that step
+          if (_lastIndex >= 0 && newIndex < _lastIndex) {
+            final snap = _stepSnapshots[newIndex] ?? board.makeSnapshot();
+            // Defer restoration to after this frame to avoid setState during build
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              int guard = 200;
+              while (!board.sudoku.equals(snap.sudoku) && guard-- > 0) {
+                if (!board.undo()) break;
+              }
+            });
+          }
+
+          _lastIndex = newIndex;
           final enterStep = widget.controller.current;
+
+          // If first time entering this step, record a snapshot
+          if (_stepSnapshots[_lastIndex] == null) {
+            _stepSnapshots[_lastIndex] = board.makeSnapshot();
+          }
           if (enterStep.selectedIndices != null) {
             // Defer mutation + notify to after this build to avoid
             // setState/notify during build exceptions.

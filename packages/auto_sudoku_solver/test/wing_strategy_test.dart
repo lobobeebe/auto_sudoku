@@ -289,6 +289,73 @@ void main() {
       },
     );
 
+    test('W-Wing example from app', () {
+      final cands = List<Set<int>>.generate(81, (_) => <int>{});
+      cands[1] = {3, 8};
+      cands[2] = {3, 8};
+      cands[9] = {4, 7, 9};
+      cands[13] = {3, 9};
+      cands[14] = {4, 9};
+      cands[15] = {3, 7};
+      cands[18] = {4, 7, 9};
+      cands[19] = {4, 7};
+      cands[21] = {1, 3, 8};
+      cands[22] = {1, 3, 8, 9};
+      cands[23] = {1, 4, 9};
+      cands[24] = {3, 6, 7};
+      cands[25] = {6, 7};
+      cands[28] = {7, 8};
+      cands[29] = {7, 8, 9};
+      cands[32] = {7, 9};
+      cands[36] = {4, 7};
+      cands[38] = {4, 7, 9};
+      cands[39] = {1, 3};
+      cands[40] = {1, 3, 5};
+      cands[41] = {1, 5};
+      cands[42] = {7, 8, 9};
+      cands[44] = {7, 8};
+      cands[48] = {7, 9};
+      cands[52] = {7, 9};
+      cands[55] = {3, 4, 7};
+      cands[56] = {3, 4, 7};
+      cands[57] = {1, 4, 8};
+      cands[58] = {5, 9};
+      cands[59] = {5, 7, 9};
+      cands[60] = {6, 7, 8, 9};
+      cands[61] = {1, 6, 7, 9};
+      cands[62] = {3, 7, 8};
+      cands[65] = {3, 4, 7};
+      cands[66] = {1, 4, 8};
+      cands[67] = {1, 8};
+      cands[70] = {1, 7};
+      cands[71] = {3, 7, 8};
+      cands[75] = {7, 9};
+      cands[78] = {7, 9};
+
+      // Verify getHintFromClues for this configuration.
+      // Use bivalue pair {4,7} at indices 19 and 36, and a strong row link on 4 at (row 1): [9, 14].
+      final h = SudokuTestHarness.make(cands);
+      final strat = WWingStrategy();
+
+      // Valid W-Wing using pair {7,9} at 48 and 78, with a strong column link on 9 at [52, 61].
+      final hint = strat.getHintFromClues(h.s, [48, 78, 52, 61]);
+      expect(hint, isNotNull);
+      expect(hint!.strategy, StrategyType.wWing);
+      expect(hint.digits.toSet(), containsAll({7, 9}));
+      expect(hint.cells.toSet(), containsAll({48, 78, 52, 61}));
+      expect(hint.unit, HintUnit.column);
+      expect(hint.eliminations[75], contains(7));
+
+      // Alternate valid W-Wing for the same pair using a box strong link on 9 at [42, 52].
+      final hint2 = strat.getHintFromClues(h.s, [48, 78, 42, 52]);
+      expect(hint2, isNotNull);
+      expect(hint2!.strategy, StrategyType.wWing);
+      expect(hint2.digits.toSet(), containsAll({7, 9}));
+      expect(hint2.cells.toSet(), containsAll({48, 78, 42, 52}));
+      expect(hint2.unit, HintUnit.box);
+      expect(hint2.eliminations[75], contains(7));
+    });
+
     test('W-Wing getHintFromClues with explicit endpoints (row strong link)', () {
       final cands = List<Set<int>>.generate(81, (_) => <int>{});
       int i(int r, int c) => idx(r, c);

@@ -705,11 +705,12 @@ class WWingStrategy extends Strategy {
           final e1 = remaining[i], e2 = remaining[j];
           // Check strong link on x -> eliminate y
           if (isStrongLink(e1, e2, x)) {
-            final seesA =
-                s.peersOf(a).contains(e1) || s.peersOf(a).contains(e2);
-            final seesB =
-                s.peersOf(b).contains(e1) || s.peersOf(b).contains(e2);
-            if (seesA && seesB) {
+            final aEnd1 = s.peersOf(a).contains(e1);
+            final aEnd2 = s.peersOf(a).contains(e2);
+            final bEnd1 = s.peersOf(b).contains(e1);
+            final bEnd2 = s.peersOf(b).contains(e2);
+            final crosses = (aEnd1 && bEnd2) || (aEnd2 && bEnd1);
+            if (crosses) {
               final elim = elimFor(y);
               if (elim.isNotEmpty) {
                 final unit = (s.rowOf(e1) == s.rowOf(e2))
@@ -729,11 +730,12 @@ class WWingStrategy extends Strategy {
           }
           // Or strong link on y -> eliminate x
           if (isStrongLink(e1, e2, y)) {
-            final seesA =
-                s.peersOf(a).contains(e1) || s.peersOf(a).contains(e2);
-            final seesB =
-                s.peersOf(b).contains(e1) || s.peersOf(b).contains(e2);
-            if (seesA && seesB) {
+            final aEnd1 = s.peersOf(a).contains(e1);
+            final aEnd2 = s.peersOf(a).contains(e2);
+            final bEnd1 = s.peersOf(b).contains(e1);
+            final bEnd2 = s.peersOf(b).contains(e2);
+            final crosses = (aEnd1 && bEnd2) || (aEnd2 && bEnd1);
+            if (crosses) {
               final elim = elimFor(x);
               if (elim.isNotEmpty) {
                 final unit = (s.rowOf(e1) == s.rowOf(e2))

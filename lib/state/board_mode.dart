@@ -48,7 +48,7 @@ abstract class BoardMode {
 
   CellViewModel buildCellViewModel(int index, SudokuTheme theme) {
     bool isSelected = board.isIndexSelected(index);
-    bool isPeer = board.isPeerWithAllSelected(index);
+    bool isPeer = board.isPeerWithAnySelected(index);
 
     bool isMatching = board.matchesAnySelected(index);
     Set<int> selectedNoteDigits = board.selectedIndices.fold(

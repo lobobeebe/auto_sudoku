@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:auto_sudoku/data/sudoku_model.dart';
 import 'package:auto_sudoku/ui/pages/lesson_sudoku_page.dart';
+import 'package:auto_sudoku/ui/pages/lesson_naked_singles_page.dart';
 import 'package:auto_sudoku_solver/auto_sudoku_solver.dart';
 
 class LearningJourneyPage extends StatefulWidget {
@@ -20,47 +21,32 @@ class _LearningJourneyPageState extends State<LearningJourneyPage>
 
   final List<_Lesson> _lessons = const [
     _Lesson(
-      title: 'Auto Sudoku Basics',
+      title: 'Basics & Hidden Singles',
       icon: Icons.grid_on_rounded,
       description: 'Understand how numbers fit in rows and columns.',
       status: LessonStatus.inProgress,
       colorIndex: 0,
     ),
     _Lesson(
-      title: 'Hidden Singles',
-      icon: Icons.visibility_rounded,
-      description: 'Find the only place a number can go.',
-      status: LessonStatus.comingSoon,
-      colorIndex: 1,
-    ),
-    _Lesson(
-      title: 'Units & Candidates',
-      icon: Icons.extension_rounded,
-      description: 'Learn units and pencil candidates.',
-      status: LessonStatus.comingSoon,
-      progress: 0.4,
-      colorIndex: 2,
-    ),
-    _Lesson(
-      title: 'Naked Singles',
+      title: 'Notes & Naked Singles',
       icon: Icons.looks_one_rounded,
       description: 'Spot cells with only one possible value.',
-      status: LessonStatus.comingSoon,
-      colorIndex: 3,
+      status: LessonStatus.inProgress,
+      colorIndex: 1,
     ),
     _Lesson(
       title: 'Locked Candidates',
       icon: Icons.lock_rounded,
       description: 'Reduce possibilities using locked candidate rules.',
       status: LessonStatus.comingSoon,
-      colorIndex: 4,
+      colorIndex: 2,
     ),
     _Lesson(
       title: 'Pairs & Triples',
       icon: Icons.all_inclusive_rounded,
       description: 'Use naked/hidden pairs and triples to advance.',
       status: LessonStatus.comingSoon,
-      colorIndex: 5,
+      colorIndex: 3,
     ),
   ];
 
@@ -200,6 +186,8 @@ class _JourneyTrack extends StatelessWidget {
                     onTap: () {
                       if (index == 0) {
                         _openLesson1(context);
+                      } else if (index == 1) {
+                        _openNakedSinglesLesson(context);
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
@@ -406,6 +394,43 @@ void _openLesson1(BuildContext context) {
               end: Offset.zero,
             ).animate(curved),
             child: LessonSudokuPage(model: model, showUnitTutorialOnOpen: true),
+          ),
+        );
+      },
+    ),
+  );
+}
+
+void _openNakedSinglesLesson(BuildContext context) {
+  // Reuse an Easy puzzle that exposes several Naked Singles early
+  const puzzle =
+      '000250001900730208000109400002576804749813652508942300097605000320497006600380000';
+  const solution =
+      '476258931915734268283169475132576894749813652568942317897625143321497586654381729';
+
+  final model = SudokuModel(
+    puzzle: puzzle,
+    solution: solution,
+    difficulty: Difficulty.easy,
+    techniques: const ['Naked Single'],
+  );
+
+  Navigator.of(context).push(
+    PageRouteBuilder<void>(
+      transitionDuration: const Duration(milliseconds: 420),
+      pageBuilder: (context, animation, secondaryAnimation) {
+        final curved = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+        );
+        return FadeTransition(
+          opacity: curved,
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0, 0.06),
+              end: Offset.zero,
+            ).animate(curved),
+            child: LessonNakedSinglesPage(model: model),
           ),
         );
       },

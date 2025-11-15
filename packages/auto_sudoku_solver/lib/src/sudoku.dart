@@ -39,8 +39,7 @@ class Sudoku {
 
   factory Sudoku.empty() => Sudoku(List.filled(81, 0));
 
-  Sudoku clone() =>
-      Sudoku._(List<int>.from(_values), List<int>.from(_notesMask));
+  Sudoku clone() => Sudoku._(List<int>.from(_values), List<int>.from(_notesMask));
 
   void overwrite(Sudoku other) {
     for (int i = 0; i < 81; ++i) {
@@ -274,4 +273,17 @@ class Sudoku {
 
   static bool isValidIndex(int index) => index >= 0 && index < numIndices;
   static bool isValidDigit(int digit) => digit >= 1 && digit <= 9;
+
+  // Debug: returns candidates as lines like "[index] = {a, b, c}"
+  String candidatesString({bool onlyEmpty = true}) {
+    final sb = StringBuffer();
+    for (var i = 0; i < numIndices; i++) {
+      if (onlyEmpty && !isEmpty(i)) continue;
+      final set = notesSet(i);
+      if (set.isEmpty) continue;
+      final list = set.toList()..sort();
+      sb.writeln('[$i] = {${list.join(', ')}}');
+    }
+    return sb.toString();
+  }
 }

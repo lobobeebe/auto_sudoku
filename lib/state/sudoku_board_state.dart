@@ -53,6 +53,7 @@ class SudokuBoardState extends ChangeNotifier {
         StrategyType.claiming,
         StrategyType.xWing,
         StrategyType.xyWing,
+        StrategyType.wWing,
       },
     ),
   );
@@ -133,6 +134,8 @@ class SudokuBoardState extends ChangeNotifier {
 
   bool requestNewHint() {
     if (_mode.allowRequestHint()) {
+      debugPrintGrid();
+      debugPrintCandidates();
       final hint = _hintSolver.nextHint(_sudoku);
 
       if (hint != null) {
@@ -432,6 +435,46 @@ class SudokuBoardState extends ChangeNotifier {
 
   BoardSnapshot makeSnapshot() {
     return BoardSnapshot(sudoku: _sudoku.clone());
+  }
+
+  // --- Debug helpers -------------------------------------------------------
+  /// Returns the current board as a compact 81-character string (row-major).
+  /// When [dotsForEmpty] is true, empty cells are represented as '.' instead of '0'.
+  String gridString() {
+    final sb = StringBuffer();
+    for (var i = 0; i < Sudoku.numIndices; i++) {
+      final v = _sudoku.valueAt(i);
+      sb.write(v.toString());
+    }
+    return sb.toString();
+  }
+
+  /// Pretty-prints the current board with 3x3 box separators.
+  String prettyGrid() {
+    final sb = StringBuffer();
+    for (var r = 0; r < 9; r++) {
+      if (r % 3 == 0) sb.writeln('+-------+-------+-------+');
+      for (var c = 0; c < 9; c++) {
+        if (c % 3 == 0) sb.write('| ');
+        final v = _sudoku.valueAt(r * 9 + c);
+        sb.write('${v == 0 ? 0 : v} ');
+      }
+      sb.writeln('|');
+    }
+    sb.writeln('+-------+-------+-------+');
+    return sb.toString();
+  }
+
+  /// Prints the current board state to debug console.
+  /// Set [pretty] to true to include box separators.
+  void debugPrintGrid({bool pretty = false, bool dotsForEmpty = true}) {
+    final out = pretty ? prettyGrid() : gridString();
+    debugPrint(out);
+  }
+
+  /// Prints candidates as lines like "[index] = {a, b, c}".
+  void debugPrintCandidates({bool onlyEmpty = true}) {
+    debugPrint(_sudoku.candidatesString(onlyEmpty: onlyEmpty));
   }
 
   bool applyHintToBoard(Hint hint) {
