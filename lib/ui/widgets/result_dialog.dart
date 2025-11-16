@@ -60,7 +60,8 @@ class ResultDialog extends StatelessWidget {
         FilledButton(
           onPressed: () {
             Navigator.of(dialogContext).pop();
-            Navigator.of(parentContext).pop();
+            // Pop the puzzle page and return whether the puzzle was won
+            Navigator.of(parentContext).pop(isWin);
           },
           child: const Text('Exit'),
         ),

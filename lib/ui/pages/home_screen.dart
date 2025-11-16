@@ -3,6 +3,7 @@ import 'package:auto_sudoku/ui/pages/difficulty_selection_page.dart';
 import 'package:auto_sudoku/ui/pages/learning_journey_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:auto_sudoku/ui/pages/strategy_settings_page.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -17,131 +18,148 @@ class HomeScreen extends StatelessWidget {
     final errorMessage = repository.error;
 
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [colorScheme.primaryContainer, colorScheme.surface],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+      body: Stack(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [colorScheme.primaryContainer, colorScheme.surface],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+            ),
           ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Card(
-                elevation: 8,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(28),
+          SafeArea(
+            child: Align(
+              alignment: Alignment.topRight,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 8, right: 8),
+                child: IconButton.filledTonal(
+                  tooltip: 'Auto-Solver Settings',
+                  icon: const Icon(Icons.tune_rounded),
+                  onPressed: () => _openStrategySettings(context),
                 ),
-                color: colorScheme.surface,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 32,
-                    vertical: 40,
+              ),
+            ),
+          ),
+          SafeArea(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: Card(
+                  elevation: 8,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(28),
                   ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.grid_view_rounded,
-                        size: 64,
-                        color: colorScheme.primary,
-                      ),
-                      const SizedBox(height: 24),
-                      Text(
-                        'Auto Sudoku',
-                        style: textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
+                  color: colorScheme.surface,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 32,
+                      vertical: 40,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.grid_view_rounded,
+                          size: 64,
+                          color: colorScheme.primary,
                         ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Relax, solve, and let smart notes assist you along the way.',
-                        style: textTheme.bodyLarge?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
+                        const SizedBox(height: 24),
+                        Text(
+                          'Auto Sudoku',
+                          style: textTheme.headlineMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                          textAlign: TextAlign.center,
                         ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 32),
-                      AnimatedSize(
-                        duration: const Duration(milliseconds: 200),
-                        curve: Curves.easeInOut,
-                        child: Column(
-                          children: [
-                            if (isLoadingRepo)
-                              const Padding(
-                                padding: EdgeInsets.only(bottom: 16),
-                                child: CircularProgressIndicator.adaptive(),
-                              ),
-                            if (hasError) ...[
-                              Text(
-                                'We couldn\'t load puzzles just yet.',
-                                style: textTheme.bodyMedium?.copyWith(
-                                  color: colorScheme.error,
-                                  fontWeight: FontWeight.w600,
+                        const SizedBox(height: 12),
+                        Text(
+                          'Relax, solve, and let smart notes assist you along the way.',
+                          style: textTheme.bodyLarge?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 32),
+                        AnimatedSize(
+                          duration: const Duration(milliseconds: 200),
+                          curve: Curves.easeInOut,
+                          child: Column(
+                            children: [
+                              if (isLoadingRepo)
+                                const Padding(
+                                  padding: EdgeInsets.only(bottom: 16),
+                                  child: CircularProgressIndicator.adaptive(),
                                 ),
-                                textAlign: TextAlign.center,
-                              ),
-                              if (errorMessage != null) ...[
-                                const SizedBox(height: 4),
+                              if (hasError) ...[
                                 Text(
-                                  errorMessage,
-                                  style: textTheme.bodySmall?.copyWith(
+                                  'We couldn\'t load puzzles just yet.',
+                                  style: textTheme.bodyMedium?.copyWith(
                                     color: colorScheme.error,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                   textAlign: TextAlign.center,
                                 ),
+                                if (errorMessage != null) ...[
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    errorMessage,
+                                    style: textTheme.bodySmall?.copyWith(
+                                      color: colorScheme.error,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                                const SizedBox(height: 12),
+                                FilledButton.tonalIcon(
+                                  icon: const Icon(Icons.refresh_rounded),
+                                  label: const Text('Try Again'),
+                                  onPressed: () {
+                                    repository.preload();
+                                  },
+                                ),
+                                const SizedBox(height: 16),
                               ],
-                              const SizedBox(height: 12),
-                              FilledButton.tonalIcon(
-                                icon: const Icon(Icons.refresh_rounded),
-                                label: const Text('Try Again'),
-                                onPressed: () {
-                                  repository.preload();
-                                },
-                              ),
-                              const SizedBox(height: 16),
                             ],
-                          ],
-                        ),
-                      ),
-                      FilledButton.icon(
-                        icon: const Icon(Icons.play_arrow_rounded),
-                        label: const Text('Start Puzzle'),
-                        style: FilledButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 32,
-                            vertical: 16,
-                          ),
-                          textStyle: textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                        onPressed: repository.isLoaded
-                            ? () => _openDifficultySelection(context)
-                            : null,
-                      ),
-                      const SizedBox(height: 12),
-                      FilledButton.tonalIcon(
-                        icon: const Icon(Icons.school_rounded),
-                        label: const Text('Learn How to Play'),
-                        style: FilledButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 28,
-                            vertical: 14,
+                        FilledButton.icon(
+                          icon: const Icon(Icons.play_arrow_rounded),
+                          label: const Text('Start Puzzle'),
+                          style: FilledButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 32,
+                              vertical: 16,
+                            ),
+                            textStyle: textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
+                          onPressed: repository.isLoaded
+                              ? () => _openDifficultySelection(context)
+                              : null,
                         ),
-                        onPressed: () => _openLearningJourney(context),
-                      ),
-                    ],
+                        const SizedBox(height: 12),
+                        FilledButton.tonalIcon(
+                          icon: const Icon(Icons.school_rounded),
+                          label: const Text('Learn How to Play'),
+                          style: FilledButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 28,
+                              vertical: 14,
+                            ),
+                          ),
+                          onPressed: () => _openLearningJourney(context),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -188,6 +206,30 @@ void _openLearningJourney(BuildContext context) {
               end: Offset.zero,
             ).animate(curved),
             child: const LearningJourneyPage(),
+          ),
+        );
+      },
+    ),
+  );
+}
+
+void _openStrategySettings(BuildContext context) {
+  Navigator.of(context).push(
+    PageRouteBuilder<void>(
+      transitionDuration: const Duration(milliseconds: 360),
+      pageBuilder: (context, animation, secondaryAnimation) {
+        final curved = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+        );
+        return FadeTransition(
+          opacity: curved,
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0, 0.06),
+              end: Offset.zero,
+            ).animate(curved),
+            child: const StrategySettingsPage(),
           ),
         );
       },

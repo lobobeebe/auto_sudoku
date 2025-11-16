@@ -11,7 +11,6 @@ class CommonContainer extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     return Container(
-      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(28),
         color: colorScheme.surface.withValues(alpha: 0.94),
@@ -26,7 +25,9 @@ class CommonContainer extends StatelessWidget {
           color: colorScheme.outlineVariant.withValues(alpha: 0.18),
         ),
       ),
-      child: child,
+      child: SingleChildScrollView(
+        child: Padding(padding: const EdgeInsets.all(24), child: child),
+      ),
     );
   }
 }

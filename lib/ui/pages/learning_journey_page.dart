@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:auto_sudoku/ui/pages/lesson_sudoku_page.dart';
 import 'package:auto_sudoku/ui/pages/lesson_naked_singles_page.dart';
 import 'package:auto_sudoku_solver/auto_sudoku_solver.dart';
+import 'package:auto_sudoku/ui/pages/lesson_track_page.dart';
 
 class LearningJourneyPage extends StatefulWidget {
   const LearningJourneyPage({super.key});
@@ -184,9 +185,17 @@ class _JourneyTrack extends StatelessWidget {
                     color: _paletteForIndex(colors, lesson.colorIndex),
                     onTap: () {
                       if (index == 0) {
-                        _openLesson1(context);
+                        _openLessonTrack(
+                          context,
+                          title: 'Hidden Singles Practice',
+                          techniqueName: 'Hidden Single',
+                        );
                       } else if (index == 1) {
-                        _openNakedSinglesLesson(context);
+                        _openLessonTrack(
+                          context,
+                          title: 'Naked Singles Practice',
+                          techniqueName: 'Naked Single',
+                        );
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
@@ -362,6 +371,37 @@ class _LessonNode extends StatelessWidget {
       ),
     );
   }
+}
+
+void _openLessonTrack(
+  BuildContext context, {
+  required String title,
+  required String techniqueName,
+}) {
+  Navigator.of(context).push(
+    PageRouteBuilder<void>(
+      transitionDuration: const Duration(milliseconds: 420),
+      pageBuilder: (context, animation, secondaryAnimation) {
+        final curved = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+        );
+        return FadeTransition(
+          opacity: curved,
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0, 0.06),
+              end: Offset.zero,
+            ).animate(curved),
+            child: LessonTrackPage(
+              title: title,
+              techniqueName: techniqueName,
+            ),
+          ),
+        );
+      },
+    ),
+  );
 }
 
 void _openLesson1(BuildContext context) {

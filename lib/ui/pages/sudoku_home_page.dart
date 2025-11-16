@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'package:auto_sudoku/state/sudoku_board_state.dart';
 import 'package:auto_sudoku/ui/widgets/sudoku_grid.dart';
+import 'package:auto_sudoku/ui/pages/strategy_settings_page.dart';
 import 'package:provider/provider.dart';
 
 class SudokuHomePage extends StatelessWidget {
@@ -47,18 +48,9 @@ class SudokuHomePage extends StatelessWidget {
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16),
-            child: IconButton.filledTonal(
+            child: IconButton(
               icon: const Icon(Icons.refresh_rounded),
               onPressed: board.allowReset() ? board.resetBoard : null,
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 18,
-                  vertical: 12,
-                ),
-                textStyle: theme.textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
             ),
           ),
         ],

@@ -57,6 +57,28 @@ class PuzzleRepository extends ChangeNotifier {
     return filtered[_random.nextInt(filtered.length)];
   }
 
+  Future<List<SudokuModel>> loadPuzzlesByTechnique(
+    String technique, {
+    int limit = 10,
+  }) async {
+    if (!_isLoaded) {
+      await preload();
+    }
+    final cache = _cache;
+    if (cache == null || cache.isEmpty) {
+      throw StateError('Puzzle repository is empty.');
+    }
+    final normalized = technique.trim();
+    final filtered = cache
+        .where((p) => p.techniques.any((t) => t == normalized))
+        .take(limit)
+        .toList(growable: false);
+    if (filtered.isEmpty) {
+      throw StateError('No puzzles available for technique "$technique".');
+    }
+    return filtered;
+  }
+
   Future<void> _performPreload() async {
     if (_isLoaded) {
       return;
