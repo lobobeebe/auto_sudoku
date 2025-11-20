@@ -3,10 +3,6 @@ import 'dart:math';
 import 'package:auto_sudoku_solver/auto_sudoku_solver.dart';
 
 import 'classified_puzzle.dart';
-import 'difficulty.dart';
-import 'solver.dart';
-import 'strategy/strategy.dart';
-import 'sudoku.dart';
 
 // Helper class for generator beam state (used in Generator.generate)
 class _State {
@@ -23,7 +19,7 @@ class PrunePolicy {
   final Symmetry symmetry;
   final bool enforceMinimality;
   final bool ratingGuided;
-  final int backboneSteps; // require first K steps to be gentle
+  final int backboneSteps; // legacy noop in signature mode
   final int minPerBox;
   final int minPerRow;
   final int minPerCol;
@@ -84,56 +80,23 @@ class Generator {
     return s.grid;
   }
 
-  int _distanceToTarget(Difficulty targetDiff, List<int> grid) {
-    // Compute rating with broad logical flags enabled
-    final r = solver.rateLogical(grid);
-
-    int idx(Difficulty d) => Difficulty.values.indexOf(d);
-    final targetIdx = idx(targetDiff);
-
-    // Weighting constants
-    const int wEasy = 1; // penalty per step easier than target (linear)
-    const int wHard =
-        10; // penalty per step harder than target (quadratic scaled)
-    const int targetBonus =
-        6; // subtract when at least one target-level step exists
-    const int targetAbsentPenalty = 12; // add when no target-level step exists
-
-    var dist = 0;
-    var targetLevelSteps = 0;
-
-    // Penalize based on *distance* between technique difficulty and target
-    r.counts.forEach((tech, count) {
-      final d = tech.getDifficulty();
-      final delta = idx(d) - targetIdx; // <0 easier, 0 equal, >0 harder
-      if (delta == 0) {
-        targetLevelSteps += count;
-        // No penalty for target-level steps (bonus applied below)
-      } else if (delta < 0) {
-        // Easier than target: small linear penalty
-        dist += count * (delta.abs()) * wEasy;
-      } else {
-        // Harder than target: strong quadratic penalty
-        dist += count * (delta * delta) * wHard;
-      }
-    });
-
-    // Nudge: prefer states that actually exhibit at least one target-level step
-    if (targetLevelSteps > 0) {
-      dist -= targetBonus;
-    } else {
-      dist += targetAbsentPenalty;
+  int _distance(Set<StrategyType> mustUse, int minMoves, List<int> grid) {
+    final copy = Sudoku(List<int>.from(grid));
+    final res = solver.solveLogical(copy);
+    final present = res.steps.toSet();
+    int missing = 0;
+    for (final t in mustUse) {
+      if (!present.contains(t)) missing++;
     }
-
-    if (dist < 0) dist = 0; // clamp
-    return dist;
+    final shortfall = minMoves > 0 && res.steps.length < minMoves
+        ? (minMoves - res.steps.length)
+        : 0;
+    return missing * 100 + shortfall;
   }
 
-  int distanceToTarget(Difficulty target, List<int> grid) =>
-      _distanceToTarget(target, grid);
-
   ClassifiedPuzzle generate({
-    Difficulty target = Difficulty.easy,
+    Set<StrategyType> mustUse = const {},
+    int minMoves = 0,
     int beamWidth = 1,
     int expansions = 8,
     int timeoutMs = 20000,
@@ -198,7 +161,7 @@ class Generator {
 
     // start from the full solution and dig
     List<_State> beam = [
-      _State(List<int>.from(full), _distanceToTarget(target, full)),
+      _State(List<int>.from(full), _distance(mustUse, minMoves, full)),
     ];
 
     // helper to try removing a symmetric group from a grid
@@ -212,10 +175,10 @@ class Generator {
       }
       if (!isUnique(next)) return null;
       if (violatesQuotas(next)) return null;
-      // Signature forcing via distance
-      final nd = _distanceToTarget(target, next);
-      // Prune children that clearly regress relative to the parent
-      if (nd > parentDist + tolerance) return null;
+      // Signature + min-moves forcing via distance
+      final nd = _distance(mustUse, minMoves, next);
+      const int localTolerance = 10;
+      if (nd > parentDist + localTolerance) return null;
       return _State(next, nd);
     }
 
@@ -272,12 +235,16 @@ class Generator {
       }
 
       // check best for fit
-      final bestClass = classify(best.grid);
-      final diff = bestClass;
-      if (diff == target) {
+      final checkCopy = Sudoku(List<int>.from(best.grid));
+      final checkRes = solver.solveLogical(checkCopy);
+      final present = checkRes.steps.toSet();
+      final missingAny = mustUse.any((t) => !present.contains(t));
+      final movesOk = minMoves <= 0 || checkRes.steps.length >= minMoves;
+      if (!missingAny && movesOk) {
         final sol = Sudoku(List<int>.from(best.grid));
         solver.solveBacktracking(sol);
-        return ClassifiedPuzzle(best.grid, sol.grid, diff);
+        final cls = classify(best.grid);
+        return ClassifiedPuzzle(best.grid, sol.grid, cls);
       }
       // stop if puzzle is too empty
       final clues = best.grid.where((v) => v != 0).length;
@@ -286,12 +253,11 @@ class Generator {
 
     if (beam.isNotEmpty) {
       final best = beam.first;
-      final bestClass = classify(best.grid);
-      final diff = bestClass;
       // If we timed out or stagnated, return the best-so-far (if it has a valid solution)
       final sol = Sudoku(List<int>.from(best.grid));
       if (solver.solveBacktracking(sol)) {
-        return ClassifiedPuzzle(best.grid, sol.grid, diff);
+        final cls = classify(best.grid);
+        return ClassifiedPuzzle(best.grid, sol.grid, cls);
       }
     }
 

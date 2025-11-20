@@ -195,46 +195,57 @@ class _LessonTrackPageState extends State<LessonTrackPage> {
 
   Widget _buildProgressChip(ThemeData theme) {
     final colors = theme.colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: colors.surface.withValues(alpha: 0.80),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: colors.outlineVariant.withValues(alpha: 0.24),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 10,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.emoji_events_rounded,
-            size: 18,
-            color: colors.onSurfaceVariant,
-          ),
-          const SizedBox(width: 8),
-          Text(
-            '$_progress/TODO',
-            style: theme.textTheme.labelLarge?.copyWith(
-              fontWeight: FontWeight.w700,
+    return FutureBuilder(
+      future: _future,
+      builder: (context, snapshot) {
+        if (snapshot.hasError || !snapshot.hasData) {
+          return SizedBox();
+        }
+
+        final puzzles = snapshot.requireData;
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: colors.surface.withValues(alpha: 0.80),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: colors.outlineVariant.withValues(alpha: 0.24),
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.06),
+                blurRadius: 10,
+                offset: const Offset(0, 6),
+              ),
+            ],
           ),
-        ],
-      ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.emoji_events_rounded,
+                size: 18,
+                color: colors.onSurfaceVariant,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '$_progress/${puzzles.length}',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
   Future<void> _openPuzzle(int index, SudokuModel model) async {
     // If the model includes tutorial steps, construct a TutorialController
     // and provide it before opening the puzzle so SudokuHomePage can show it.
-    final hasTutorial = model.tutorial != null && model.tutorial!.isNotEmpty;
+    final hasTutorial = model.tutorial != null;
 
     final result = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
@@ -242,17 +253,19 @@ class _LessonTrackPageState extends State<LessonTrackPage> {
           return MultiProvider(
             providers: [
               ChangeNotifierProvider<SudokuBoardState>(
-                create: (_) =>
-                    SudokuBoardState(showNotes: false, autoFinish: false)
-                      ..requestInitPuzzle(model),
+                create: (_) {
+                  final state = SudokuBoardState(
+                    showNotes: model.tutorial?.overrideShowNotes,
+                    autoFinish: false,
+                  );
+                  state.requestInitPuzzle(model);
+
+                  return state;
+                },
               ),
               if (hasTutorial)
                 ChangeNotifierProvider<TutorialController>(
-                  create: (_) => TutorialController(
-                    steps: [
-                      for (final m in model.tutorial!) TutorialStep.fromJson(m),
-                    ],
-                  ),
+                  create: (_) => TutorialController(tutorial: model.tutorial!),
                 ),
             ],
             child: const SudokuHomePage(),

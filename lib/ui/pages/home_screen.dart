@@ -63,14 +63,14 @@ class HomeScreen extends StatelessWidget {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                      GestureDetector(
-                        onLongPress: () => _debugResetProgress(context),
-                        child: Icon(
-                          Icons.grid_view_rounded,
-                          size: 64,
-                          color: colorScheme.primary,
+                        GestureDetector(
+                          onLongPress: () => _debugResetProgress(context),
+                          child: Icon(
+                            Icons.grid_view_rounded,
+                            size: 64,
+                            color: colorScheme.primary,
+                          ),
                         ),
-                      ),
                         const SizedBox(height: 24),
                         Text(
                           'Auto Sudoku',
@@ -247,14 +247,8 @@ Future<void> _debugResetProgress(BuildContext context) async {
   if (!kDebugMode) return;
   try {
     final prefs = await SharedPreferences.getInstance();
-    // Known lesson track keys
-    const keys = <String>{
-      'lesson_track_hidden_single_completed',
-      'lesson_track_naked_single_completed',
-    };
-    for (final k in keys) {
-      await prefs.remove(k);
-    }
+    await prefs.clear();
+
     showToast(
       context,
       Row(
@@ -262,7 +256,7 @@ Future<void> _debugResetProgress(BuildContext context) async {
         children: const [
           Icon(Icons.restart_alt_rounded),
           SizedBox(width: 10),
-          Text('Progress reset. Lessons cleared.'),
+          Text('Progress & Preferences reset.'),
         ],
       ),
     );

@@ -1,103 +1,347 @@
 [
-  {
-    "id": "BAS101",
-    "puzzle": "000250001900730208000109400002576804749813652508942300097605000320497006600380000",
-    "solution": "476258931915734268283169475132576894749813652568942317897625143321497586654381729",
-    "techniques": {
-      "Hidden Single": 3,
-      "Naked Single": 12
+    {
+        "id": "BAS101",
+        "puzzle": "480210596962045187715900402198062375054173800327850641271038904536794218849021063",
+        "solution": "483217596962345187715986432198462375654173829327859641271638954536794218849521763",
+        "techniques": {
+            "Hidden Single": 15
+        },
+        "tutorial": {
+            "showNotes": false,
+            "steps": [
+                {
+                    "title": "Welcome to Sudoku!",
+                    "body": "The goal is to fill each 'Unit' with 1–9 — no repeats. Auto Sudoku makes it easy!",
+                    "centerDialog": true
+                },
+                {
+                    "maskRows": [
+                        7
+                    ],
+                    "maskCols": [
+                        1
+                    ],
+                    "maskBoxes": [
+                        6
+                    ],
+                    "title": "What is a Unit?",
+                    "body": "A unit is a row, column, or 3×3 box. Each must contain 1–9 exactly once—no repeats."
+                },
+                {
+                    "title": "Filled Cells",
+                    "body": "Tap a filled cell and we softly gray out where that number can’t go — perfect for focusing your search. Give it a try!",
+                    "maskRows": [
+                        0,
+                        1,
+                        2,
+                        3,
+                        4,
+                        5,
+                        6,
+                        7,
+                        8
+                    ],
+                    "preventGridTaps": false
+                },
+                {
+                    "title": "Empty Cells",
+                    "body": "Tap an empty cell and we softly gray out where that number can't \"see\". The peers in the selected cell's row, column and box will stay lit.",
+                    "maskRows": [
+                        0,
+                        1,
+                        2,
+                        3,
+                        4,
+                        5,
+                        6,
+                        7,
+                        8
+                    ],
+                    "preventGridTaps": false
+                },
+                {
+                    "title": "Tap a 3",
+                    "body": "Tap any filled 3 — we’ll use it to spot something sneaky.",
+                    "advanceOnValue": 3,
+                    "selectedIndices": [],
+                    "maskIndices": [
+                        33,
+                        41,
+                        45,
+                        58,
+                        64,
+                        80
+                    ],
+                    "preventGridTaps": false
+                },
+                {
+                    "maskBoxes": [
+                        0
+                    ],
+                    "preventGridTaps": false,
+                    "tappableIndices": [
+                        2
+                    ],
+                    "solver": {
+                        "allowed": [
+                            "Hidden Single"
+                        ]
+                    },
+                    "advanceOnIndices": [
+                        2
+                    ],
+                    "title": "Hidden Single",
+                    "body": "Spot the standout? Only one cell remains unfilled in the top-left box — a hidden single. Give it a tap!"
+                },
+                {
+                    "maskBoxes": [
+                        0
+                    ],
+                    "title": "First Hidden Single",
+                    "body": "Nice job! We've filled in the 3 in this box. A hidden single says 'There is only one spot available for a digit in this unit, so it must go here!' Let's keep looking for more!"
+                },
+                {
+                    "maskRows": [
+                        2
+                    ],
+                    "maskCols": [
+                        4,
+                        5
+                    ],
+                    "preventGridTaps": false,
+                    "title": "Next Hidden Single",
+                    "body": "There are multiple empty cells in this row, but there's only one cell where a 3 could go - Do you see it? Give it a tap!",
+                    "solver": {
+                        "allowed": [
+                            "Hidden Single"
+                        ]
+                    },
+                    "advanceOnIndices": [
+                        25
+                    ],
+                    "tappableIndices": [
+                        25
+                    ]
+                },
+                {
+                    "title": "Last Hidden Single",
+                    "body": "This column has one cozy spot left for a 3 — finish the set by tapping it!",
+                    "maskRows": [
+                        3,
+                        6,
+                        8
+                    ],
+                    "maskCols": [
+                        3
+                    ],
+                    "preventGridTaps": false,
+                    "solver": {
+                        "allowed": [
+                            "Hidden Single"
+                        ]
+                    },
+                    "advanceOnIndices": [
+                        12
+                    ],
+                    "tappableIndices": [
+                        12
+                    ]
+                },
+                {
+                    "preventGridTaps": false,
+                    "centerDialog": true,
+                    "title": "3s Completed",
+                    "body": "So far, all the examples we've seen have been Hidden Singles - exactly one place in a unit could hold a 3. Let's look a case where we aren't so lucky."
+                },
+                {
+                    "title": "Tap a 5",
+                    "body": "Tap any filled 5 to see the possible cells a 5 could go.",
+                    "advanceOnValue": 5,
+                    "selectedIndices": [],
+                    "maskIndices": [
+                        6,
+                        14,
+                        35,
+                        37,
+                        49,
+                        63
+                    ],
+                    "preventGridTaps": false
+                },
+                {
+                    "maskCols": [
+                        3
+                    ],
+                    "title": "No Hidden Single",
+                    "body": "Notice how there are two possible cells where a 5 could be placed in this column? That means we'll have to come back later!"
+                },
+                {
+                    "title": "Hidden Single 5",
+                    "body": "Looking at this box, we see only a single lit cell for a 5! We found another Hidden Single! Give it a tap!",
+                    "maskBoxes": [
+                        8
+                    ],
+                    "preventGridTaps": false,
+                    "solver": {
+                        "allowed": [
+                            "Hidden Single"
+                        ]
+                    },
+                    "advanceOnIndices": [
+                        61
+                    ],
+                    "tappableIndices": [
+                        61
+                    ]
+                },
+                {
+                    "maskCols": [
+                        3
+                    ],
+                    "title": "Return to the 5",
+                    "body": "That last 5 has updated the column we looked at before. See the Hidden Single? Give it a tap!",
+                    "preventGridTaps": false,
+                    "solver": {
+                        "allowed": [
+                            "Hidden Single"
+                        ]
+                    },
+                    "advanceOnIndices": [
+                        75
+                    ],
+                    "tappableIndices": [
+                        75
+                    ]
+                },
+                {
+                    "preventGridTaps": false,
+                    "centerDialog": true,
+                    "title": "Complete the Puzzle",
+                    "body": "Hidden Singles are just the beginning! Tap on more filled cells to find Hidden Singles and finish this puzzle. Happy tapping!",
+                    "solver": {
+                        "allowed": [
+                            "Hidden Single"
+                        ]
+                    }
+                }
+            ]
+        }
     },
-    "tutorial": [
-      {
-        "title": "Welcome to Sudoku!",
-        "body": "The goal is to fill each 'Unit' with 1–9 — no repeats. Auto Sudoku makes it easy!",
-        "centerDialog": true
-      },
-      {
-        "maskRows": [4],
-        "maskCols": [3],
-        "maskBoxes": [4],
-        "title": "What is a Unit?",
-        "body": "A unit is a row, column, or 3×3 box. Each must contain 1–9 exactly once—no repeats."
-      },
-      {
-        "maskRows": [4],
-        "title": "Rows",
-        "body": "Each row is a unit. Digits 1–9 can appear only once across the row."
-      },
-      {
-        "maskCols": [3],
-        "title": "Columns",
-        "body": "Each column is also a unit. Digits 1–9 can appear only once vertically."
-      },
-      {
-        "maskBoxes": [4],
-        "title": "3×3 Boxes",
-        "body": "3×3 boxes are also units. Make sure digits 1–9 appear exactly once inside."
-      },
-      {
-        "title": "Filled Cells",
-        "body": "Tap a filled cell and we softly gray out where that number can’t go — perfect for focusing your search. Give it a try!",
-        "maskRows": [0,1,2,3,4,5,6,7,8],
-        "preventGridTaps": false
-      },
-      {
-        "title": "Empty Cells",
-        "body": "Tap an empty cell and we softly gray out where that number can't \"see\". The peers in the selected cell's row, column and box will stay lit.",
-        "maskRows": [0,1,2,3,4,5,6,7,8],
-        "preventGridTaps": false
-      },
-      {
-        "title": "Tap a 2",
-        "body": "Tap any filled 2 — we’ll use it to spot something sneaky.",
-        "advanceOnValue": 2,
-        "selectedIndices": [],
-        "maskIndices": [3, 15, 29, 44, 50, 64],
-        "preventGridTaps": false
-      },
-      {
-        "maskBoxes": [0],
-        "maskCols": [1, 2],
-        "maskRows": [0, 1],
-        "preventGridTaps": false,
-        "tappableIndices": [18],
-        "solver": {"allowed": ["Hidden Single"]},
-        "advanceOnIndices": [18],
-        "title": "Hidden Single",
-        "body": "Spot the standout? Only one cell stays lit in the top-left box — a hidden single. Give it a tap!"
-      },
-      {
-        "maskBoxes": [0],
-        "maskCols": [1, 2],
-        "maskRows": [0, 1],
-        "title": "First Hidden Single Done!",
-        "body": "Nice job! We've filled in the 2 in this box. A hidden single says 'There is only one spot available for a digit in this unit, so it must go here!' Let's keep looking for more!"
-      },
-      {
-        "maskRows": [8],
-        "preventGridTaps": false,
-        "title": "Next Hidden Single",
-        "body": "Spot another lonely home for a 2 in this row? Give it a tap!",
-        "solver": {"allowed": ["Hidden Single"]},
-        "advanceOnIndices": [79],
-        "tappableIndices": [79]
-      },
-      {
-        "maskCols": [4],
-        "preventGridTaps": false,
-        "title": "Last Hidden Single",
-        "body": "This column has one cozy spot left for a 2 — finish the set by tapping it!",
-        "solver": {"allowed": ["Hidden Single"]},
-        "advanceOnIndices": [58],
-        "tappableIndices": [58]
-      },
-      {
-        "preventGridTaps": false,
-        "centerDialog": true,
-        "title": "Complete the Puzzle",
-        "body": "Hidden Singles are just the beginning! Tap on more filled cells to find Hidden Singles and finish this puzzle. Happy tapping!",
-        "solver": {"allowed": ["Hidden Single"]}
-      }
-    ]
-  }
+    {
+        "id": "BAS102",
+        "puzzle": "000690000172004906094010850040069300319040675006370090087050410401800269000021000",
+        "solution": "538692741172584936694713852745169328319248675826375194287956413451837269963421587",
+        "techniques": {
+            "Naked Single": 40
+        },
+        "tutorial": {
+            "steps": [
+                {
+                    "title": "What are those tiny numbers?",
+                    "body": "Those tiny numbers are called Candidates. They list all of the digits that could possibly be in that cell and we'll use them for our next strategy - Open Singles.",
+                    "maskRows": [
+                        0,
+                        1,
+                        2,
+                        3,
+                        4,
+                        5,
+                        6,
+                        7,
+                        8
+                    ]
+                },
+                {
+                    "title": "Single Candidate",
+                    "body": "In this cell, there is exactly one possible digit (candidate) that can be placed - 5. Let's take a look at why.",
+                    "maskIndices": [
+                        12
+                    ],
+                    "selectedIndices": [
+                        12
+                    ]
+                },
+                {
+                    "title": "3x3 Box",
+                    "body": "The digits 1, 4, 6, and 9 exist within the same box. No duplicates in a box means those values can't possibly be in this cell.",
+                    "maskBoxes": [
+                        1
+                    ],
+                    "selectedIndices": [
+                        12
+                    ]
+                },
+                {
+                    "title": "Row",
+                    "body": "The digits 7 & 2 also exist within the same row - those values are also left out of that cell's candidates.",
+                    "maskBoxes": [
+                        1
+                    ],
+                    "maskRows": [
+                        1
+                    ],
+                    "selectedIndices": [
+                        12
+                    ]
+                },
+                {
+                    "title": "Column",
+                    "body": "The final digits, 3 & 8 exist within the same column - can't be those digits either!",
+                    "maskBoxes": [
+                        1
+                    ],
+                    "maskRows": [
+                        1
+                    ],
+                    "maskCols": [
+                        3
+                    ],
+                    "selectedIndices": [
+                        12
+                    ]
+                },
+                {
+                    "title": "Open Single",
+                    "body": "With candidates displayed, it's easy to see that only the 5 can be in this cell. We call this an Open Single - Give it a tap!",
+                    "maskBoxes": [
+                        1
+                    ],
+                    "maskRows": [
+                        1
+                    ],
+                    "maskCols": [
+                        3
+                    ],
+                    "tappableIndices": [
+                        12
+                    ],
+                    "selectedIndices": [],
+                    "advanceOnIndices": [
+                        12
+                    ],
+                    "preventGridTaps": false,
+                    "solver": {
+                        "allowed": [
+                            "Naked Single"
+                        ]
+                    }
+                },
+                {
+                    "title": "Complete the Puzzle",
+                    "body": "The rest of this puzzle can be completed just by finding Open Singles. Hidden Singles won't be available here!",
+                    "centerDialog": true
+                },
+                {
+                    "title": "P.S. - Multi-selection",
+                    "body": "Tapping multiple empty cells in a row will highlight them all - this is expected! We'll learn more about it later, but for now you if you need to clear multiple selections, you can tap a filled cell or tap the cells again! Happy Tapping!",
+                    "centerDialog": true,
+                    "solver": {
+                        "allowed": [
+                            "Naked Single"
+                        ]
+                    }
+                }
+            ]
+        }
+    }
 ]

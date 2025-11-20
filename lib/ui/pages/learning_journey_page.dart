@@ -20,9 +20,9 @@ class _LearningJourneyPageState extends State<LearningJourneyPage>
     Lesson(
       title: 'The Basics',
       icon: Icons.grid_on_rounded,
-      shortDesc: "Fundamentals and Hidden Singles",
+      shortDesc: "Start with the Fundamentals",
       description:
-          'Start with fundamentals, then practice your first strategy - Hidden Singles.',
+          'Learn the fundamentals of Sudoku and the basic strategies to solve them.',
       status: LessonStatus.inProgress,
       path: "assets/puzzles/lessons/the_basics.json",
     ),

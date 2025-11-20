@@ -1,3 +1,4 @@
+import 'package:auto_sudoku_solver/data/tutorial.dart';
 import 'package:auto_sudoku_solver/src/difficulty.dart';
 
 // Model class for reading Sudoku Puzzles from data (new format)
@@ -8,9 +9,7 @@ class SudokuModel {
   final String solution;
   final Map<String, int> techniqueCounts;
   final String id;
-  // Optional raw tutorial step data (app-level deserialization will map
-  // these to TutorialStep objects). Kept as raw maps to avoid a UI import.
-  final List<Map<String, dynamic>>? tutorial;
+  final Tutorial? tutorial;
 
   SudokuModel({
     required this.puzzle,
@@ -31,14 +30,11 @@ class SudokuModel {
       counts[k] = n;
     });
 
-    // Optional tutorial steps (kept raw)
-    List<Map<String, dynamic>>? tutorial;
-    final rawTut = json['tutorial'] ?? json['tutorialSteps'];
-    if (rawTut is List) {
-      tutorial = rawTut
-          .whereType<Map>()
-          .map((m) => m.cast<String, dynamic>())
-          .toList(growable: false);
+    // Optional tutorial
+    Tutorial? tutorial;
+    const tutorialKey = 'tutorial';
+    if (json.containsKey(tutorialKey)) {
+      tutorial = Tutorial.fromJson(json[tutorialKey]);
     }
 
     return SudokuModel(

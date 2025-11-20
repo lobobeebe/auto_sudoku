@@ -36,10 +36,7 @@ import 'dart:io';
 
 import 'package:auto_sudoku_solver/auto_sudoku_solver.dart';
 import 'package:auto_sudoku_solver/src/classified_puzzle.dart';
-import 'package:auto_sudoku_solver/src/difficulty.dart';
 import 'package:auto_sudoku_solver/src/generator.dart';
-import 'package:auto_sudoku_solver/src/strategy/strategy.dart';
-import 'package:auto_sudoku_solver/src/sudoku.dart';
 
 String formatGrid(List<int> g) {
   final sb = StringBuffer();
@@ -57,7 +54,9 @@ String formatGrid(List<int> g) {
 }
 
 void main(List<String> args) {
-  Difficulty target = Difficulty.easy;
+  Set<StrategyType> must = {};
+  Set<StrategyType>? only;
+
   int? seed;
   bool showBoard = false;
   int maxAttempts = 500;
@@ -67,17 +66,29 @@ void main(List<String> args) {
   String outPath = 'sudoku_output.json';
   int timeoutMs = 20000;
   int maxRounds = 400;
+  int? minMoves; // Minimum number of logical steps required
+
+  Set<StrategyType> parseTechList(String raw) {
+    final parts = raw.split(',');
+    final out = <StrategyType>{};
+    for (final p in parts) {
+      final t = p.trim().toLowerCase();
+      for (final st in StrategyType.values) {
+        if (st.toString().toLowerCase() == t || st.name.toLowerCase() == t) {
+          out.add(st);
+          break;
+        }
+      }
+    }
+    return out;
+  }
 
   for (var i = 0; i < args.length; i++) {
     final a = args[i];
-    if (a == '--target' && i + 1 < args.length) {
-      final inTarget = Difficulty.fromString(args[++i].toLowerCase());
-      if (inTarget == null) {
-        throw ArgumentError(
-          'Invalid --target. Use ${Difficulty.values.map((d) => d.name).join('|')}.',
-        );
-      }
-      target = inTarget;
+    if (a == '--only' && i + 1 < args.length) {
+      only = parseTechList(args[++i]);
+    } else if (a == '--must' && i + 1 < args.length) {
+      must = parseTechList(args[++i]);
     } else if (a == '--seed' && i + 1 < args.length) {
       seed = int.tryParse(args[++i]);
     } else if (a == '--board') {
@@ -97,40 +108,14 @@ void main(List<String> args) {
       timeoutMs = int.tryParse(args[++i]) ?? timeoutMs;
     } else if (a == '--max-rounds' && i + 1 < args.length) {
       maxRounds = int.tryParse(args[++i]) ?? maxRounds;
+    } else if (a == '--min-moves' && i + 1 < args.length) {
+      minMoves = int.tryParse(args[++i]);
     }
   }
 
-  // Parse strategy filters
-  Set<StrategyType>? allow;
-  Set<StrategyType>? except;
-
-  Set<StrategyType> parseTechList(String raw) {
-    final parts = raw.split(',');
-    final out = <StrategyType>{};
-    for (final p in parts) {
-      final t = p.trim().toLowerCase();
-      for (final st in StrategyType.values) {
-        if (st.toString().toLowerCase() == t || st.name.toLowerCase() == t) {
-          out.add(st);
-          break;
-        }
-      }
-    }
-    return out;
-  }
-
-  for (var i = 0; i < args.length; i++) {
-    final a = args[i];
-    if (a == '--allow' && i + 1 < args.length) {
-      allow = parseTechList(args[++i]);
-    } else if (a == '--except' && i + 1 < args.length) {
-      except = parseTechList(args[++i]);
-    }
-  }
-
-  final SolverSettings settings = allow != null
-      ? SolverSettings(allowed: allow)
-      : SolverSettings.all(except: except);
+  final SolverSettings settings = only != null
+      ? SolverSettings(allowed: only)
+      : SolverSettings.all();
 
   final gen = Generator(seed: seed, settings: settings);
   final List<Map<String, dynamic>> outList = [];
@@ -140,34 +125,33 @@ void main(List<String> args) {
     int attempts = 0;
 
     print(
-      'Generating puzzle $n/$count (target=$target, max $maxAttempts attempts)...',
+      'Generating puzzle $n/$count (must=${must.map((e) => e.name).join(',')}, only=${only?.map((e)=>e.name).join(',') ?? '-'}, minMoves=${minMoves ?? 0}, max $maxAttempts attempts)...',
     );
 
     do {
       attempts++;
       result = gen.generate(
-        target: target,
+        mustUse: must,
+        minMoves: minMoves ?? 0,
         beamWidth: beamWidth,
         expansions: expansions,
         timeoutMs: timeoutMs,
         maxRounds: maxRounds,
       );
 
-      final diff = result.difficulty;
-      final dist = gen.distanceToTarget(target, result.puzzle);
-      print(
-        '  Attempt $attempts -> ${diff.toString().split('.').last} (dist=$dist)',
+      // Verify signature satisfaction
+      final check = gen.solver.solveLogical(
+        Sudoku(List<int>.from(result.puzzle)),
       );
-    } while (result.difficulty != target && attempts < maxAttempts);
-
-    if (result.difficulty != target) {
-      print(
-        '  WARNING: Reached max attempts ($maxAttempts) without hitting exact difficulty for item $n; keeping closest attempt.',
-      );
-    }
-
-    String diffLabel = result.difficulty.name;
-    print('Difficulty: $diffLabel');
+      final present = check.steps.toSet();
+      final stepsCount = check.steps.length;
+      final requiredMoves = minMoves ?? 0;
+      final satisfied = must.every(present.contains) &&
+          (only == null || check.solved) &&
+          (minMoves == null || stepsCount >= requiredMoves);
+      print('  Attempt $attempts -> satisfied=$satisfied, steps=$stepsCount');
+      if (satisfied) break;
+    } while (attempts < maxAttempts);
     if (showBoard) {
       print('Puzzle:');
       print(formatGrid(result.puzzle));
@@ -187,18 +171,13 @@ void main(List<String> args) {
       techniques[label] = (techniques[label] ?? 0) + 1;
     }
 
-    if (result.difficulty != Difficulty.trivial &&
-        result.difficulty != Difficulty.impossible) {
-      outList.add({
-        'id': SudokuModel.computeIdFromPuzzle(puzzleStr),
-        'puzzle': puzzleStr,
-        'solution': solutionStr,
-        'techniques': techniques,
-      });
-      print('  -> Added to output');
-    } else {
-      print('  -> Skipped (Trivial or Impossible)');
-    }
+    outList.add({
+      'id': SudokuModel.computeIdFromPuzzle(puzzleStr),
+      'puzzle': puzzleStr,
+      'solution': solutionStr,
+      'techniques': techniques,
+    });
+    print('  -> Added to output');
   }
 
   // Write JSON array to file

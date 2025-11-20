@@ -12,7 +12,7 @@ import 'sudoku.dart';
 import 'solver_settings.dart';
 
 class Solver {
-  final strategyOrder = [
+  final List<Strategy> strategyOrder = [
     // Trivial Singles
     NakedSingleStrategy(),
     HiddenSingleStrategy(),
