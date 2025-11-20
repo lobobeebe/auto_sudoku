@@ -1,5 +1,3 @@
-import 'package:auto_sudoku_solver/src/sudoku_tool.dart';
-
 import 'strategy/strategy.dart';
 
 class SolveResult {

@@ -1,4 +1,7 @@
-import 'package:auto_sudoku_solver/src/sudoku_tool.dart';
+import 'package:auto_sudoku_solver/src/difficulty.dart';
+import 'package:auto_sudoku_solver/src/hint.dart';
+import 'package:auto_sudoku_solver/src/strategy/strategy.dart';
+import 'package:auto_sudoku_solver/src/sudoku.dart';
 
 abstract class NakedStrategy extends Strategy {
   // Helper to find a subset hint (naked/hidden, k in {2,3,4})

@@ -1,4 +1,4 @@
-import 'package:auto_sudoku_solver/auto_sudoku_solver.dart';
+import 'package:auto_sudoku_solver/src/strategy/strategy.dart';
 
 class SolverSettings {
   final Set<StrategyType> _allowedStrategies;

@@ -143,7 +143,7 @@ class SudokuBoardState extends ChangeNotifier {
             .where((i) => i >= 0 && i < StrategyType.values.length)
             .toList();
         _autoAllowedStrategies = {
-          for (final i in indices) StrategyType.values[i]
+          for (final i in indices) StrategyType.values[i],
         };
       }
       _rebuildDefaultSolver();
@@ -157,7 +157,9 @@ class SudokuBoardState extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_prefsKeyEnabled, _autoStrategyOverrideEnabled);
-      final list = autoAllowedStrategies.map((e) => e.index.toString()).toList();
+      final list = autoAllowedStrategies
+          .map((e) => e.index.toString())
+          .toList();
       await prefs.setStringList(_prefsKeyAllowed, list);
     } catch (_) {
       // Ignore persistence errors silently for now

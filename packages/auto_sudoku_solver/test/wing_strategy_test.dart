@@ -1,7 +1,8 @@
+import 'package:auto_sudoku_solver/src/hint.dart';
+import 'package:auto_sudoku_solver/src/strategy/strategy.dart';
 import 'package:test/test.dart';
 
 import 'package:auto_sudoku_solver/src/strategy/wing_strategy.dart';
-import 'package:auto_sudoku_solver/auto_sudoku_solver.dart';
 
 import 'test_harness.dart';
 

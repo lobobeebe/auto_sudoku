@@ -45,9 +45,9 @@ class Generator {
   final Solver solver;
   final PrunePolicy policy;
 
-  Generator({int? seed, PrunePolicy? policy})
+  Generator({int? seed, PrunePolicy? policy, SolverSettings? settings})
     : rng = Random(seed),
-      solver = Solver(settings: SolverSettings.all()),
+      solver = Solver(settings: settings ?? SolverSettings.all()),
       policy = policy ?? const PrunePolicy();
 
   // Create a complete solved board by randomized backtracking

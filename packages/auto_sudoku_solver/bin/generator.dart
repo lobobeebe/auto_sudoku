@@ -10,11 +10,12 @@
 // - Impossible: Unsolvable even with backtracking, or requires guessing (invalid puzzle).
 //
 // Usage:
-//   dart run sudoku_tool.dart [--target trivial|easy|medium|hard|any] [--seed N] [--board] [--steps]
+//   dart run sudoku_tool.dart [--target trivial|easy|medium|hard|any] [--seed N] [--board]
 //                              [--max-attempts N] [--beam W] [--exp K] [--count N] [--out path]
+//                              [--allow techniques] [--except techniques]
 //   - Beam search: keep W best candidates each round (default 1). Each state expands by K random removals per round (default 8).
 //   - --count N: generate N puzzles that match the requested difficulty (default 1).
-//   - --out path: write a JSON array of {"difficulty","puzzle","solution"} objects to this file (default: sudoku_output.json).
+//   - --out path: write a JSON array of {"puzzle","solution","techniques"} objects to this file (default: sudoku_output.json).
 //   - --timeout MS: abort a single generation attempt after MS milliseconds (default 20000).
 //   - --max-rounds N: abort beam digging after N rounds (default 400).
 //   - JSON output excludes Trivial and Impossible puzzles.
@@ -34,16 +35,11 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:auto_sudoku_solver/auto_sudoku_solver.dart';
-
-export 'classified_puzzle.dart';
-export 'difficulty.dart';
-export 'generator.dart';
-export 'hint.dart';
-export 'rating.dart';
-export 'solve_result.dart';
-export 'solver.dart';
-export 'strategy/strategy.dart';
-export 'sudoku.dart';
+import 'package:auto_sudoku_solver/src/classified_puzzle.dart';
+import 'package:auto_sudoku_solver/src/difficulty.dart';
+import 'package:auto_sudoku_solver/src/generator.dart';
+import 'package:auto_sudoku_solver/src/strategy/strategy.dart';
+import 'package:auto_sudoku_solver/src/sudoku.dart';
 
 String formatGrid(List<int> g) {
   final sb = StringBuffer();
@@ -104,7 +100,39 @@ void main(List<String> args) {
     }
   }
 
-  final gen = Generator(seed: seed);
+  // Parse strategy filters
+  Set<StrategyType>? allow;
+  Set<StrategyType>? except;
+
+  Set<StrategyType> parseTechList(String raw) {
+    final parts = raw.split(',');
+    final out = <StrategyType>{};
+    for (final p in parts) {
+      final t = p.trim().toLowerCase();
+      for (final st in StrategyType.values) {
+        if (st.toString().toLowerCase() == t || st.name.toLowerCase() == t) {
+          out.add(st);
+          break;
+        }
+      }
+    }
+    return out;
+  }
+
+  for (var i = 0; i < args.length; i++) {
+    final a = args[i];
+    if (a == '--allow' && i + 1 < args.length) {
+      allow = parseTechList(args[++i]);
+    } else if (a == '--except' && i + 1 < args.length) {
+      except = parseTechList(args[++i]);
+    }
+  }
+
+  final SolverSettings settings = allow != null
+      ? SolverSettings(allowed: allow)
+      : SolverSettings.all(except: except);
+
+  final gen = Generator(seed: seed, settings: settings);
   final List<Map<String, dynamic>> outList = [];
 
   for (var n = 1; n <= count; n++) {
@@ -147,24 +175,22 @@ void main(List<String> args) {
       print(formatGrid(result.solution));
     }
 
-    String diffOut = result.difficulty.name;
-
     final puzzleStr = result.puzzle.map((e) => e.toString()).join();
     final solutionStr = result.solution.map((e) => e.toString()).join();
 
-    // Compute unique techniques (including singles) for this puzzle, human-readable
+    // Compute technique counts for this puzzle (including singles)
     final sTech = Sudoku(List<int>.from(result.puzzle));
     final resTech = gen.solver.solveLogical(sTech);
-    final techSet = <StrategyType>{};
+    final Map<String, int> techniques = {};
     for (final st in resTech.steps) {
-      techSet.add(st);
+      final label = st.toString();
+      techniques[label] = (techniques[label] ?? 0) + 1;
     }
-    final techniques = techSet.map((s) => s.toString()).toList()..sort();
 
     if (result.difficulty != Difficulty.trivial &&
         result.difficulty != Difficulty.impossible) {
       outList.add({
-        'difficulty': diffOut,
+        'id': SudokuModel.computeIdFromPuzzle(puzzleStr),
         'puzzle': puzzleStr,
         'solution': solutionStr,
         'techniques': techniques,

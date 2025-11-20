@@ -60,6 +60,7 @@ class PuzzleRepository extends ChangeNotifier {
   Future<List<SudokuModel>> loadPuzzlesByTechnique(
     String technique, {
     int limit = 10,
+    bool onlyThisTechnique = false,
   }) async {
     if (!_isLoaded) {
       await preload();
@@ -69,14 +70,56 @@ class PuzzleRepository extends ChangeNotifier {
       throw StateError('Puzzle repository is empty.');
     }
     final normalized = technique.trim();
-    final filtered = cache
-        .where((p) => p.techniques.any((t) => t == normalized))
-        .take(limit)
-        .toList(growable: false);
+    Iterable<SudokuModel> it = cache.where(
+      (p) => (p.techniqueCounts[normalized] ?? 0) > 0,
+    );
+    if (onlyThisTechnique) {
+      it = it.where(
+        (p) => p.techniqueCounts.keys.every((k) => k == normalized),
+      );
+    }
+    final filtered = it.take(limit).toList(growable: false);
     if (filtered.isEmpty) {
       throw StateError('No puzzles available for technique "$technique".');
     }
     return filtered;
+  }
+
+  Future<SudokuModel> loadRandomSinglesOnlyPuzzle() async {
+    if (!_isLoaded) await preload();
+    final cache = _cache;
+    if (cache == null || cache.isEmpty) {
+      throw StateError('Puzzle repository is empty.');
+    }
+    final singles = {'Naked Single', 'Hidden Single'};
+    final candidates = cache
+        .where((p) => p.techniqueCounts.keys.every(singles.contains))
+        .toList();
+    if (candidates.isEmpty) {
+      throw StateError('No singles-only puzzles found.');
+    }
+    return candidates[_random.nextInt(candidates.length)];
+  }
+
+  Future<List<SudokuModel>> loadSinglesOnlyPuzzles({int limit = 20}) async {
+    if (!_isLoaded) await preload();
+    final cache = _cache;
+    if (cache == null || cache.isEmpty) {
+      throw StateError('Puzzle repository is empty.');
+    }
+    final singles = {'Naked Single', 'Hidden Single'};
+    final list = cache
+        .where(
+          (p) =>
+              p.techniqueCounts.isNotEmpty &&
+              p.techniqueCounts.keys.every(singles.contains),
+        )
+        .take(limit)
+        .toList(growable: false);
+    if (list.isEmpty) {
+      throw StateError('No singles-only puzzles found.');
+    }
+    return list;
   }
 
   Future<void> _performPreload() async {
@@ -101,6 +144,13 @@ class PuzzleRepository extends ChangeNotifier {
         _preloadFuture = null;
       }
     }
+  }
+
+  // Load an arbitrary asset file that contains a JSON array of SudokuModel
+  // entries (same shape as assets/puzzles/puzzles.json or lesson files).
+  Future<List<SudokuModel>> loadAssetFile(String path) async {
+    final raw = await rootBundle.loadString(path);
+    return compute(_parsePuzzles, raw);
   }
 }
 

@@ -3,19 +3,11 @@ import 'package:flutter/material.dart';
 
 import 'package:auto_sudoku/state/sudoku_board_state.dart';
 import 'package:auto_sudoku/ui/widgets/sudoku_grid.dart';
-import 'package:auto_sudoku/ui/pages/strategy_settings_page.dart';
 import 'package:provider/provider.dart';
+import 'package:auto_sudoku/ui/widgets/tutorial_overlay.dart';
 
 class SudokuHomePage extends StatelessWidget {
-  final Widget? tutorialOverlay;
-  // Full-width panel shown as an overlay at the bottom, above the Action Bar
-  final Widget? tutorialPanelOverlay;
-
-  const SudokuHomePage({
-    super.key,
-    this.tutorialOverlay,
-    this.tutorialPanelOverlay,
-  });
+  const SudokuHomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -101,25 +93,8 @@ class SudokuHomePage extends StatelessWidget {
             child: content,
           ),
         ),
-        if (tutorialPanelOverlay != null)
-          // Overlay panel floats above the controls/action bar
-          Positioned.fill(
-            child: IgnorePointer(
-              ignoring: false,
-              child: SafeArea(
-                child: Align(
-                  alignment: Alignment.bottomCenter,
-                  child: Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 1120),
-                      child: tutorialPanelOverlay!,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
+        // Overlay panel floats above the controls/action bar.
+        TutorialPanel(), // Hides when no tutorial controlle present
       ],
     );
   }
@@ -152,12 +127,9 @@ class SudokuHomePage extends StatelessWidget {
           ),
         ],
       ),
-      child: Stack(
+      child: const Stack(
         fit: StackFit.expand,
-        children: [
-          const SudokuGrid(),
-          if (tutorialOverlay != null) tutorialOverlay!,
-        ],
+        children: [SudokuGrid(), GridMaskOverlay()],
       ),
     );
   }

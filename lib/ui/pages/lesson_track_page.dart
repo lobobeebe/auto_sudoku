@@ -1,7 +1,9 @@
 import 'package:auto_sudoku/data/puzzle_repository.dart';
 import 'package:auto_sudoku/state/sudoku_board_state.dart';
+import 'package:auto_sudoku/ui/pages/learning_journey_page.dart';
 import 'package:auto_sudoku/ui/pages/sudoku_home_page.dart';
 import 'package:auto_sudoku/ui/widgets/puzzle_icon_button.dart';
+import 'package:auto_sudoku/ui/widgets/tutorial_overlay.dart';
 import 'package:auto_sudoku/ui/widgets/background_orb.dart';
 import 'package:auto_sudoku/ui/widgets/common_container.dart';
 import 'package:auto_sudoku_solver/auto_sudoku_solver.dart';
@@ -10,16 +12,9 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class LessonTrackPage extends StatefulWidget {
-  final String title;
-  final String techniqueName;
-  final int count;
+  final Lesson lesson;
 
-  const LessonTrackPage({
-    super.key,
-    required this.title,
-    required this.techniqueName,
-    this.count = 48,
-  });
+  const LessonTrackPage({super.key, required this.lesson});
 
   @override
   State<LessonTrackPage> createState() => _LessonTrackPageState();
@@ -34,14 +29,11 @@ class _LessonTrackPageState extends State<LessonTrackPage> {
     super.initState();
     _loadProgress();
     final repo = context.read<PuzzleRepository>();
-    _future = repo.loadPuzzlesByTechnique(
-      widget.techniqueName,
-      limit: widget.count,
-    );
+
+    _future = repo.loadAssetFile(widget.lesson.path);
   }
 
-  String get _prefsKey =>
-      'lesson_track_${_slug(widget.techniqueName)}_completed';
+  String get _prefsKey => '${_slug(widget.lesson.title)}_completed';
 
   Future<void> _loadProgress() async {
     final prefs = await SharedPreferences.getInstance();
@@ -106,7 +98,7 @@ class _LessonTrackPageState extends State<LessonTrackPage> {
                       ),
                       const SizedBox(width: 12),
                       Text(
-                        widget.title,
+                        widget.lesson.title,
                         style: theme.textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.w700,
                         ),
@@ -115,7 +107,7 @@ class _LessonTrackPageState extends State<LessonTrackPage> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Practice ${widget.techniqueName} with ${widget.count} focused puzzles.',
+                    widget.lesson.description,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: colors.onSurfaceVariant,
                     ),
@@ -223,17 +215,13 @@ class _LessonTrackPageState extends State<LessonTrackPage> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            _progress == widget.count
-                ? Icons.emoji_events_rounded
-                : Icons.flag_rounded,
+            Icons.emoji_events_rounded,
             size: 18,
-            color: _progress == widget.count
-                ? colors.primary
-                : colors.onSurfaceVariant,
+            color: colors.onSurfaceVariant,
           ),
           const SizedBox(width: 8),
           Text(
-            '$_progress/${widget.count}',
+            '$_progress/TODO',
             style: theme.textTheme.labelLarge?.copyWith(
               fontWeight: FontWeight.w700,
             ),
@@ -244,12 +232,32 @@ class _LessonTrackPageState extends State<LessonTrackPage> {
   }
 
   Future<void> _openPuzzle(int index, SudokuModel model) async {
+    // If the model includes tutorial steps, construct a TutorialController
+    // and provide it before opening the puzzle so SudokuHomePage can show it.
+    final hasTutorial = model.tutorial != null && model.tutorial!.isNotEmpty;
+
     final result = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
-        builder: (_) => ChangeNotifierProvider<SudokuBoardState>(
-          create: (_) => SudokuBoardState()..requestInitPuzzle(model),
-          child: const SudokuHomePage(),
-        ),
+        builder: (_) {
+          return MultiProvider(
+            providers: [
+              ChangeNotifierProvider<SudokuBoardState>(
+                create: (_) =>
+                    SudokuBoardState(showNotes: false, autoFinish: false)
+                      ..requestInitPuzzle(model),
+              ),
+              if (hasTutorial)
+                ChangeNotifierProvider<TutorialController>(
+                  create: (_) => TutorialController(
+                    steps: [
+                      for (final m in model.tutorial!) TutorialStep.fromJson(m),
+                    ],
+                  ),
+                ),
+            ],
+            child: const SudokuHomePage(),
+          );
+        },
       ),
     );
     if (result == true) {

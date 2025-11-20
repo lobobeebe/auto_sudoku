@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:auto_sudoku/ui/pages/lesson_sudoku_page.dart';
-import 'package:auto_sudoku/ui/pages/lesson_naked_singles_page.dart';
-import 'package:auto_sudoku_solver/auto_sudoku_solver.dart';
 import 'package:auto_sudoku/ui/pages/lesson_track_page.dart';
 
 class LearningJourneyPage extends StatefulWidget {
@@ -19,35 +16,28 @@ class _LearningJourneyPageState extends State<LearningJourneyPage>
   )..forward();
   final ScrollController _scrollController = ScrollController();
 
-  final List<_Lesson> _lessons = const [
-    _Lesson(
-      title: 'Basics & Hidden Singles',
+  final List<Lesson> _lessons = const [
+    Lesson(
+      title: 'The Basics',
       icon: Icons.grid_on_rounded,
-      description: 'Understand how numbers fit in rows and columns.',
+      shortDesc: "Fundamentals and Hidden Singles",
+      description:
+          'Start with fundamentals, then practice your first strategy - Hidden Singles.',
       status: LessonStatus.inProgress,
-      colorIndex: 0,
+      path: "assets/puzzles/lessons/the_basics.json",
     ),
-    _Lesson(
-      title: 'Notes & Naked Singles',
-      icon: Icons.looks_one_rounded,
-      description: 'Spot cells with only one possible value.',
-      status: LessonStatus.inProgress,
-      colorIndex: 1,
-    ),
-    _Lesson(
-      title: 'Locked Candidates',
-      icon: Icons.lock_rounded,
-      description: 'Reduce possibilities using locked candidate rules.',
-      status: LessonStatus.comingSoon,
-      colorIndex: 2,
-    ),
-    _Lesson(
-      title: 'Pairs & Triples',
-      icon: Icons.all_inclusive_rounded,
-      description: 'Use naked/hidden pairs and triples to advance.',
-      status: LessonStatus.comingSoon,
-      colorIndex: 3,
-    ),
+    // _Lesson(
+    //   title: 'Hidden Singles',
+    //   icon: Icons.filter_1_rounded,
+    //   description: '20 puzzles solvable using only Hidden Singles.',
+    //   status: LessonStatus.inProgress,
+    // ),
+    // _Lesson(
+    //   title: 'Naked Singles',
+    //   icon: Icons.looks_one_rounded,
+    //   description: '20 puzzles solvable using only Naked Singles.',
+    //   status: LessonStatus.inProgress,
+    // ),
   ];
 
   @override
@@ -137,7 +127,7 @@ class _LearningJourneyPageState extends State<LearningJourneyPage>
 }
 
 class _JourneyTrack extends StatelessWidget {
-  final List<_Lesson> lessons;
+  final List<Lesson> lessons;
   final AnimationController controller;
   final ScrollController scrollController;
 
@@ -182,28 +172,8 @@ class _JourneyTrack extends StatelessWidget {
                   child: _LessonNode(
                     lesson: lesson,
                     alignLeft: alignLeft,
-                    color: _paletteForIndex(colors, lesson.colorIndex),
-                    onTap: () {
-                      if (index == 0) {
-                        _openLessonTrack(
-                          context,
-                          title: 'Hidden Singles Practice',
-                          techniqueName: 'Hidden Single',
-                        );
-                      } else if (index == 1) {
-                        _openLessonTrack(
-                          context,
-                          title: 'Naked Singles Practice',
-                          techniqueName: 'Naked Single',
-                        );
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('"${lesson.title}" coming soon'),
-                          ),
-                        );
-                      }
-                    },
+                    color: _paletteForIndex(colors, index),
+                    onTap: () => _openLessonTrack(context, lesson: lesson),
                   ),
                 ),
                 if (alignLeft) const Spacer(),
@@ -231,7 +201,7 @@ class _JourneyTrack extends StatelessWidget {
 }
 
 class _LessonNode extends StatelessWidget {
-  final _Lesson lesson;
+  final Lesson lesson;
   final bool alignLeft;
   final Color color;
   final VoidCallback onTap;
@@ -259,7 +229,6 @@ class _LessonNode extends StatelessWidget {
 
     final locked = lesson.status == LessonStatus.locked;
     final comingSoon = lesson.status == LessonStatus.comingSoon;
-    final inProgress = lesson.status == LessonStatus.inProgress;
     final completed = lesson.status == LessonStatus.completed;
 
     return InkWell(
@@ -296,19 +265,6 @@ class _LessonNode extends StatelessWidget {
                   alignment: Alignment.center,
                   children: [
                     Icon(lesson.icon, size: 28, color: color),
-                    if (inProgress)
-                      SizedBox(
-                        width: 52,
-                        height: 52,
-                        child: CircularProgressIndicator(
-                          value: lesson.progress,
-                          strokeWidth: 3,
-                          color: color,
-                          backgroundColor: colors.outlineVariant.withValues(
-                            alpha: 0.4,
-                          ),
-                        ),
-                      ),
                     if (completed)
                       Positioned(
                         right: -2,
@@ -344,7 +300,7 @@ class _LessonNode extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      lesson.description,
+                      lesson.shortDesc,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: (locked || comingSoon)
                             ? theme.disabledColor
@@ -373,11 +329,7 @@ class _LessonNode extends StatelessWidget {
   }
 }
 
-void _openLessonTrack(
-  BuildContext context, {
-  required String title,
-  required String techniqueName,
-}) {
+void _openLessonTrack(BuildContext context, {required Lesson lesson}) {
   Navigator.of(context).push(
     PageRouteBuilder<void>(
       transitionDuration: const Duration(milliseconds: 420),
@@ -393,83 +345,7 @@ void _openLessonTrack(
               begin: const Offset(0, 0.06),
               end: Offset.zero,
             ).animate(curved),
-            child: LessonTrackPage(
-              title: title,
-              techniqueName: techniqueName,
-            ),
-          ),
-        );
-      },
-    ),
-  );
-}
-
-void _openLesson1(BuildContext context) {
-  const puzzle =
-      '000250001900730208000109400002576804749813652508942300097605000320497006600380000';
-  const solution =
-      '476258931915734268283169475132576894749813652568942317897625143321497586654381729';
-
-  final model = SudokuModel(
-    puzzle: puzzle,
-    solution: solution,
-    difficulty: Difficulty.easy,
-    techniques: const ['Naked Single', 'Hidden Single'],
-  );
-
-  Navigator.of(context).push(
-    PageRouteBuilder<void>(
-      transitionDuration: const Duration(milliseconds: 420),
-      pageBuilder: (context, animation, secondaryAnimation) {
-        final curved = CurvedAnimation(
-          parent: animation,
-          curve: Curves.easeOutCubic,
-        );
-        return FadeTransition(
-          opacity: curved,
-          child: SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(0, 0.06),
-              end: Offset.zero,
-            ).animate(curved),
-            child: LessonSudokuPage(model: model, showUnitTutorialOnOpen: true),
-          ),
-        );
-      },
-    ),
-  );
-}
-
-void _openNakedSinglesLesson(BuildContext context) {
-  // Reuse an Easy puzzle that exposes several Naked Singles early
-  const puzzle =
-      '000250001900730208000109400002576804749813652508942300097605000320497006600380000';
-  const solution =
-      '476258931915734268283169475132576894749813652568942317897625143321497586654381729';
-
-  final model = SudokuModel(
-    puzzle: puzzle,
-    solution: solution,
-    difficulty: Difficulty.easy,
-    techniques: const ['Naked Single'],
-  );
-
-  Navigator.of(context).push(
-    PageRouteBuilder<void>(
-      transitionDuration: const Duration(milliseconds: 420),
-      pageBuilder: (context, animation, secondaryAnimation) {
-        final curved = CurvedAnimation(
-          parent: animation,
-          curve: Curves.easeOutCubic,
-        );
-        return FadeTransition(
-          opacity: curved,
-          child: SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(0, 0.06),
-              end: Offset.zero,
-            ).animate(curved),
-            child: LessonNakedSinglesPage(model: model),
+            child: LessonTrackPage(lesson: lesson),
           ),
         );
       },
@@ -505,20 +381,20 @@ class _BlurOrb extends StatelessWidget {
 
 enum LessonStatus { completed, inProgress, locked, comingSoon }
 
-class _Lesson {
+class Lesson {
   final String title;
+  final String shortDesc;
   final String description;
   final IconData icon;
   final LessonStatus status;
-  final double progress; // 0..1 if inProgress
-  final int colorIndex;
+  final String path;
 
-  const _Lesson({
+  const Lesson({
     required this.title,
     required this.icon,
+    required this.shortDesc,
     required this.description,
     required this.status,
-    this.progress = 0.0,
-    this.colorIndex = 0,
+    required this.path,
   });
 }

@@ -1,4 +1,4 @@
-import 'package:auto_sudoku_solver/auto_sudoku_solver.dart';
+import 'package:auto_sudoku_solver/src/hint.dart';
 
 class Sudoku {
   static const size = 9;

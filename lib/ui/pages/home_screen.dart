@@ -3,6 +3,9 @@ import 'package:auto_sudoku/ui/pages/difficulty_selection_page.dart';
 import 'package:auto_sudoku/ui/pages/learning_journey_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:auto_sudoku/ui/utils/feedback.dart';
 import 'package:auto_sudoku/ui/pages/strategy_settings_page.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -60,11 +63,14 @@ class HomeScreen extends StatelessWidget {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
+                      GestureDetector(
+                        onLongPress: () => _debugResetProgress(context),
+                        child: Icon(
                           Icons.grid_view_rounded,
                           size: 64,
                           color: colorScheme.primary,
                         ),
+                      ),
                         const SizedBox(height: 24),
                         Text(
                           'Auto Sudoku',
@@ -235,4 +241,32 @@ void _openStrategySettings(BuildContext context) {
       },
     ),
   );
+}
+
+Future<void> _debugResetProgress(BuildContext context) async {
+  if (!kDebugMode) return;
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    // Known lesson track keys
+    const keys = <String>{
+      'lesson_track_hidden_single_completed',
+      'lesson_track_naked_single_completed',
+    };
+    for (final k in keys) {
+      await prefs.remove(k);
+    }
+    showToast(
+      context,
+      Row(
+        mainAxisSize: MainAxisSize.min,
+        children: const [
+          Icon(Icons.restart_alt_rounded),
+          SizedBox(width: 10),
+          Text('Progress reset. Lessons cleared.'),
+        ],
+      ),
+    );
+  } catch (_) {
+    // Ignore errors silently in debug
+  }
 }

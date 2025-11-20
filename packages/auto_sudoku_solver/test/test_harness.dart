@@ -1,4 +1,4 @@
-import 'package:auto_sudoku_solver/auto_sudoku_solver.dart';
+import 'package:auto_sudoku_solver/src/sudoku.dart';
 
 /// Utility: build a Sudoku with all zeros and a CandidateMap from a list of sets.
 /// Adjust construction if your real Sudoku / CandidateMap have different APIs.

@@ -3,7 +3,6 @@ import 'package:auto_sudoku_solver/src/strategy/locked_strategy.dart';
 import 'package:auto_sudoku_solver/src/strategy/naked_strategy.dart';
 import 'package:auto_sudoku_solver/src/strategy/wing_strategy.dart';
 
-import 'difficulty.dart';
 import 'hint.dart';
 import 'rating.dart';
 import 'solve_result.dart';
@@ -881,13 +880,6 @@ class Solver {
       counts[st] = (counts[st] ?? 0) + 1;
       first.putIfAbsent(st, () => i);
     }
-    return Rating(
-      res.solved
-          ? Difficulty.trivial
-          : Difficulty
-                .impossible, // bucket is not used by distance; keep trivial placeholder
-      counts,
-      first,
-    );
+    return Rating(counts, first);
   }
 }

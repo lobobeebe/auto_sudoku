@@ -1,8 +1,8 @@
 import 'package:auto_sudoku/state/sudoku_board_state.dart';
+import 'package:auto_sudoku_solver/auto_sudoku_solver.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:auto_sudoku_solver/auto_sudoku_solver.dart';
 
 class TutorialStep {
   final Set<int> maskRows;
@@ -65,129 +65,161 @@ class TutorialStep {
       maskCols.isNotEmpty ||
       maskBoxes.isNotEmpty ||
       cells.isNotEmpty;
-}
 
-class TutorialOverlay extends StatefulWidget {
-  final List<TutorialStep> steps;
-  final VoidCallback? onDone;
+  // Deserialize a step from JSON.
+  // Supported keys:
+  // - title, body, centerDialog, enableActionBar, preventGridTaps
+  // - maskRows, maskCols, maskBoxes, cells, maskIndices, selectedIndices,
+  //   advanceOnIndices, tappableIndices (all arrays of ints)
+  // - advanceOnValue (int)
+  // - solver: { allowed: [StrategyType names or labels] }
+  factory TutorialStep.fromJson(Map<String, dynamic> json) {
+    Set<int> set(dynamic v) {
+      final list = (v is List) ? v : const <dynamic>[];
+      return list
+          .map((e) => int.tryParse(e.toString()))
+          .whereType<int>()
+          .toSet();
+    }
 
-  const TutorialOverlay({super.key, required this.steps, this.onDone});
+    SolverSettings? solverSettings;
+    final solver = json['solver'];
+    if (solver is Map) {
+      final allowedRaw = solver['allowed'];
+      if (allowedRaw is List) {
+        final allowed = <StrategyType>{};
+        for (final item in allowedRaw) {
+          final s = item.toString();
+          // Match by enum name or toString label
+          StrategyType? match;
+          for (final t in StrategyType.values) {
+            if (t.name.toLowerCase() == s.toLowerCase() ||
+                t.toString().toLowerCase() == s.toLowerCase()) {
+              match = t;
+              break;
+            }
+          }
+          if (match != null) allowed.add(match);
+        }
+        solverSettings = SolverSettings(allowed: allowed);
+      }
+    }
 
-  @override
-  State<TutorialOverlay> createState() => _TutorialOverlayState();
+    return TutorialStep(
+      title: (json['title'] ?? '').toString(),
+      body: (json['body'] ?? '').toString(),
+      centerDialog: json['centerDialog'] == true,
+      enableActionBar: json['enableActionBar'] == true,
+      preventGridTaps: json['preventGridTaps'] != false, // default true
+      advanceOnValue: json['advanceOnValue'] is int
+          ? json['advanceOnValue'] as int
+          : int.tryParse(json['advanceOnValue']?.toString() ?? ''),
+      maskRows: set(json['maskRows']),
+      maskCols: set(json['maskCols']),
+      maskBoxes: set(json['maskBoxes']),
+      cells: set(json['cells']),
+      maskIndices: set(json['maskIndices']).isEmpty
+          ? null
+          : set(json['maskIndices']),
+      selectedIndices: set(json['selectedIndices']).isEmpty
+          ? null
+          : set(json['selectedIndices']),
+      advanceOnIndices: set(json['advanceOnIndices']).isEmpty
+          ? null
+          : set(json['advanceOnIndices']),
+      tappableIndices: set(json['tappableIndices']).isEmpty
+          ? null
+          : set(json['tappableIndices']),
+      solverSettings: solverSettings,
+    );
+  }
 }
 
 /// Shared controller so overlay mask and bottom panel stay in sync
 class TutorialController extends ChangeNotifier {
   final List<TutorialStep> steps;
   int index;
-  final VoidCallback? onDone;
+  bool _isDone = false;
 
-  TutorialController({required this.steps, this.index = 0, this.onDone});
+  TutorialController({required this.steps, this.index = 0});
 
   TutorialStep get current => steps[index];
   bool get hasPrev => index > 0;
   bool get hasNext => index < steps.length - 1;
+  bool get isDone => _isDone;
 
   void next() {
     if (hasNext) {
       index++;
       notifyListeners();
     } else {
-      onDone?.call();
+      _isDone = true;
+      notifyListeners();
     }
   }
 
   void back() {
     if (hasPrev) {
       index--;
+      _isDone = false;
       notifyListeners();
+    }
+  }
+
+  static TutorialController? of(BuildContext context) {
+    try {
+      return Provider.of<TutorialController>(context);
+    } catch (_) {
+      return null;
     }
   }
 }
 
 /// Grid-only mask that can be used with [TutorialController]
-class GridMaskOverlay extends StatefulWidget {
-  final TutorialController controller;
-  const GridMaskOverlay({super.key, required this.controller});
-
-  @override
-  State<GridMaskOverlay> createState() => _GridMaskOverlayState();
-}
-
-class _GridMaskOverlayState extends State<GridMaskOverlay> {
-  int _lastIndex = -1;
-  // Snapshot of the board at the time each step is first entered.
-  final List<BoardSnapshot?> _stepSnapshots = <BoardSnapshot?>[];
+class GridMaskOverlay extends StatelessWidget {
+  const GridMaskOverlay({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final controller = TutorialController.of(context);
+
+    if (controller == null || controller.isDone) {
+      return SizedBox.shrink();
+    }
+
     return AnimatedBuilder(
-      animation: widget.controller,
+      animation: controller,
       builder: (context, _) {
         final board = Provider.of<SudokuBoardState>(context, listen: false);
-        // Ensure we can store snapshots for all tutorial steps
-        final stepsLen = widget.controller.steps.length;
-        if (_stepSnapshots.length < stepsLen) {
-          _stepSnapshots.length = stepsLen;
+        final enterStep = controller.current;
+
+        if (enterStep.selectedIndices != null) {
+          // Defer mutation + notify to after this build to avoid
+          // setState/notify during build exceptions.
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            board.selectedIndices
+              ..clear()
+              ..addAll(enterStep.selectedIndices!);
+            board.emitChange();
+          });
         }
 
-        // Step-change hook: run enter behaviors once when index changes
-        if (_lastIndex != widget.controller.index) {
-          final newIndex = widget.controller.index;
-
-          // If navigating backward, restore to the saved snapshot for that step
-          if (_lastIndex >= 0 && newIndex < _lastIndex) {
-            final snap = _stepSnapshots[newIndex] ?? board.makeSnapshot();
-            // Defer restoration to after this frame to avoid setState during build
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              int guard = 200;
-              while (!board.sudoku.equals(snap.sudoku) && guard-- > 0) {
-                if (!board.undo()) break;
-              }
-            });
-          }
-
-          _lastIndex = newIndex;
-          final enterStep = widget.controller.current;
-
-          // If first time entering this step, record a snapshot
-          if (_stepSnapshots[_lastIndex] == null) {
-            _stepSnapshots[_lastIndex] = board.makeSnapshot();
-          }
-          if (enterStep.selectedIndices != null) {
-            // Defer mutation + notify to after this build to avoid
-            // setState/notify during build exceptions.
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              board.selectedIndices
-                ..clear()
-                ..addAll(enterStep.selectedIndices!);
-              board.emitChange();
-            });
-          }
-        }
-
-        // Determine which areas should be allowed for this step.
-        final logicalStep = widget.controller.current;
         // Apply per-step solver settings (default to none if not provided)
         board.applyTutorialSolverSettings(
-          logicalStep.solverSettings ?? const SolverSettings(),
+          enterStep.solverSettings ?? const SolverSettings(),
         );
-        final maskBase = _stepForMask(
-          widget.controller.steps,
-          widget.controller.index,
-        );
+        final maskBase = _stepForMask(controller.steps, controller.index);
         return LayoutBuilder(
           builder: (context, constraints) {
             final size = Size(constraints.maxWidth, constraints.maxHeight);
             final grid = _gridRect(size);
             // Build allowed rects: if explicit mask indices are provided,
             // they take precedence. Otherwise, use the step's units/cells.
-            final allowedRects = logicalStep.maskIndices != null
+            final allowedRects = enterStep.maskIndices != null
                 ? _computeVisualRects(
                     grid,
                     TutorialStep(
-                      cells: logicalStep.maskIndices!,
+                      cells: enterStep.maskIndices!,
                       title: '',
                       body: '',
                     ),
@@ -201,9 +233,9 @@ class _GridMaskOverlayState extends State<GridMaskOverlay> {
                 ),
                 _TouchShield(
                   gridRect: grid,
-                  step: logicalStep,
+                  step: enterStep,
                   board: board,
-                  controller: widget.controller,
+                  controller: controller,
                 ),
               ],
             );
@@ -216,72 +248,100 @@ class _GridMaskOverlayState extends State<GridMaskOverlay> {
 
 /// Bottom panel suitable for above the Action Bar
 class TutorialPanel extends StatelessWidget {
-  final TutorialController controller;
-  const TutorialPanel({super.key, required this.controller});
+  const TutorialPanel({super.key});
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    return AnimatedBuilder(
-      animation: controller,
-      builder: (context, _) {
-        final step = controller.current;
-        final canGoNext =
-            controller.hasNext &&
-            step.advanceOnValue == null &&
-            (step.advanceOnIndices == null || step.advanceOnIndices!.isEmpty);
-        return Card(
-          elevation: 3,
-          color: colors.surfaceContainerHighest,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 12, 12),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  step.title,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  step.body,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: colors.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    IconButton.filledTonal(
-                      tooltip: 'Back',
-                      onPressed: controller.hasPrev ? controller.back : null,
-                      icon: const Icon(Icons.arrow_back_rounded),
-                    ),
-                    const Spacer(),
-                    if (controller.hasNext)
-                      IconButton.filled(
-                        tooltip: 'Next',
-                        onPressed: canGoNext ? controller.next : null,
-                        icon: const Icon(Icons.arrow_forward_rounded),
-                      )
-                    else
-                      IconButton.filled(
-                        onPressed: controller.next,
-                        icon: const Icon(Icons.check_rounded),
+    final controller = TutorialController.of(context);
+
+    if (controller == null || controller.isDone) {
+      return SizedBox.shrink();
+    }
+
+    bool center = controller.current.centerDialog;
+
+    return Positioned.fill(
+      child: IgnorePointer(
+        ignoring: false,
+        child: SafeArea(
+          child: Align(
+            alignment: center ? Alignment.center : Alignment.bottomCenter,
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1120),
+                child: AnimatedBuilder(
+                  animation: controller,
+                  builder: (context, _) {
+                    final step = controller.current;
+                    final canGoNext =
+                        controller.hasNext &&
+                        step.advanceOnValue == null &&
+                        (step.advanceOnIndices == null ||
+                            step.advanceOnIndices!.isEmpty);
+                    return Card(
+                      elevation: 3,
+                      color: colors.surfaceContainerHighest,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
                       ),
-                  ],
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 14, 12, 12),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              step.title,
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.w700),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              step.body,
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(color: colors.onSurfaceVariant),
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                IconButton.filledTonal(
+                                  tooltip: 'Back',
+                                  onPressed: controller.hasPrev
+                                      ? controller.back
+                                      : null,
+                                  icon: const Icon(Icons.arrow_back_rounded),
+                                ),
+                                const Spacer(),
+                                if (controller.hasNext)
+                                  IconButton.filled(
+                                    tooltip: 'Next',
+                                    onPressed: canGoNext
+                                        ? controller.next
+                                        : null,
+                                    icon: const Icon(
+                                      Icons.arrow_forward_rounded,
+                                    ),
+                                  )
+                                else
+                                  IconButton.filled(
+                                    onPressed: controller.next,
+                                    icon: const Icon(Icons.check_rounded),
+                                  ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 ),
-              ],
+              ),
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }
@@ -371,143 +431,6 @@ class TutorialStepDialog extends StatelessWidget {
   }
 }
 
-/// Centered dialog overlay that listens to the same TutorialController
-/// and only renders for steps marked with `centerDialog`.
-class CenterDialogOverlay extends StatelessWidget {
-  final TutorialController controller;
-  const CenterDialogOverlay({super.key, required this.controller});
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: controller,
-      builder: (context, _) {
-        final step = controller.current;
-        if (!step.centerDialog) return const SizedBox.shrink();
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            final size = Size(constraints.maxWidth, constraints.maxHeight);
-            final grid = _gridRect(size);
-            return Stack(
-              fit: StackFit.expand,
-              children: [
-                // The grid mask is painted by GridMaskOverlay; this widget
-                // focuses on presenting a centered dialog.
-                Align(
-                  alignment: Alignment.center,
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(maxWidth: grid.width * 0.7),
-                    child: TutorialStepDialog(
-                      title: step.title,
-                      body: step.body,
-                      hasPrev: controller.hasPrev,
-                      hasNext: controller.hasNext,
-                      onBack: controller.back,
-                      onNext:
-                          (step.advanceOnValue == null &&
-                              (step.advanceOnIndices == null ||
-                                  step.advanceOnIndices!.isEmpty))
-                          ? controller.next
-                          : null,
-                      showDoneLabel: true,
-                      padding: const EdgeInsets.fromLTRB(20, 16, 16, 14),
-                      elevation: 10,
-                    ),
-                  ),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-}
-
-class _TutorialOverlayState extends State<TutorialOverlay> {
-  int _index = 0;
-
-  void _next() {
-    if (_index < widget.steps.length - 1) {
-      setState(() => _index++);
-    } else {
-      widget.onDone?.call();
-    }
-  }
-
-  void _back() {
-    if (_index > 0) setState(() => _index--);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final displayStep = widget.steps[_index];
-    final maskStep = _stepForMask(widget.steps, _index);
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final board = Provider.of<SudokuBoardState>(context, listen: false);
-        final size = Size(constraints.maxWidth, constraints.maxHeight);
-        final grid = _gridRect(size);
-        final allowedRects = _computeVisualRects(grid, maskStep);
-        final union = _unionRect(allowedRects);
-
-        // Decide dialog placement opposite the union center (within grid)
-        final gridCenter = grid.center;
-        final center = union?.center ?? gridCenter;
-        final placeTop = center.dy > gridCenter.dy;
-        final placeLeft = center.dx > gridCenter.dx;
-        final alignment = Alignment(
-          placeLeft ? -0.9 : 0.9,
-          placeTop ? -0.9 : 0.9,
-        );
-
-        return Stack(
-          fit: StackFit.expand,
-          children: [
-            // Dimmer with cutouts
-            CustomPaint(
-              painter: _OverlayPainter(allowed: allowedRects, grid: grid),
-            ),
-
-            // Capture touches and forward only inside allowed
-            _TouchShield(
-              gridRect: grid,
-              step: maskStep,
-              board: board,
-              controller: null,
-            ),
-
-            // Small dialog
-            Align(
-              alignment: alignment,
-              child: ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: grid.width * 0.58),
-                child: TutorialStepDialog(
-                  title: displayStep.title,
-                  body: displayStep.body,
-                  hasPrev: _index > 0,
-                  hasNext: _index < widget.steps.length - 1,
-                  onBack: _back,
-                  onNext:
-                      (displayStep.advanceOnValue == null &&
-                          (displayStep.advanceOnIndices == null ||
-                              displayStep.advanceOnIndices!.isEmpty))
-                      ? _next
-                      : null,
-                  showDoneLabel: true,
-                  padding: const EdgeInsets.fromLTRB(16, 14, 12, 12),
-                  elevation: 8,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
 // Visual clear areas (rounded rects) with a bit of padding outside the unit
 List<RRect> _computeVisualRects(Rect grid, TutorialStep step) {
   final w = grid.width / 9;
@@ -592,15 +515,6 @@ TutorialStep _stepForMask(List<TutorialStep> steps, int index) {
   return steps[index];
 }
 
-Rect? _unionRect(List<RRect> rects) {
-  if (rects.isEmpty) return null;
-  Rect? u;
-  for (final r in rects) {
-    u = u == null ? r.outerRect : u.expandToInclude(r.outerRect);
-  }
-  return u;
-}
-
 class _OverlayPainter extends CustomPainter {
   final List<RRect> allowed;
   final Rect grid;
@@ -665,7 +579,8 @@ class _TouchShield extends StatelessWidget {
     if (step.maskIndices != null) {
       baseAllowed = step.maskIndices!.contains(idx);
     } else {
-      baseAllowed = step.cells.contains(idx) ||
+      baseAllowed =
+          step.cells.contains(idx) ||
           step.maskRows.contains(row) ||
           step.maskCols.contains(col) ||
           step.maskBoxes.contains(box);
@@ -682,8 +597,7 @@ class _TouchShield extends StatelessWidget {
     }
 
     // Further restrict with explicit tappable indices if provided.
-    if (step.tappableIndices != null &&
-        !step.tappableIndices!.contains(idx)) {
+    if (step.tappableIndices != null && !step.tappableIndices!.contains(idx)) {
       return false;
     }
 

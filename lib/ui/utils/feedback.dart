@@ -26,7 +26,6 @@ void showToast(
   _dismissActiveToast();
 
   final overlay = Overlay.of(context);
-  if (overlay == null) return;
 
   // Use NavigatorState as a TickerProvider for vsync
   final vsync = Navigator.of(context);

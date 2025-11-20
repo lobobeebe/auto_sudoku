@@ -1,5 +1,6 @@
+import 'package:auto_sudoku_solver/src/hint.dart';
+import 'package:auto_sudoku_solver/src/strategy/strategy.dart';
 import 'package:test/test.dart';
-import 'package:auto_sudoku_solver/src/sudoku_tool.dart';
 import 'package:auto_sudoku_solver/src/strategy/naked_strategy.dart';
 
 import 'test_harness.dart';
