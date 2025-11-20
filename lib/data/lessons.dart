@@ -42,6 +42,7 @@ class Lessons {
       path: "assets/puzzles/lessons/open_singles.json",
       preReqLesson: theBasics.title,
     ),
+    easyStrategies,
     Lesson(
       title: 'Open Sets',
       icon: Icons.looks_two_rounded,

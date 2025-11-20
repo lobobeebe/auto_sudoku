@@ -1,0 +1,100 @@
+[
+    {
+        "id": "BBzjHm",
+        "puzzle": "590183700060004008700000000410000000326000174000000039000000007200500060001427083",
+        "solution": "592183746163754298748962315419376852326895174875241639934618527287539461651427983",
+        "techniques": {
+            "Naked Single": 51,
+            "Naked Pair": 5
+        },
+        "tutorial": {
+            "showNotes": true,
+            "steps": [
+                {
+                    "centerDialog": true,
+                    "title": "Open Pair",
+                    "body": "Our next strategy is called the Open Pair. When exactly two cells in a unit share the same two candidates, no other cells in that unit can share those candidates. Let's take a look!"
+                },
+                {
+                    "title": "Spot the Pair",
+                    "body": "In the top row, two cells share candidates 2 and 4 — an Open Pair.",
+                    "maskRows": [
+                        0
+                    ]
+                },
+                {
+                    "title": "Why it Works",
+                    "body": "Logically, one of these two cells must be 2 and the other must be 4. If we placed a 2 on the left cell, the other must be 4. If we placed a 2 on the right cell, the other must be 4. That means the 2 and 4 can't be anywhere else in the row!",
+                    "maskRows": [
+                        0
+                    ]
+                },
+                {
+                    "title": "First Open Pair",
+                    "body": "Here's where selecting multiple empty cells comes in! We are going to select the evidence of our strategy. First select one of the two cells with candidates 2 and 4, then select the other.",
+                    "maskRows": [
+                        0
+                    ],
+                    "solver": {
+                        "allowed": [
+                            "Naked Pair"
+                        ]
+                    },
+                    "preventGridTaps": false
+                },
+                {
+                    "title": "Quick Single",
+                    "body": "Before the next pair appears, press Hint then Apply to place this Naked Single.",
+                    "maskIndices": [
+                        9
+                    ],
+                    "enableActionBar": true,
+                    "solver": {
+                        "allowed": [
+                            "Naked Single"
+                        ]
+                    }
+                },
+                {
+                    "title": "One More Single",
+                    "body": "Press Hint then Apply once more to place the next Naked Single.",
+                    "maskIndices": [
+                        45
+                    ],
+                    "enableActionBar": true,
+                    "solver": {
+                        "allowed": [
+                            "Naked Single"
+                        ]
+                    }
+                },
+                {
+                    "title": "Second Naked Pair",
+                    "body": "Now in this row, two cells share candidates 5 and 7 — tap either cell of this Naked Pair.",
+                    "maskRows": [
+                        5
+                    ],
+                    "preventGridTaps": false,
+                    "solver": {
+                        "allowed": [
+                            "Naked Pair"
+                        ]
+                    },
+                    "tappableIndices": [
+                        46,
+                        47
+                    ],
+                    "advanceOnIndices": [
+                        46,
+                        47
+                    ]
+                },
+                {
+                    "centerDialog": true,
+                    "title": "Great Work",
+                    "body": "You identified two Naked Pairs. Use them to prune candidates and set up more singles and pairs as you continue."
+                }
+            ]
+        }
+    }
+]
