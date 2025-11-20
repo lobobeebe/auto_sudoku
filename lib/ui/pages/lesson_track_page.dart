@@ -1,19 +1,20 @@
+import 'package:auto_sudoku/data/lesson.dart';
 import 'package:auto_sudoku/data/puzzle_repository.dart';
+import 'package:auto_sudoku/state/lesson_progress.dart';
 import 'package:auto_sudoku/state/sudoku_board_state.dart';
-import 'package:auto_sudoku/ui/pages/learning_journey_page.dart';
 import 'package:auto_sudoku/ui/pages/sudoku_home_page.dart';
 import 'package:auto_sudoku/ui/widgets/puzzle_icon_button.dart';
 import 'package:auto_sudoku/ui/widgets/tutorial_overlay.dart';
 import 'package:auto_sudoku/ui/widgets/background_orb.dart';
 import 'package:auto_sudoku/ui/widgets/common_container.dart';
 import 'package:auto_sudoku_solver/auto_sudoku_solver.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+// import 'package:shared_preferences/shared_preferences.dart';
 
 class LessonTrackPage extends StatefulWidget {
   final Lesson lesson;
-
   const LessonTrackPage({super.key, required this.lesson});
 
   @override
@@ -21,43 +22,23 @@ class LessonTrackPage extends StatefulWidget {
 }
 
 class _LessonTrackPageState extends State<LessonTrackPage> {
-  late Future<List<SudokuModel>> _future;
-  int _progress = 0; // number of puzzles completed
+  late final Future<List<SudokuModel>> _puzzleFuture;
 
   @override
   void initState() {
     super.initState();
-    _loadProgress();
-    final repo = context.read<PuzzleRepository>();
 
-    _future = repo.loadAssetFile(widget.lesson.path);
+    _puzzleFuture = context.read<PuzzleRepository>().loadAssetFile(
+      widget.lesson.path,
+    );
   }
-
-  String get _prefsKey => '${_slug(widget.lesson.title)}_completed';
-
-  Future<void> _loadProgress() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() => _progress = prefs.getInt(_prefsKey) ?? 0);
-  }
-
-  Future<void> _saveProgress(int next) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_prefsKey, next);
-    setState(() => _progress = next);
-  }
-
-  static String _slug(String input) => input
-      .toLowerCase()
-      .replaceAll(RegExp(r"[^a-z0-9]+"), '_')
-      .replaceAll(RegExp(r"_+"), '_')
-      .replaceAll(RegExp(r"^_+|_+$"), '');
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-
-    return Scaffold(
+    // Build the page content once. Provider must exist above this widget.
+    final page = Scaffold(
       backgroundColor: colors.surface,
       body: Stack(
         children: [
@@ -115,7 +96,7 @@ class _LessonTrackPageState extends State<LessonTrackPage> {
                   const SizedBox(height: 18),
                   Expanded(
                     child: FutureBuilder<List<SudokuModel>>(
-                      future: _future,
+                      future: _puzzleFuture,
                       builder: (context, snapshot) {
                         if (snapshot.connectionState != ConnectionState.done) {
                           return const Center(
@@ -137,6 +118,12 @@ class _LessonTrackPageState extends State<LessonTrackPage> {
                           );
                         }
                         final puzzles = snapshot.data ?? const <SudokuModel>[];
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          context.read<LessonProgress>().setTotal(
+                            widget.lesson,
+                            puzzles.length,
+                          );
+                        });
                         return Center(
                           child: ConstrainedBox(
                             constraints: const BoxConstraints(maxWidth: 820),
@@ -147,7 +134,7 @@ class _LessonTrackPageState extends State<LessonTrackPage> {
                                 runSpacing: 18,
                                 children: [
                                   for (int i = 0; i < puzzles.length; i++)
-                                    _animatedIcon(i, puzzles[i]),
+                                    _animatedIcon(context, i, puzzles[i]),
                                 ],
                               ),
                             ),
@@ -156,7 +143,7 @@ class _LessonTrackPageState extends State<LessonTrackPage> {
                       },
                     ),
                   ),
-                  _buildProgressChip(theme),
+                  _buildProgressChip(context, theme),
                 ],
               ),
             ),
@@ -164,12 +151,15 @@ class _LessonTrackPageState extends State<LessonTrackPage> {
         ],
       ),
     );
+
+    return page;
   }
 
-  Widget _buildIcon(int index, SudokuModel model) {
-    final completed = index < _progress;
-    final isCurrent = index == _progress;
-    final locked = index > _progress;
+  Widget _buildIcon(BuildContext context, int index, SudokuModel model) {
+    final prog = context.watch<LessonProgress>().progressFor(widget.lesson);
+    final completed = index < prog;
+    final isCurrent = index == prog;
+    final locked = index > prog;
 
     final state = completed
         ? PuzzleIconState.completed
@@ -178,71 +168,75 @@ class _LessonTrackPageState extends State<LessonTrackPage> {
     return PuzzleIconButton(
       number: index + 1,
       state: state,
-      onTap: locked ? null : () => _openPuzzle(index, model),
+      onTap: locked ? null : () => _openPuzzle(context, index, model),
     );
   }
 
-  Widget _animatedIcon(int index, SudokuModel model) {
+  Widget _animatedIcon(BuildContext context, int index, SudokuModel model) {
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.90, end: 1),
       duration: const Duration(milliseconds: 320),
       curve: Curves.easeOutBack,
       builder: (context, scale, child) =>
           Transform.scale(scale: scale, child: child),
-      child: _buildIcon(index, model),
+      child: _buildIcon(context, index, model),
     );
   }
 
-  Widget _buildProgressChip(ThemeData theme) {
+  Widget _buildProgressChip(BuildContext context, ThemeData theme) {
     final colors = theme.colorScheme;
-    return FutureBuilder(
-      future: _future,
-      builder: (context, snapshot) {
-        if (snapshot.hasError || !snapshot.hasData) {
-          return SizedBox();
-        }
-
-        final puzzles = snapshot.requireData;
-
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: colors.surface.withValues(alpha: 0.80),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: colors.outlineVariant.withValues(alpha: 0.24),
+    final progress = context.watch<LessonProgress>().progressFor(widget.lesson);
+    final total = context.watch<LessonProgress>().totalFor(widget.lesson);
+    return InkWell(
+      onLongPress: kDebugMode
+          ? () async {
+              await context.read<LessonProgress>().markAllCompleteForDebug(
+                widget.lesson,
+              );
+            }
+          : null,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: colors.surface.withValues(alpha: 0.80),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: colors.outlineVariant.withValues(alpha: 0.24),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 10,
+              offset: const Offset(0, 6),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.06),
-                blurRadius: 10,
-                offset: const Offset(0, 6),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.emoji_events_rounded,
+              size: 18,
+              color: colors.onSurfaceVariant,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '$progress/$total',
+              style: theme.textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.w700,
               ),
-            ],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.emoji_events_rounded,
-                size: 18,
-                color: colors.onSurfaceVariant,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                '$_progress/${puzzles.length}',
-                style: theme.textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  Future<void> _openPuzzle(int index, SudokuModel model) async {
+  Future<void> _openPuzzle(
+    BuildContext context,
+    int index,
+    SudokuModel model,
+  ) async {
     // If the model includes tutorial steps, construct a TutorialController
     // and provide it before opening the puzzle so SudokuHomePage can show it.
     final hasTutorial = model.tutorial != null;
@@ -274,8 +268,10 @@ class _LessonTrackPageState extends State<LessonTrackPage> {
       ),
     );
     if (result == true) {
-      final next = (_progress >= index + 1) ? _progress : index + 1;
-      await _saveProgress(next);
+      await context.read<LessonProgress>().markSolvedIndex(
+        widget.lesson,
+        index,
+      );
     }
   }
 }

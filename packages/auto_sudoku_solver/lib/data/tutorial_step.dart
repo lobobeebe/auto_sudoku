@@ -117,7 +117,9 @@ class TutorialStep {
       maskIndices: set(json['maskIndices']).isEmpty
           ? null
           : set(json['maskIndices']),
-      selectedIndices: set(json['selectedIndices']),
+      selectedIndices: json.containsKey('selectedIndices')
+          ? set(json['selectedIndices'])
+          : null,
       advanceOnIndices: set(json['advanceOnIndices']).isEmpty
           ? null
           : set(json['advanceOnIndices']),

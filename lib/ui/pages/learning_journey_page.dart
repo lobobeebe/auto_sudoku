@@ -1,5 +1,11 @@
+// import 'package:auto_sudoku/data/shared_prefs.dart';
+import 'package:auto_sudoku/data/lesson.dart';
+import 'package:auto_sudoku/data/lessons.dart';
 import 'package:flutter/material.dart';
 import 'package:auto_sudoku/ui/pages/lesson_track_page.dart';
+import 'package:auto_sudoku/state/lesson_progress.dart';
+import 'package:provider/provider.dart';
+// import 'package:shared_preferences/shared_preferences.dart';
 
 class LearningJourneyPage extends StatefulWidget {
   const LearningJourneyPage({super.key});
@@ -15,30 +21,6 @@ class _LearningJourneyPageState extends State<LearningJourneyPage>
     duration: const Duration(milliseconds: 700),
   )..forward();
   final ScrollController _scrollController = ScrollController();
-
-  final List<Lesson> _lessons = const [
-    Lesson(
-      title: 'The Basics',
-      icon: Icons.grid_on_rounded,
-      shortDesc: "Start with the Fundamentals",
-      description:
-          'Learn the fundamentals of Sudoku and the basic strategies to solve them.',
-      status: LessonStatus.inProgress,
-      path: "assets/puzzles/lessons/the_basics.json",
-    ),
-    // _Lesson(
-    //   title: 'Hidden Singles',
-    //   icon: Icons.filter_1_rounded,
-    //   description: '20 puzzles solvable using only Hidden Singles.',
-    //   status: LessonStatus.inProgress,
-    // ),
-    // _Lesson(
-    //   title: 'Naked Singles',
-    //   icon: Icons.looks_one_rounded,
-    //   description: '20 puzzles solvable using only Naked Singles.',
-    //   status: LessonStatus.inProgress,
-    // ),
-  ];
 
   @override
   void dispose() {
@@ -111,7 +93,6 @@ class _LearningJourneyPageState extends State<LearningJourneyPage>
                   const SizedBox(height: 16),
                   Expanded(
                     child: _JourneyTrack(
-                      lessons: _lessons,
                       controller: _controller,
                       scrollController: _scrollController,
                     ),
@@ -127,12 +108,10 @@ class _LearningJourneyPageState extends State<LearningJourneyPage>
 }
 
 class _JourneyTrack extends StatelessWidget {
-  final List<Lesson> lessons;
   final AnimationController controller;
   final ScrollController scrollController;
 
   const _JourneyTrack({
-    required this.lessons,
     required this.controller,
     required this.scrollController,
   });
@@ -147,8 +126,9 @@ class _JourneyTrack extends StatelessWidget {
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.only(bottom: 32, top: 12),
       itemBuilder: (context, index) {
-        final lesson = lessons[index];
+        final lesson = Lessons.all[index];
         final alignLeft = index.isEven; // Zig-zag left / right
+
         final curved = CurvedAnimation(
           parent: controller,
           curve: Interval(
@@ -157,6 +137,13 @@ class _JourneyTrack extends StatelessWidget {
             curve: Curves.easeOutCubic,
           ),
         );
+        // Shared provider is above; compute status using the multi-lesson API
+        final progress = context.watch<LessonProgress>();
+        final status = !progress.isPrereqDone(lesson)
+            ? LessonStatus.locked
+            : (progress.isDone(lesson)
+                  ? LessonStatus.completed
+                  : LessonStatus.inProgress);
         return FadeTransition(
           opacity: curved,
           child: SlideTransition(
@@ -169,13 +156,17 @@ class _JourneyTrack extends StatelessWidget {
                 if (!alignLeft) const Spacer(),
                 Flexible(
                   flex: 14,
-                  child: _LessonNode(
-                    lesson: lesson,
-                    alignLeft: alignLeft,
-                    color: _paletteForIndex(colors, index),
-                    onTap: () => _openLessonTrack(context, lesson: lesson),
+                  child: Builder(
+                    builder: (innerCtx) => _LessonNode(
+                      lesson: lesson,
+                      alignLeft: alignLeft,
+                      color: _paletteForIndex(colors, index),
+                      onTap: () => _openLessonTrack(innerCtx, lesson),
+                      status: status,
+                    ),
                   ),
                 ),
+
                 if (alignLeft) const Spacer(),
               ],
             ),
@@ -183,7 +174,7 @@ class _JourneyTrack extends StatelessWidget {
         );
       },
       separatorBuilder: (_, __) => const SizedBox(height: 22),
-      itemCount: lessons.length,
+      itemCount: Lessons.all.length,
     );
   }
 
@@ -205,12 +196,14 @@ class _LessonNode extends StatelessWidget {
   final bool alignLeft;
   final Color color;
   final VoidCallback onTap;
+  final LessonStatus status;
 
   const _LessonNode({
     required this.lesson,
     required this.alignLeft,
     required this.color,
     required this.onTap,
+    required this.status,
   });
 
   @override
@@ -227,9 +220,9 @@ class _LessonNode extends StatelessWidget {
       end: Alignment.bottomRight,
     );
 
-    final locked = lesson.status == LessonStatus.locked;
-    final comingSoon = lesson.status == LessonStatus.comingSoon;
-    final completed = lesson.status == LessonStatus.completed;
+    final locked = status == LessonStatus.locked;
+    final comingSoon = status == LessonStatus.comingSoon;
+    final completed = status == LessonStatus.completed;
 
     return InkWell(
       onTap: (locked || comingSoon) ? null : onTap,
@@ -329,23 +322,28 @@ class _LessonNode extends StatelessWidget {
   }
 }
 
-void _openLessonTrack(BuildContext context, {required Lesson lesson}) {
+void _openLessonTrack(BuildContext context, Lesson lesson) {
   Navigator.of(context).push(
     PageRouteBuilder<void>(
       transitionDuration: const Duration(milliseconds: 420),
-      pageBuilder: (context, animation, secondaryAnimation) {
+      pageBuilder: (innerCtxt, animation, secondaryAnimation) {
         final curved = CurvedAnimation(
           parent: animation,
           curve: Curves.easeOutCubic,
         );
-        return FadeTransition(
-          opacity: curved,
-          child: SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(0, 0.06),
-              end: Offset.zero,
-            ).animate(curved),
-            child: LessonTrackPage(lesson: lesson),
+        // Re-use the existing LessonProgress created above this node
+        final progress = context.read<LessonProgress>();
+        return ChangeNotifierProvider<LessonProgress>.value(
+          value: progress,
+          child: FadeTransition(
+            opacity: curved,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0, 0.06),
+                end: Offset.zero,
+              ).animate(curved),
+              child: LessonTrackPage(lesson: lesson),
+            ),
           ),
         );
       },
@@ -380,21 +378,3 @@ class _BlurOrb extends StatelessWidget {
 }
 
 enum LessonStatus { completed, inProgress, locked, comingSoon }
-
-class Lesson {
-  final String title;
-  final String shortDesc;
-  final String description;
-  final IconData icon;
-  final LessonStatus status;
-  final String path;
-
-  const Lesson({
-    required this.title,
-    required this.icon,
-    required this.shortDesc,
-    required this.description,
-    required this.status,
-    required this.path,
-  });
-}

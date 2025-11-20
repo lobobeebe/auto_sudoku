@@ -57,13 +57,13 @@
                         7,
                         8
                     ],
-                    "preventGridTaps": false
+                    "preventGridTaps": false,
+                    "selectedIndices": []
                 },
                 {
                     "title": "Tap a 3",
                     "body": "Tap any filled 3 — we’ll use it to spot something sneaky.",
                     "advanceOnValue": 3,
-                    "selectedIndices": [],
                     "maskIndices": [
                         33,
                         41,
@@ -333,11 +333,35 @@
                 },
                 {
                     "title": "P.S. - Multi-selection",
-                    "body": "Tapping multiple empty cells in a row will highlight them all - this is expected! We'll learn more about it later, but for now you if you need to clear multiple selections, you can tap a filled cell or tap the cells again! Happy Tapping!",
+                    "body": "Tapping multiple empty cells in a row will highlight them all - this is expected! We'll learn more about it later, but for now if you need to clear multiple selections, you can tap a filled cell or tap the cells again! Happy Tapping!",
                     "centerDialog": true,
                     "solver": {
                         "allowed": [
                             "Naked Single"
+                        ]
+                    }
+                }
+            ]
+        }
+    },
+    {
+        "id": "oKWYUe",
+        "puzzle": "008009406975000018200008000002060005409125307500080600000600002850000761607800500",
+        "solution": "318279456975346218246518973782963145469125387531784629194657832853492761627831594",
+        "techniques": {
+            "Naked Single": 32,
+            "Hidden Single": 14
+        },
+        "tutorial": {
+            "steps": [
+                {
+                    "title": "Complete the Puzzle",
+                    "body": "Use the Open and Hidden Singles strategies that you've learned to complete this puzzle and unlock training lessons.",
+                    "centerDialog": true,
+                    "solver": {
+                        "allowed": [
+                            "Naked Single",
+                            "Hidden Single"
                         ]
                     }
                 }

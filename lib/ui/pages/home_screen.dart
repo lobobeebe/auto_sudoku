@@ -1,10 +1,11 @@
+import 'package:auto_sudoku/data/lessons.dart';
 import 'package:auto_sudoku/data/puzzle_repository.dart';
+import 'package:auto_sudoku/state/lesson_progress.dart';
 import 'package:auto_sudoku/ui/pages/difficulty_selection_page.dart';
 import 'package:auto_sudoku/ui/pages/learning_journey_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:auto_sudoku/ui/utils/feedback.dart';
 import 'package:auto_sudoku/ui/pages/strategy_settings_page.dart';
 
@@ -19,6 +20,7 @@ class HomeScreen extends StatelessWidget {
     final isLoadingRepo = repository.isLoading && !repository.isLoaded;
     final hasError = repository.error != null && !repository.isLoaded;
     final errorMessage = repository.error;
+    final progress = Provider.of<LessonProgress>(context);
 
     return Scaffold(
       body: Stack(
@@ -132,7 +134,7 @@ class HomeScreen extends StatelessWidget {
                         ),
                         FilledButton.icon(
                           icon: const Icon(Icons.play_arrow_rounded),
-                          label: const Text('Start Puzzle'),
+                          label: const Text('Free Play'),
                           style: FilledButton.styleFrom(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 32,
@@ -142,14 +144,16 @@ class HomeScreen extends StatelessWidget {
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                          onPressed: repository.isLoaded
+                          onPressed:
+                              progress.isDone(Lessons.theBasics) &&
+                                  repository.isLoaded
                               ? () => _openDifficultySelection(context)
                               : null,
                         ),
                         const SizedBox(height: 12),
                         FilledButton.tonalIcon(
                           icon: const Icon(Icons.school_rounded),
-                          label: const Text('Learn How to Play'),
+                          label: const Text('Learn'),
                           style: FilledButton.styleFrom(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 28,
@@ -245,22 +249,17 @@ void _openStrategySettings(BuildContext context) {
 
 Future<void> _debugResetProgress(BuildContext context) async {
   if (!kDebugMode) return;
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
 
-    showToast(
-      context,
-      Row(
-        mainAxisSize: MainAxisSize.min,
-        children: const [
-          Icon(Icons.restart_alt_rounded),
-          SizedBox(width: 10),
-          Text('Progress & Preferences reset.'),
-        ],
-      ),
-    );
-  } catch (_) {
-    // Ignore errors silently in debug
-  }
+  context.read<LessonProgress>().resetAll();
+  showToast(
+    context,
+    Row(
+      mainAxisSize: MainAxisSize.min,
+      children: const [
+        Icon(Icons.restart_alt_rounded),
+        SizedBox(width: 10),
+        Text('Progress & Preferences reset.'),
+      ],
+    ),
+  );
 }

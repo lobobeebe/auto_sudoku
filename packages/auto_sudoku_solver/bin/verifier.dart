@@ -2,8 +2,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:auto_sudoku_solver/auto_sudoku_solver.dart';
-import 'package:auto_sudoku_solver/src/solver.dart';
-import 'package:auto_sudoku_solver/src/sudoku.dart';
 
 // Verifies puzzles and emits normalized JSON array with
 // { "puzzle": String(81), "solution": String(81), "techniques": {name: count} }

@@ -1,4 +1,5 @@
 import 'package:auto_sudoku/data/puzzle_repository.dart';
+import 'package:auto_sudoku/state/lesson_progress.dart';
 import 'package:auto_sudoku/ui/pages/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -13,8 +14,15 @@ class AutoSudokuApp extends StatelessWidget {
       colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
     );
 
-    return ChangeNotifierProvider(
-      create: (_) => PuzzleRepository()..preload(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider<PuzzleRepository>(
+          create: (_) => PuzzleRepository()..preload(),
+        ),
+        ChangeNotifierProvider<LessonProgress>(
+          create: (_) => LessonProgress()..loadAll(),
+        ),
+      ],
       child: MaterialApp(
         title: 'Auto Sudoku',
         theme: baseTheme.copyWith(

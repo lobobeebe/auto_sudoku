@@ -13,13 +13,10 @@ class ActionBar extends StatelessWidget {
     final board = context.watch<SudokuBoardState>();
     // If a tutorial is active, enable only when the step allows it.
     // Provider might not be present; fall back to enabled.
-    TutorialController? tutorial;
-    try {
-      tutorial = context.watch<TutorialController>();
-    } catch (_) {
-      tutorial = null;
-    }
-    final tutorialAllows = tutorial?.current.enableActionBar ?? true;
+    TutorialController? tutorial = TutorialController.of(context);
+    final tutorialAllows =
+        ((tutorial?.isDone ?? true) ||
+        (tutorial?.current.enableActionBar ?? true));
     final isEnabled = board.allowControls && tutorialAllows;
 
     final leftControls = Row(

@@ -13,7 +13,7 @@ class SudokuTheme {
       valueHighlightColor = colorScheme.onPrimaryContainer,
 
       // Matching Values
-      matchingValueBackground = colorScheme.primaryContainer,
+      matchingValueBackground = colorScheme.primary.withValues(alpha: .5),
 
       // Selected
       selectedCellBackground = colorScheme.primaryContainer,
@@ -38,7 +38,7 @@ class SudokuTheme {
 
       // Peers
       peerCellBackground = Color.alphaBlend(
-        colorScheme.primary.withValues(alpha: 0.08),
+        colorScheme.primary.withValues(alpha: 0.15),
         colorScheme.surface,
       ),
 
