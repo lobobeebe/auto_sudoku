@@ -18,6 +18,8 @@
 //   - --out path: write a JSON array of {"puzzle","solution","techniques"} objects to this file (default: sudoku_output.json).
 //   - --timeout MS: abort a single generation attempt after MS milliseconds (default 20000).
 //   - --max-rounds N: abort beam digging after N rounds (default 400).
+//   - --min-moves N: require at least N logical steps to solve.
+//   - --max-moves N: require at most N logical steps to solve.
 //   - JSON output excludes Trivial and Impossible puzzles.
 //   - If --board is provided, it also prints the pretty board (difficulty, reason, grids) and progress messages.
 //   - Use --max-attempts to cap the attempts when searching for an exact difficulty match (default 500).
@@ -67,6 +69,7 @@ void main(List<String> args) {
   int timeoutMs = 20000;
   int maxRounds = 400;
   int? minMoves; // Minimum number of logical steps required
+  int? maxMoves; // Maximum number of logical steps allowed
 
   Set<StrategyType> parseTechList(String raw) {
     final parts = raw.split(',');
@@ -110,6 +113,8 @@ void main(List<String> args) {
       maxRounds = int.tryParse(args[++i]) ?? maxRounds;
     } else if (a == '--min-moves' && i + 1 < args.length) {
       minMoves = int.tryParse(args[++i]);
+    } else if (a == '--max-moves' && i + 1 < args.length) {
+      maxMoves = int.tryParse(args[++i]);
     }
   }
 
@@ -125,7 +130,7 @@ void main(List<String> args) {
     int attempts = 0;
 
     print(
-      'Generating puzzle $n/$count (must=${must.map((e) => e.name).join(',')}, only=${only?.map((e)=>e.name).join(',') ?? '-'}, minMoves=${minMoves ?? 0}, max $maxAttempts attempts)...',
+      'Generating puzzle $n/$count (must=${must.map((e) => e.name).join(',')}, only=${only?.map((e) => e.name).join(',') ?? '-'}, minMoves=${minMoves ?? 0}, maxMoves=${maxMoves ?? '-'}, max $maxAttempts attempts)...',
     );
 
     do {
@@ -146,9 +151,13 @@ void main(List<String> args) {
       final present = check.steps.toSet();
       final stepsCount = check.steps.length;
       final requiredMoves = minMoves ?? 0;
-      final satisfied = must.every(present.contains) &&
+      final int? cap = maxMoves;
+      final withinMax = cap == null || stepsCount <= cap;
+      final satisfied =
+          must.every(present.contains) &&
           (only == null || check.solved) &&
-          (minMoves == null || stepsCount >= requiredMoves);
+          (minMoves == null || stepsCount >= requiredMoves) &&
+          withinMax;
       print('  Attempt $attempts -> satisfied=$satisfied, steps=$stepsCount');
       if (satisfied) break;
     } while (attempts < maxAttempts);
