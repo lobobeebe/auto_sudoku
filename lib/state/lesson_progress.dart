@@ -24,11 +24,8 @@ class LessonProgress extends ChangeNotifier {
   int totalFor(Lesson l) => _ensure(l.title).total;
   bool isDone(Lesson l) => _ensure(l.title).done;
   bool isDoneByTitle(String title) => _ensure(title).done;
-  bool isPrereqDone(Lesson l) {
-    final key = l.preReqPrefKey;
-    if (key == null) return true;
-    return _prefs?.getBool(key) ?? false;
-  }
+  bool isPrereqDone(Lesson l) =>
+      l.preReqLesson == null || _ensure(l.preReqLesson!).done;
 
   // Mutations
   Future<void> setTotal(Lesson l, int total) async {
@@ -65,6 +62,7 @@ class LessonProgress extends ChangeNotifier {
   Future<void> resetAll() async {
     await _ensurePrefs();
     _prefs?.clear();
+    _states.clear();
     notifyListeners();
   }
 

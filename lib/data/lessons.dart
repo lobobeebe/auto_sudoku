@@ -11,7 +11,7 @@ class Lessons {
     path: "assets/puzzles/lessons/the_basics.json",
   );
 
-  static List<Lesson> get all => const [
+  static List<Lesson> get all => [
     theBasics,
     Lesson(
       title: 'Hidden Singles',
@@ -20,7 +20,8 @@ class Lessons {
       description:
           'Complete these puzzles using only the Hidden Single strategy to unlock auto-completing of Hidden Singles.',
       path: "assets/puzzles/lessons/hidden_singles.json",
-      preReqPrefKey: "the_basics_completed",
+      preReqLesson: theBasics.title,
+      showNotes: false,
     ),
     Lesson(
       title: 'Open Singles',
@@ -29,7 +30,7 @@ class Lessons {
       description:
           'Complete these puzzles using only the Open Single strategy to unlock auto-completing of Open Singles.',
       path: "assets/puzzles/lessons/open_singles.json",
-      preReqPrefKey: "the_basics_completed",
+      preReqLesson: theBasics.title,
     ),
   ];
 }

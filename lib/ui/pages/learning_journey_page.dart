@@ -120,6 +120,7 @@ class _JourneyTrack extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
+    final progress = Provider.of<LessonProgress>(context);
 
     return ListView.separated(
       controller: scrollController,
@@ -138,7 +139,6 @@ class _JourneyTrack extends StatelessWidget {
           ),
         );
         // Shared provider is above; compute status using the multi-lesson API
-        final progress = context.watch<LessonProgress>();
         final status = !progress.isPrereqDone(lesson)
             ? LessonStatus.locked
             : (progress.isDone(lesson)

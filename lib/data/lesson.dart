@@ -6,7 +6,8 @@ class Lesson {
   final String description;
   final IconData icon;
   final String path;
-  final String? preReqPrefKey;
+  final bool? showNotes;
+  final String? preReqLesson;
 
   const Lesson({
     required this.title,
@@ -14,6 +15,7 @@ class Lesson {
     required this.shortDesc,
     required this.description,
     required this.path,
-    this.preReqPrefKey,
+    this.showNotes,
+    this.preReqLesson,
   });
 }

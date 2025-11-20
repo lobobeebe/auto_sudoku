@@ -249,7 +249,9 @@ class _LessonTrackPageState extends State<LessonTrackPage> {
               ChangeNotifierProvider<SudokuBoardState>(
                 create: (_) {
                   final state = SudokuBoardState(
-                    showNotes: model.tutorial?.overrideShowNotes,
+                    showNotes:
+                        widget.lesson.showNotes ??
+                        model.tutorial?.overrideShowNotes,
                     autoFinish: false,
                   );
                   state.requestInitPuzzle(model);
