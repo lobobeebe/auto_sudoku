@@ -90,27 +90,37 @@ class SudokuModel {
   // Deterministic 6-char Base62 ID from puzzle string
   static String computeIdFromPuzzle(String puzzle) =>
       _computeIdFromPuzzle(puzzle);
+
+  // FNV-1a constants kept as BigInt so they remain precise in JS runtimes.
+  static final BigInt _fnvOffset = BigInt.parse(
+    'cbf29ce484222325',
+    radix: 16,
+  ); // 1469598103934665603
+  static final BigInt _fnvPrime = BigInt.parse(
+    '100000001b3',
+    radix: 16,
+  ); // 1099511628211
+  static final BigInt _mask64 = BigInt.parse('ffffffffffffffff', radix: 16);
+  static final BigInt _mask63 = BigInt.parse('7fffffffffffffff', radix: 16);
+
   static String _computeIdFromPuzzle(String puzzle) {
-    // FNV-1a 64-bit
-    const int fnvOffset = 0xcbf29ce484222325; // 1469598103934665603
-    const int fnvPrime = 0x100000001b3; // 1099511628211
-    const int mask64 = 0xFFFFFFFFFFFFFFFF;
-    int h = fnvOffset;
+    // FNV-1a 64-bit using BigInt for JS-compat precision
+    BigInt h = _fnvOffset;
     for (final codeUnit in puzzle.codeUnits) {
-      h ^= codeUnit & 0xFF;
-      h = (h * fnvPrime) & mask64;
+      h ^= BigInt.from(codeUnit & 0xFF);
+      h = (h * _fnvPrime) & _mask64;
     }
     return _base62(h, 6);
   }
 
   static const String _alphabet =
       '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
-  static String _base62(int value, int len) {
-    final base = _alphabet.length;
+  static String _base62(BigInt value, int len) {
+    final base = BigInt.from(_alphabet.length);
     final buf = List<String>.filled(len, '0');
-    var v = value & 0x7FFFFFFFFFFFFFFF; // ensure non-negative
+    var v = value & _mask63; // ensure non-negative
     for (int i = len - 1; i >= 0; i--) {
-      buf[i] = _alphabet[v % base];
+      buf[i] = _alphabet[(v % base).toInt()];
       v ~/= base;
     }
     return buf.join();

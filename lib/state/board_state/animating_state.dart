@@ -21,26 +21,19 @@ class AnimatingMode extends BoardMode {
     board.selectedIndices.clear();
     board.emitChange();
 
-    unawaited(_runSingles());
+    unawaited(_run());
   }
 
-  Future<void> _runSingles() async {
-    var nextSingle = board.nextSingle();
-    while (nextSingle != null) {
-      var index = nextSingle.placements.keys.firstOrNull;
-
-      _animatingIndex = index;
-
-      var mutated = board.applyHintToBoard(nextSingle);
-      if (mutated) {
-        board.emitChange();
-      }
-
-      // Wait for animation
+  Future<void> _run() async {
+    // Custom auto-solver animation with provided strategies
+    while (true) {
+      final hint = board.nextAutoMove();
+      if (hint == null) break;
+      _animatingIndex = hint.placements.keys.firstOrNull;
+      final mutated = board.applyHintToBoard(hint);
+      if (!mutated) break;
+      board.emitChange();
       await Future.delayed(_autoFillStepDelay);
-
-      // Find the next single to repeat animation
-      nextSingle = board.nextSingle();
     }
 
     final result = board.evaluateResult();

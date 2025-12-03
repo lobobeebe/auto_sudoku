@@ -252,7 +252,6 @@ class _LessonTrackPageState extends State<LessonTrackPage> {
                     showNotes:
                         widget.lesson.showNotes ??
                         model.tutorial?.overrideShowNotes,
-                    autoFinish: false,
                   );
                   state.requestInitPuzzle(model);
 

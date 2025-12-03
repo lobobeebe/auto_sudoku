@@ -13,10 +13,10 @@ class SudokuTheme {
       valueHighlightColor = colorScheme.onPrimaryContainer,
 
       // Matching Values
-      matchingValueBackground = colorScheme.primary.withValues(alpha: .5),
+      matchingValueBackground = colorScheme.primaryContainer,
 
       // Selected
-      selectedCellBackground = colorScheme.primaryContainer,
+      selectedCellBackground = colorScheme.primary.withValues(alpha: .5),
       selectedCellTextColor = colorScheme.onPrimaryContainer,
 
       // Coloring mode

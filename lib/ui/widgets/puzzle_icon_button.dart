@@ -51,6 +51,59 @@ class PuzzleIconButton extends StatelessWidget {
 
     final isDisabled = state == PuzzleIconState.locked || onTap == null;
 
+    final button = SizedBox(
+      width: size,
+      height: size,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: isDisabled ? null : onTap,
+          customBorder: const CircleBorder(),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOutCubic,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [bg, bg.withValues(alpha: 0.82)],
+                radius: 0.92,
+                center: const Alignment(-0.2, -0.2),
+              ),
+              border: Border.all(color: border, width: 1.2),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.08),
+                  blurRadius: 18,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Text(
+                  number.toString(),
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    color: fg,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.2,
+                  ),
+                ),
+                if (overlayIcon != null)
+                  IgnorePointer(
+                    child: Icon(
+                      overlayIcon,
+                      size: size * 0.74,
+                      color: overlayColor,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
     return Semantics(
       button: true,
       enabled: !isDisabled,
@@ -58,56 +111,7 @@ class PuzzleIconButton extends StatelessWidget {
           .trim(),
       child: Tooltip(
         message: 'Puzzle $number',
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: isDisabled ? null : onTap,
-            customBorder: const CircleBorder(),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 220),
-              curve: Curves.easeOutCubic,
-              width: size,
-              height: size,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [bg, bg.withValues(alpha: 0.82)],
-                  radius: 0.92,
-                  center: const Alignment(-0.2, -0.2),
-                ),
-                border: Border.all(color: border, width: 1.2),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.08),
-                    blurRadius: 18,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Text(
-                    number.toString(),
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      color: fg,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.2,
-                    ),
-                  ),
-                  if (overlayIcon != null)
-                    IgnorePointer(
-                      child: Icon(
-                        overlayIcon,
-                        size: size * 0.74,
-                        color: overlayColor,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
-        ),
+        child: button,
       ),
     );
   }

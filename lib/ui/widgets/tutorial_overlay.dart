@@ -53,15 +53,19 @@ class GridMaskOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = TutorialController.of(context);
+    final board = Provider.of<SudokuBoardState>(context, listen: false);
 
+    // If no active tutorial, ensure no auto-advance listener remains.
     if (controller == null || controller.isDone) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        board.onHintApplied = null;
+      });
       return SizedBox.shrink();
     }
 
     return AnimatedBuilder(
       animation: controller,
       builder: (context, _) {
-        final board = Provider.of<SudokuBoardState>(context, listen: false);
         final enterStep = controller.current;
 
         if (enterStep.selectedIndices != null) {
@@ -128,19 +132,34 @@ class TutorialPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final controller = TutorialController.of(context);
+    final board = Provider.of<SudokuBoardState>(context, listen: false);
 
     if (controller == null || controller.isDone) {
+      // Ensure any previous auto-advance listener is removed
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        board.onHintApplied = null;
+      });
       return SizedBox.shrink();
     }
 
-    bool center = controller.current.centerDialog;
+    // Choose panel alignment: top, center, or bottom (default center)
+    final align = () {
+      switch (controller.current.dialogAlignment) {
+        case TutorialDialogAlignment.top:
+          return Alignment.topCenter;
+        case TutorialDialogAlignment.center:
+          return Alignment.center;
+        case TutorialDialogAlignment.bottom:
+          return Alignment.bottomCenter;
+      }
+    }();
 
     return Positioned.fill(
       child: IgnorePointer(
         ignoring: false,
         child: SafeArea(
           child: Align(
-            alignment: center ? Alignment.center : Alignment.bottomCenter,
+            alignment: align,
             child: Padding(
               padding: const EdgeInsets.all(24.0),
               child: ConstrainedBox(
@@ -152,8 +171,22 @@ class TutorialPanel extends StatelessWidget {
                     final canGoNext =
                         controller.hasNext &&
                         step.advanceOnValue == null &&
+                        step.advanceOnStrategy == null &&
                         (step.advanceOnIndices == null ||
                             step.advanceOnIndices!.isEmpty);
+                    // Install or update board-level hooks so advancing and
+                    // auto-solve work even when the grid mask is not present.
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      // Advance on matching strategy whenever a hint is applied.
+                      board.onHintApplied = (hint) {
+                        final expect = controller.current.advanceOnStrategy;
+                        if (!controller.isDone &&
+                            expect != null &&
+                            hint.strategy == expect) {
+                          controller.next();
+                        }
+                      };
+                    });
                     return Card(
                       elevation: 3,
                       color: colors.surfaceContainerHighest,

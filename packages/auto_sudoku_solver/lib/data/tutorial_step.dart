@@ -1,5 +1,7 @@
 import 'package:auto_sudoku_solver/auto_sudoku_solver.dart';
 
+enum TutorialDialogAlignment { top, center, bottom }
+
 class TutorialStep {
   final Set<int> maskRows;
   final Set<int> maskCols;
@@ -7,9 +9,9 @@ class TutorialStep {
   final Set<int> cells; // indices 0..80
   final String title;
   final String body;
-  // When true, show a centered dialog and do not
-  // highlight any specific grid region for this step.
-  final bool centerDialog;
+  // Where to place the tutorial panel: top, center, or bottom
+  // Defaults to center. Preferred over legacy [centerDialog].
+  final TutorialDialogAlignment dialogAlignment;
   // If set, this step requires the user to tap a grid cell whose
   // filled-in value equals this digit; upon a valid tap, the tutorial
   // auto-advances. All other grid taps are blocked.
@@ -36,6 +38,13 @@ class TutorialStep {
   // Optional per-step solver settings to apply on the board while
   // this step is active. If null, defaults to none (disable hints).
   final SolverSettings? solverSettings;
+  // Optional: automatically advance to the next step when a hint with this
+  // strategy is successfully applied.
+  final StrategyType? advanceOnStrategy;
+  // Optional: automatically apply hints on step entry using the given
+  // strategy allowlist. Applied repeatedly until no more hints are found or
+  // until [autoSolveMaxSteps] is reached.
+  final Set<StrategyType>? autoSolveAllowed;
 
   const TutorialStep({
     this.maskRows = const {},
@@ -44,7 +53,7 @@ class TutorialStep {
     this.cells = const {},
     required this.title,
     required this.body,
-    this.centerDialog = false,
+    this.dialogAlignment = TutorialDialogAlignment.bottom,
     this.advanceOnValue,
     this.enableActionBar = false,
     this.selectedIndices,
@@ -53,6 +62,8 @@ class TutorialStep {
     this.maskIndices,
     this.advanceOnIndices,
     this.tappableIndices,
+    this.advanceOnStrategy,
+    this.autoSolveAllowed,
   });
 
   bool get hasAnyAllow =>
@@ -64,10 +75,12 @@ class TutorialStep {
 
   // Deserialize a step from JSON.
   // Supported keys:
-  // - title, body, centerDialog, enableActionBar, preventGridTaps
+  // - title, body, centerDialog (legacy), alignment/dialogAlignment ('top'|'center'|'bottom'), enableActionBar, preventGridTaps
   // - maskRows, maskCols, maskBoxes, cells, maskIndices, selectedIndices,
   //   advanceOnIndices, tappableIndices (all arrays of ints)
   // - advanceOnValue (int)
+  // - advanceOnStrategy (string; StrategyType name or label)
+  // - autoSolve: { allowed: [StrategyType names or labels], maxSteps: int }
   // - solver: { allowed: [StrategyType names or labels] }
   factory TutorialStep.fromJson(Map<String, dynamic> json) {
     Set<int> set(dynamic v) {
@@ -101,10 +114,57 @@ class TutorialStep {
       }
     }
 
+    StrategyType? parseStrategy(dynamic raw) {
+      if (raw == null) return null;
+      final s = raw.toString();
+      for (final t in StrategyType.values) {
+        if (t.name.toLowerCase() == s.toLowerCase() ||
+            t.toString().toLowerCase() == s.toLowerCase()) {
+          return t;
+        }
+      }
+      return null;
+    }
+
+    // Parse auto-solve specification
+    Set<StrategyType>? autoSolveAllowed;
+    final autoSolve = json['autoSolve'];
+    if (autoSolve is Map) {
+      final allowedRaw = autoSolve['allowed'];
+      if (allowedRaw is List) {
+        final set = <StrategyType>{};
+        for (final item in allowedRaw) {
+          final t = parseStrategy(item);
+          if (t != null) set.add(t);
+        }
+        if (set.isNotEmpty) autoSolveAllowed = set;
+      }
+    }
+
+    // Map alignment. Prefer explicit alignment/dialogAlignment string.
+    TutorialDialogAlignment alignment = TutorialDialogAlignment.bottom;
+    String? alignRaw;
+    if (json.containsKey('alignment')) {
+      alignRaw = json['alignment']?.toString();
+    }
+    if (alignRaw != null) {
+      switch (alignRaw.toLowerCase()) {
+        case 'top':
+          alignment = TutorialDialogAlignment.top;
+          break;
+        case 'bottom':
+          alignment = TutorialDialogAlignment.bottom;
+          break;
+        case 'center':
+        default:
+          alignment = TutorialDialogAlignment.center;
+      }
+    }
+
     return TutorialStep(
       title: (json['title'] ?? '').toString(),
       body: (json['body'] ?? '').toString(),
-      centerDialog: json['centerDialog'] == true,
+      dialogAlignment: alignment,
       enableActionBar: json['enableActionBar'] == true,
       preventGridTaps: json['preventGridTaps'] != false, // default true
       advanceOnValue: json['advanceOnValue'] is int
@@ -127,6 +187,8 @@ class TutorialStep {
           ? null
           : set(json['tappableIndices']),
       solverSettings: solverSettings,
+      advanceOnStrategy: parseStrategy(json['advanceOnStrategy']),
+      autoSolveAllowed: autoSolveAllowed,
     );
   }
 }

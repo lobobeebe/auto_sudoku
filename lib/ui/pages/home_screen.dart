@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:auto_sudoku/ui/utils/feedback.dart';
-import 'package:auto_sudoku/ui/pages/strategy_settings_page.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -31,19 +30,6 @@ class HomeScreen extends StatelessWidget {
                 colors: [colorScheme.primaryContainer, colorScheme.surface],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-              ),
-            ),
-          ),
-          SafeArea(
-            child: Align(
-              alignment: Alignment.topRight,
-              child: Padding(
-                padding: const EdgeInsets.only(top: 8, right: 8),
-                child: IconButton.filledTonal(
-                  tooltip: 'Auto-Solver Settings',
-                  icon: const Icon(Icons.tune_rounded),
-                  onPressed: () => _openStrategySettings(context),
-                ),
               ),
             ),
           ),
@@ -216,30 +202,6 @@ void _openLearningJourney(BuildContext context) {
               end: Offset.zero,
             ).animate(curved),
             child: const LearningJourneyPage(),
-          ),
-        );
-      },
-    ),
-  );
-}
-
-void _openStrategySettings(BuildContext context) {
-  Navigator.of(context).push(
-    PageRouteBuilder<void>(
-      transitionDuration: const Duration(milliseconds: 360),
-      pageBuilder: (context, animation, secondaryAnimation) {
-        final curved = CurvedAnimation(
-          parent: animation,
-          curve: Curves.easeOutCubic,
-        );
-        return FadeTransition(
-          opacity: curved,
-          child: SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(0, 0.06),
-              end: Offset.zero,
-            ).animate(curved),
-            child: const StrategySettingsPage(),
           ),
         );
       },

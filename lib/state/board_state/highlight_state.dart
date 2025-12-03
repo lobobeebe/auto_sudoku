@@ -67,7 +67,7 @@ class HighlightMode extends BoardMode {
       return true;
     }
 
-    if (board.autoFinish && board.canWinBySingles()) {
+    if (board.canAutoFinish()) {
       board.setMode(AnimatingMode(board, this));
       return true;
     }

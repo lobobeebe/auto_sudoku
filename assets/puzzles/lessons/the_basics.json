@@ -25,11 +25,12 @@
                         6
                     ],
                     "title": "What is a Unit?",
-                    "body": "A unit is a row, column, or 3×3 box. Each must contain 1–9 exactly once—no repeats."
+                    "body": "A unit is a row, column, or 3×3 box. Each must contain 1–9 exactly once—no repeats.",
+                    "alignment": "top"
                 },
                 {
                     "title": "Filled Cells",
-                    "body": "Tap a filled cell and we softly gray out where that number can’t go — perfect for focusing your search. Give it a try!",
+                    "body": "After tapping a filled cell, we softly gray out where that number can’t go — perfect for focusing your search.",
                     "maskRows": [
                         0,
                         1,
@@ -41,11 +42,13 @@
                         7,
                         8
                     ],
-                    "preventGridTaps": false
+                    "selectedIndices": [
+                        31
+                    ]
                 },
                 {
                     "title": "Empty Cells",
-                    "body": "Tap an empty cell and we softly gray out where that number can't \"see\". The peers in the selected cell's row, column and box will stay lit.",
+                    "body": "Tapping an empty cell softly grays out where that number can't \"see\". The peers in the selected cell's row, column and box will stay lit.",
                     "maskRows": [
                         0,
                         1,
@@ -57,8 +60,9 @@
                         7,
                         8
                     ],
-                    "preventGridTaps": false,
-                    "selectedIndices": []
+                    "selectedIndices": [
+                        30
+                    ]
                 },
                 {
                     "title": "Tap a 3",
@@ -91,14 +95,17 @@
                         2
                     ],
                     "title": "Hidden Single",
-                    "body": "Spot the standout? Only one cell remains unfilled in the top-left box — a hidden single. Give it a tap!"
+                    "body": "Spot the standout? Only one cell remains unfilled in the top-left box — we call this a hidden single. Give it a tap!"
                 },
                 {
                     "maskBoxes": [
                         0
                     ],
                     "title": "First Hidden Single",
-                    "body": "Nice job! We've filled in the 3 in this box. A hidden single says 'There is only one spot available for a digit in this unit, so it must go here!' Let's keep looking for more!"
+                    "body": "Nice job! We've filled in the 3 in this box. A hidden single says 'There is only one spot available for a digit in this unit, so it must go here!' Let's keep looking for more!",
+                    "selectedIndices": [
+                        2
+                    ]
                 },
                 {
                     "maskRows": [
@@ -173,7 +180,8 @@
                         3
                     ],
                     "title": "No Hidden Single",
-                    "body": "Notice how there are two possible cells where a 5 could be placed in this column? That means we'll have to come back later!"
+                    "body": "Notice how there are two possible cells where a 5 could be placed in this column? That means we'll have to come back later!",
+                    "alignment": "top"
                 },
                 {
                     "title": "Hidden Single 5",
@@ -181,6 +189,7 @@
                     "maskBoxes": [
                         8
                     ],
+                    "alignment": "top",
                     "preventGridTaps": false,
                     "solver": {
                         "allowed": [
@@ -198,6 +207,9 @@
                     "maskCols": [
                         3
                     ],
+                    "maskRows": [
+                        6
+                    ],
                     "title": "Return to the 5",
                     "body": "That last 5 has updated the column we looked at before. See the Hidden Single? Give it a tap!",
                     "preventGridTaps": false,
@@ -211,7 +223,8 @@
                     ],
                     "tappableIndices": [
                         75
-                    ]
+                    ],
+                    "alignment": "top"
                 },
                 {
                     "preventGridTaps": false,
@@ -254,8 +267,14 @@
                 {
                     "title": "Single Candidate",
                     "body": "In this cell, there is exactly one possible digit (candidate) that can be placed - 5. Let's take a look at why.",
-                    "maskIndices": [
-                        12
+                    "maskRows": [
+                        1
+                    ],
+                    "maskBoxes": [
+                        1
+                    ],
+                    "maskCols": [
+                        3
                     ],
                     "selectedIndices": [
                         12

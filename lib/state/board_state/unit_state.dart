@@ -60,7 +60,7 @@ class UnitMode extends BoardMode {
       return;
     }
 
-    if (board.autoFinish && board.canWinBySingles()) {
+    if (board.canAutoFinish()) {
       board.setMode(AnimatingMode(board, this));
       return;
     }
