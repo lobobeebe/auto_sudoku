@@ -1,4 +1,5 @@
 import 'package:auto_sudoku/data/puzzle_repository.dart';
+import 'package:auto_sudoku/state/lesson_progress.dart';
 import 'package:auto_sudoku/state/sudoku_board_state.dart';
 import 'package:auto_sudoku/ui/pages/sudoku_home_page.dart';
 import 'package:auto_sudoku_solver/auto_sudoku_solver.dart';
@@ -26,18 +27,30 @@ class _DifficultySelectionPageState extends State<DifficultySelectionPage>
       title: 'Trivial',
       description: 'Singles-only puzzles to get you comfy with the basics.',
       icon: Icons.wb_sunny_rounded,
+      strategies: [StrategyType.openSingle, StrategyType.hiddenSingle],
     ),
     _DifficultyOption(
       difficulty: Difficulty.easy,
       title: 'Easy',
       description: 'Perfect for warming up and learning the basics.',
       icon: Icons.sentiment_satisfied_alt_rounded,
+      strategies: [
+        StrategyType.openPair,
+        StrategyType.hiddenPair,
+        StrategyType.openTriple,
+        StrategyType.hiddenTriple,
+        StrategyType.openQuad,
+        StrategyType.hiddenQuad,
+        StrategyType.pointing,
+        StrategyType.claiming,
+      ],
     ),
     _DifficultyOption(
       difficulty: Difficulty.medium,
       title: 'Medium',
       description: 'A balanced challenge to keep you thinking.',
       icon: Icons.auto_awesome_rounded,
+      strategies: [StrategyType.xWing, StrategyType.xyWing, StrategyType.wWing],
     ),
     _DifficultyOption(
       difficulty: Difficulty.hard,
@@ -45,6 +58,15 @@ class _DifficultySelectionPageState extends State<DifficultySelectionPage>
       description: 'For seasoned solvers seeking a serious puzzle.',
       icon: Icons.bolt_rounded,
       enabled: false,
+      strategies: [
+        StrategyType.skyscraper,
+        StrategyType.twoStringKite,
+        StrategyType.turbotFish,
+        StrategyType.uniqueRectangle,
+        StrategyType.bug,
+        StrategyType.remotePairs,
+        StrategyType.xyChain,
+      ],
     ),
   ];
 
@@ -213,6 +235,79 @@ class _DifficultyCard extends StatefulWidget {
 class _DifficultyCardState extends State<_DifficultyCard> {
   bool _isPressed = false;
 
+  void _showInfoDialog() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final progress = Provider.of<LessonProgress>(context, listen: false);
+
+    showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('${widget.option.title} details'),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  widget.option.description,
+                  style: theme.textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  'Strategies',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: widget.option.strategies.map((strategy) {
+                    final learned =
+                        progress?.isDoneByTitle(strategy.toString()) ?? false;
+                    final icon = learned
+                        ? Icons.check_circle_rounded
+                        : Icons.check_circle_outline_rounded;
+                    final iconColor = learned
+                        ? Colors.green
+                        : theme.disabledColor;
+                    return TextButton.icon(
+                      onPressed: () {},
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 8,
+                        ),
+                        foregroundColor: colorScheme.onSurface,
+                        backgroundColor: colorScheme.surfaceVariant.withValues(
+                          alpha: 0.4,
+                        ),
+                      ),
+                      icon: Icon(icon, size: 18, color: iconColor),
+                      label: Text(
+                        strategy.toString(),
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -277,12 +372,29 @@ class _DifficultyCardState extends State<_DifficultyCard> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        widget.option.title,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: enabled ? null : theme.disabledColor,
-                        ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              widget.option.title,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: enabled ? null : theme.disabledColor,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            icon: Icon(
+                              Icons.info_outline_rounded,
+                              color: enabled
+                                  ? colorScheme.primary
+                                  : theme.disabledColor,
+                              size: 20,
+                            ),
+                            tooltip: 'View ${widget.option.title} info',
+                            onPressed: enabled ? _showInfoDialog : null,
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 6),
                       Text(
@@ -319,12 +431,14 @@ class _DifficultyOption {
   final String description;
   final IconData icon;
   final bool enabled;
+  final List<StrategyType> strategies;
 
   const _DifficultyOption({
     required this.difficulty,
     required this.title,
     required this.description,
     required this.icon,
+    required this.strategies,
     this.enabled = true,
   });
 }
