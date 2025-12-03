@@ -91,7 +91,7 @@ class PuzzleRepository extends ChangeNotifier {
     if (cache == null || cache.isEmpty) {
       throw StateError('Puzzle repository is empty.');
     }
-    final singles = {'Naked Single', 'Hidden Single'};
+    final singles = {'Open Single', 'Hidden Single'};
     final candidates = cache
         .where((p) => p.techniqueCounts.keys.every(singles.contains))
         .toList();
@@ -107,7 +107,7 @@ class PuzzleRepository extends ChangeNotifier {
     if (cache == null || cache.isEmpty) {
       throw StateError('Puzzle repository is empty.');
     }
-    final singles = {'Naked Single', 'Hidden Single'};
+    final singles = {'Open Single', 'Hidden Single'};
     final list = cache
         .where(
           (p) =>

@@ -1,6 +1,6 @@
 import 'package:auto_sudoku_solver/src/strategy/hidden_strategy.dart';
 import 'package:auto_sudoku_solver/src/strategy/locked_strategy.dart';
-import 'package:auto_sudoku_solver/src/strategy/naked_strategy.dart';
+import 'package:auto_sudoku_solver/src/strategy/open_strategy.dart';
 import 'package:auto_sudoku_solver/src/strategy/wing_strategy.dart';
 
 import 'hint.dart';
@@ -14,13 +14,13 @@ import 'solver_settings.dart';
 class Solver {
   final List<Strategy> strategyOrder = [
     // Trivial Singles
-    NakedSingleStrategy(),
+    OpenSingleStrategy(),
     HiddenSingleStrategy(),
 
-    // Naked Sets
-    NakedPairStrategy(),
-    NakedTripleStrategy(),
-    NakedQuadStrategy(),
+    // Open Sets
+    OpenPairStrategy(),
+    OpenTripleStrategy(),
+    OpenQuadStrategy(),
 
     // Locked Candidates
     ClaimingStrategy(),

@@ -5,8 +5,8 @@
         "solution": "741628539869573412523491876678352194912746358354189627137264985485917263296835741",
         "techniques": [
             "Hidden Single",
-            "Naked Pair",
-            "Naked Single"
+            "Open Pair",
+            "Open Single"
         ]
     }
 ]

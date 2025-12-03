@@ -3,16 +3,16 @@ import 'package:auto_sudoku_solver/src/hint.dart';
 import 'package:auto_sudoku_solver/src/sudoku.dart';
 
 enum StrategyType {
-  nakedSingle,
+  openSingle,
   hiddenSingle,
   // Pairs
-  nakedPair,
+  openPair,
   hiddenPair,
   // Triples
-  nakedTriple,
+  openTriple,
   hiddenTriple,
   // Quads
-  nakedQuad,
+  openQuad,
   hiddenQuad,
   // Locked Candidates
   pointing,
@@ -42,24 +42,24 @@ enum StrategyType {
   @override
   String toString() {
     switch (this) {
-      case StrategyType.nakedSingle:
-        return 'Naked Single';
+      case StrategyType.openSingle:
+        return 'Open Single';
       case StrategyType.hiddenSingle:
         return 'Hidden Single';
       case StrategyType.pointing:
         return 'Locked Candidates (Pointing)';
       case StrategyType.claiming:
         return 'Locked Candidates (Claiming)';
-      case StrategyType.nakedPair:
-        return 'Naked Pair';
+      case StrategyType.openPair:
+        return 'Open Pair';
       case StrategyType.hiddenPair:
         return 'Hidden Pair';
-      case StrategyType.nakedTriple:
-        return 'Naked Triple';
+      case StrategyType.openTriple:
+        return 'Open Triple';
       case StrategyType.hiddenTriple:
         return 'Hidden Triple';
-      case StrategyType.nakedQuad:
-        return 'Naked Quad';
+      case StrategyType.openQuad:
+        return 'Open Quad';
       case StrategyType.hiddenQuad:
         return 'Hidden Quad';
       case StrategyType.xWing:
@@ -99,11 +99,11 @@ enum StrategyType {
 }
 
 const Map<StrategyType, Difficulty> difficultyMap = {
-  StrategyType.nakedSingle: Difficulty.trivial,
+  StrategyType.openSingle: Difficulty.trivial,
   StrategyType.hiddenSingle: Difficulty.trivial,
-  StrategyType.nakedPair: Difficulty.easy,
-  StrategyType.nakedTriple: Difficulty.easy,
-  StrategyType.nakedQuad: Difficulty.easy,
+  StrategyType.openPair: Difficulty.easy,
+  StrategyType.openTriple: Difficulty.easy,
+  StrategyType.openQuad: Difficulty.easy,
   StrategyType.pointing: Difficulty.easy,
   StrategyType.claiming: Difficulty.easy,
   StrategyType.hiddenPair: Difficulty.easy,

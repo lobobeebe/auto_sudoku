@@ -3,25 +3,25 @@ import 'package:auto_sudoku_solver/src/hint.dart';
 import 'package:auto_sudoku_solver/src/strategy/strategy.dart';
 import 'package:auto_sudoku_solver/src/sudoku.dart';
 
-abstract class NakedStrategy extends Strategy {
-  // Helper to find a subset hint (naked/hidden, k in {2,3,4})
-  Hint? _findNakedHint(Sudoku s, int k) {
+abstract class OpenStrategy extends Strategy {
+  // Helper to find a subset hint (open/hidden, k in {2,3,4})
+  Hint? _findOpenHint(Sudoku s, int k) {
     for (var r = 0; r < 9; r++) {
-      final h = _processUnitNaked(s, k, s.rowIndices(r), HintUnit.row);
+      final h = _processUnitOpen(s, k, s.rowIndices(r), HintUnit.row);
       if (h != null) return h;
     }
     for (var c = 0; c < 9; c++) {
-      final h = _processUnitNaked(s, k, s.colIndices(c), HintUnit.column);
+      final h = _processUnitOpen(s, k, s.colIndices(c), HintUnit.column);
       if (h != null) return h;
     }
     for (var b = 0; b < 9; b++) {
-      final h = _processUnitNaked(s, k, s.boxIndices(b), HintUnit.box);
+      final h = _processUnitOpen(s, k, s.boxIndices(b), HintUnit.box);
       if (h != null) return h;
     }
     return null;
   }
 
-  // Build a Naked subset hint (k in {2,3,4}) from explicit user-selected indices.
+  // Build a Open subset hint (k in {2,3,4}) from explicit user-selected indices.
   Hint? _getHintFromCluesCommon(
     Sudoku s,
     List<int> indices,
@@ -101,8 +101,8 @@ abstract class NakedStrategy extends Strategy {
     );
   }
 
-  // Try Naked subset in each unit (generalized for k in {2,3,4})
-  Hint? _processUnitNaked(
+  // Try Open subset in each unit (generalized for k in {2,3,4})
+  Hint? _processUnitOpen(
     Sudoku s,
     int k,
     Iterable<int> unit,
@@ -159,13 +159,13 @@ abstract class NakedStrategy extends Strategy {
   StrategyType _strategyTypeForK(int k) {
     switch (k) {
       case 2:
-        return StrategyType.nakedPair;
+        return StrategyType.openPair;
       case 3:
-        return StrategyType.nakedTriple;
+        return StrategyType.openTriple;
       case 4:
-        return StrategyType.nakedQuad;
+        return StrategyType.openQuad;
       default:
-        throw ArgumentError('Unsupported naked subset size: $k');
+        throw ArgumentError('Unsupported open subset size: $k');
     }
   }
 
@@ -193,12 +193,12 @@ abstract class NakedStrategy extends Strategy {
   }
 }
 
-class NakedPairStrategy extends NakedStrategy {
+class OpenPairStrategy extends OpenStrategy {
   @override
-  StrategyType get type => StrategyType.nakedPair;
+  StrategyType get type => StrategyType.openPair;
   @override
   Hint? findHint(Sudoku s) {
-    return _findNakedHint(s, 2);
+    return _findOpenHint(s, 2);
   }
 
   @override
@@ -206,17 +206,17 @@ class NakedPairStrategy extends NakedStrategy {
 
   @override
   Hint? getHintFromClues(Sudoku s, List<int> indices) {
-    return _getHintFromCluesCommon(s, indices, 2, StrategyType.nakedPair);
+    return _getHintFromCluesCommon(s, indices, 2, StrategyType.openPair);
   }
 }
 
-class NakedTripleStrategy extends NakedStrategy {
+class OpenTripleStrategy extends OpenStrategy {
   @override
-  StrategyType get type => StrategyType.nakedTriple;
+  StrategyType get type => StrategyType.openTriple;
 
   @override
   Hint? findHint(Sudoku s) {
-    return _findNakedHint(s, 3);
+    return _findOpenHint(s, 3);
   }
 
   @override
@@ -224,17 +224,17 @@ class NakedTripleStrategy extends NakedStrategy {
 
   @override
   Hint? getHintFromClues(Sudoku s, List<int> indices) {
-    return _getHintFromCluesCommon(s, indices, 3, StrategyType.nakedTriple);
+    return _getHintFromCluesCommon(s, indices, 3, StrategyType.openTriple);
   }
 }
 
-class NakedQuadStrategy extends NakedStrategy {
+class OpenQuadStrategy extends OpenStrategy {
   @override
-  StrategyType get type => StrategyType.nakedQuad;
+  StrategyType get type => StrategyType.openQuad;
 
   @override
   Hint? findHint(Sudoku s) {
-    return _findNakedHint(s, 4);
+    return _findOpenHint(s, 4);
   }
 
   @override
@@ -242,13 +242,13 @@ class NakedQuadStrategy extends NakedStrategy {
 
   @override
   Hint? getHintFromClues(Sudoku s, List<int> indices) {
-    return _getHintFromCluesCommon(s, indices, 4, StrategyType.nakedQuad);
+    return _getHintFromCluesCommon(s, indices, 4, StrategyType.openQuad);
   }
 }
 
-class NakedSingleStrategy extends Strategy {
+class OpenSingleStrategy extends Strategy {
   @override
-  StrategyType get type => StrategyType.nakedSingle;
+  StrategyType get type => StrategyType.openSingle;
 
   @override
   Difficulty get difficulty => Difficulty.easy;
@@ -270,7 +270,7 @@ class NakedSingleStrategy extends Strategy {
           }
         }
         return Hint(
-          StrategyType.nakedSingle,
+          StrategyType.openSingle,
           eliminations: eliminations,
           placements: {i: d},
           cells: [i],
@@ -299,7 +299,7 @@ class NakedSingleStrategy extends Strategy {
       }
     }
     return Hint(
-      StrategyType.nakedSingle,
+      StrategyType.openSingle,
       eliminations: eliminations,
       placements: {i: d},
       cells: [i],

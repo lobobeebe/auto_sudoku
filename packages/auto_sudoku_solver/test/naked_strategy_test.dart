@@ -1,17 +1,17 @@
 import 'package:auto_sudoku_solver/src/hint.dart';
 import 'package:auto_sudoku_solver/src/strategy/strategy.dart';
 import 'package:test/test.dart';
-import 'package:auto_sudoku_solver/src/strategy/naked_strategy.dart';
+import 'package:auto_sudoku_solver/src/strategy/open_strategy.dart';
 
 import 'test_harness.dart';
 
 void main() {
-  group('Naked getHintFromClues (Pair/Triple/Quad)', () {
-    test('Naked Triple in a row produces eliminations in that row', () {
+  group('Open getHintFromClues (Pair/Triple/Quad)', () {
+    test('Open Triple in a row produces eliminations in that row', () {
       // Prepare candidates: all empty by default.
       final cands = List<Set<int>>.generate(81, (_) => <int>{});
 
-      // Row 0: three bi/tri-value cells with union {1,2,3} form a naked triple.
+      // Row 0: three bi/tri-value cells with union {1,2,3} form a open triple.
       final a = idx(0, 0);
       final b = idx(0, 1);
       final c = idx(0, 2);
@@ -28,11 +28,11 @@ void main() {
 
       final h = SudokuTestHarness.make(cands);
 
-      final strat = NakedTripleStrategy();
+      final strat = OpenTripleStrategy();
       final hint = strat.getHintFromClues(h.s, [a, b, c]);
 
-      expect(hint, isNotNull, reason: 'Should detect a Naked Triple');
-      expect(hint!.strategy, StrategyType.nakedTriple);
+      expect(hint, isNotNull, reason: 'Should detect a Open Triple');
+      expect(hint!.strategy, StrategyType.openTriple);
       expect(hint.unit, anyOf(HintUnit.row, HintUnit.column, HintUnit.box));
       expect(hint.cells.toSet(), {a, b, c});
       expect(hint.digits, [1, 2, 3]);
@@ -48,7 +48,7 @@ void main() {
       expect(elims.containsKey(c), isFalse);
     });
 
-    test('Naked Pair in a column produces eliminations in that column', () {
+    test('Open Pair in a column produces eliminations in that column', () {
       final cands = List<Set<int>>.generate(81, (_) => <int>{});
 
       // Column 4: pair at r2c5 and r8c5 with digits {5,7}.
@@ -65,11 +65,11 @@ void main() {
 
       final h = SudokuTestHarness.make(cands);
 
-      final strat = NakedPairStrategy();
+      final strat = OpenPairStrategy();
       final hint = strat.getHintFromClues(h.s, [p1, p2]);
 
-      expect(hint, isNotNull, reason: 'Should detect a Naked Pair');
-      expect(hint!.strategy, StrategyType.nakedPair);
+      expect(hint, isNotNull, reason: 'Should detect a Open Pair');
+      expect(hint!.strategy, StrategyType.openPair);
       expect(hint.cells.toSet(), {p1, p2});
       expect(hint.digits.toSet(), {5, 7});
 
@@ -81,7 +81,7 @@ void main() {
       expect(elims.containsKey(p2), isFalse);
     });
 
-    test('Naked Quad in a box produces eliminations inside that box', () {
+    test('Open Quad in a box produces eliminations inside that box', () {
       final cands = List<Set<int>>.generate(81, (_) => <int>{});
 
       // Box (rows 3..5, cols 6..8) => box index 5 (zero-based):
@@ -102,11 +102,11 @@ void main() {
 
       final h = SudokuTestHarness.make(cands);
 
-      final strat = NakedQuadStrategy();
+      final strat = OpenQuadStrategy();
       final hint = strat.getHintFromClues(h.s, [q1, q2, q3, q4]);
 
-      expect(hint, isNotNull, reason: 'Should detect a Naked Quad');
-      expect(hint!.strategy, StrategyType.nakedQuad);
+      expect(hint, isNotNull, reason: 'Should detect a Open Quad');
+      expect(hint!.strategy, StrategyType.openQuad);
       expect(hint.cells.toSet(), {q1, q2, q3, q4});
       expect(hint.digits.toSet(), {2, 4, 6, 9});
 
@@ -120,8 +120,8 @@ void main() {
     });
   });
 
-  group('Naked findHint (Pair/Triple/Quad)', () {
-    test('findHint: Naked Triple in a row', () {
+  group('Open findHint (Pair/Triple/Quad)', () {
+    test('findHint: Open Triple in a row', () {
       final cands = List<Set<int>>.generate(81, (_) => <int>{});
 
       // Row 4 (zero-based): indices r4c1, r4c2, r4c3 form a triple {1,2,3}
@@ -140,11 +140,11 @@ void main() {
 
       final h = SudokuTestHarness.make(cands);
 
-      final strat = NakedTripleStrategy();
+      final strat = OpenTripleStrategy();
       final hint = strat.findHint(h.s);
 
-      expect(hint, isNotNull, reason: 'Should find a Naked Triple in the row');
-      expect(hint!.strategy, StrategyType.nakedTriple);
+      expect(hint, isNotNull, reason: 'Should find a Open Triple in the row');
+      expect(hint!.strategy, StrategyType.openTriple);
       expect(hint.unit, HintUnit.row);
       expect(hint.digits, [1, 2, 3]);
       final cells = hint.cells.toSet();
@@ -157,7 +157,7 @@ void main() {
       expect(cells.any((c) => elims.containsKey(c)), isFalse);
     });
 
-    test('findHint: Naked Pair in a column', () {
+    test('findHint: Open Pair in a column', () {
       final cands = List<Set<int>>.generate(81, (_) => <int>{});
 
       // Column 6 (zero-based col=5): pair at r1c6 and r8c6 -> digits {5,7}
@@ -173,11 +173,11 @@ void main() {
       cands[y] = {1, 7};
 
       final h = SudokuTestHarness.make(cands);
-      final strat = NakedPairStrategy();
+      final strat = OpenPairStrategy();
       final hint = strat.findHint(h.s);
 
-      expect(hint, isNotNull, reason: 'Should find a Naked Pair in the column');
-      expect(hint!.strategy, StrategyType.nakedPair);
+      expect(hint, isNotNull, reason: 'Should find a Open Pair in the column');
+      expect(hint!.strategy, StrategyType.openPair);
       expect(hint.unit, HintUnit.column);
       expect(hint.digits.toSet(), {5, 7});
       final cells = hint.cells.toSet();
@@ -190,7 +190,7 @@ void main() {
       expect(cells.any((c) => elims.containsKey(c)), isFalse);
     });
 
-    test('findHint: Naked Quad in a box', () {
+    test('findHint: Open Quad in a box', () {
       final cands = List<Set<int>>.generate(81, (_) => <int>{});
 
       // Box (rows 6..8, cols 0..2) => bottom-left box
@@ -208,11 +208,11 @@ void main() {
       cands[peer] = {1, 2, 9};
 
       final h = SudokuTestHarness.make(cands);
-      final strat = NakedQuadStrategy();
+      final strat = OpenQuadStrategy();
       final hint = strat.findHint(h.s);
 
-      expect(hint, isNotNull, reason: 'Should find a Naked Quad in the box');
-      expect(hint!.strategy, StrategyType.nakedQuad);
+      expect(hint, isNotNull, reason: 'Should find a Open Quad in the box');
+      expect(hint!.strategy, StrategyType.openQuad);
       expect(hint.unit, HintUnit.box);
       expect(hint.digits.toSet(), {2, 4, 6, 9});
       final cells = hint.cells.toSet();

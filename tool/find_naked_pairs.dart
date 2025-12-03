@@ -29,10 +29,10 @@ void main(List<String> args) async {
 
   final s = Sudoku.fromString(puzzle);
 
-  // Helper to get all pairs (two-cell combos) that form a valid Naked Pair
+  // Helper to get all pairs (two-cell combos) that form a valid Open Pair
   // in rows, columns, and boxes at the current candidate state.
   List<(List<int> cells, List<int> digits, HintUnit unit, int unitIndex)>
-      findNakedPairs(Sudoku s) {
+  findOpenPairs(Sudoku s) {
     final results = <(List<int>, List<int>, HintUnit, int)>[];
 
     void processUnit(Iterable<int> unit, HintUnit unitType, int unitIdx) {
@@ -40,7 +40,7 @@ void main(List<String> args) async {
       if (empties.length < 2) return;
 
       // Consider cells with 2 candidates (pairs can also include a cell with >2
-      // as long as union size is 2, but standard Naked Pair requires each cell
+      // as long as union size is 2, but standard Open Pair requires each cell
       // has subset of size 2..2 or <=2? Here we allow 2..2 and union size 2.
       final subsetPool = empties.where((i) => s.numNotesAt(i) >= 2).toList();
       for (var a = 0; a < subsetPool.length; a++) {
@@ -88,9 +88,9 @@ void main(List<String> args) async {
     return unique;
   }
 
-  final pairs0 = findNakedPairs(s);
+  final pairs0 = findOpenPairs(s);
   if (pairs0.isEmpty) {
-    print('No Naked Pair at initial state.');
+    print('No Open Pair at initial state.');
   } else {
     // Print initial pairs
     for (var idx = 0; idx < pairs0.length && idx < 10; idx++) {
@@ -99,15 +99,15 @@ void main(List<String> args) async {
         HintUnit.row => 'row',
         HintUnit.column => 'col',
         HintUnit.box => 'box',
-        null => 'unit'
+        null => 'unit',
       };
       print('initial[$idx]: cells=${p.$1} digits=${p.$2} unit=$unit${p.$4}');
     }
   }
 
-  // Apply a few Naked Singles until a new pair appears
+  // Apply a few Open Singles until a new pair appears
   final solver = Solver(
-    settings: SolverSettings(allowed: {StrategyType.nakedSingle}),
+    settings: SolverSettings(allowed: {StrategyType.openSingle}),
   );
   final s2 = s.clone();
   var singlesApplied = 0;
@@ -115,7 +115,7 @@ void main(List<String> args) async {
   while (singlesApplied < maxSingles) {
     final h = solver.nextHint(s2);
     if (h == null) break;
-    if (h.strategy != StrategyType.nakedSingle) break;
+    if (h.strategy != StrategyType.openSingle) break;
     final changed = s2.applyHint(h);
     // Log the placement(s)
     if (h.placements.isNotEmpty) {
@@ -125,12 +125,16 @@ void main(List<String> args) async {
     }
     if (changed.isEmpty) break;
     singlesApplied++;
-    final pairsNow = findNakedPairs(s2);
+    final pairsNow = findOpenPairs(s2);
     // Find a pair that wasn't present initially
     final firstNew = pairsNow.firstWhere(
-      (p) => !pairs0.any((q) =>
-          q.$3 == p.$3 && q.$4 == p.$4 &&
-          q.$1[0] == p.$1[0] && q.$1[1] == p.$1[1]),
+      (p) => !pairs0.any(
+        (q) =>
+            q.$3 == p.$3 &&
+            q.$4 == p.$4 &&
+            q.$1[0] == p.$1[0] &&
+            q.$1[1] == p.$1[1],
+      ),
       orElse: () => ([], [], HintUnit.row, -1),
     );
     if (firstNew.$1.isNotEmpty) {
@@ -138,9 +142,11 @@ void main(List<String> args) async {
         HintUnit.row => 'row',
         HintUnit.column => 'col',
         HintUnit.box => 'box',
-        null => 'unit'
+        null => 'unit',
       };
-      print('after $singlesApplied singles: cells=${firstNew.$1} digits=${firstNew.$2} unit=$unit${firstNew.$4}');
+      print(
+        'after $singlesApplied singles: cells=${firstNew.$1} digits=${firstNew.$2} unit=$unit${firstNew.$4}',
+      );
       break;
     }
   }

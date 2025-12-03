@@ -54,11 +54,11 @@ class SudokuModel {
     // Any Pairs/Triples/Quads or Locked Candidates => Easy
     // Any X/XY/W-Wing => Medium
     bool has(String name) => (techniqueCounts[name] ?? 0) > 0;
-    final singles = {'Naked Single', 'Hidden Single'};
+    final singles = {'Open Single', 'Hidden Single'};
     final setsOrLocked = {
-      'Naked Pair',
-      'Naked Triple',
-      'Naked Quad',
+      'Open Pair',
+      'Open Triple',
+      'Open Quad',
       'Hidden Pair',
       'Hidden Triple',
       'Hidden Quad',

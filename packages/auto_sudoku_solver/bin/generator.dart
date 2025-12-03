@@ -3,8 +3,8 @@
 // Generates valid 9x9 Sudoku puzzles and classifies difficulty.
 //
 // Difficulty rules used here (as requested):
-// - Trivial: Singles only (Naked + Hidden).
-// - Easy: Naked + Hidden Pairs/Triples/Quads, plus Locked Candidates (Pointing/Claiming). No fish.
+// - Trivial: Singles only (Open + Hidden).
+// - Easy: Open + Hidden Pairs/Triples/Quads, plus Locked Candidates (Pointing/Claiming). No fish.
 // - Medium: X-Wing and XY-Wing (plus all Easy techniques).
 // - Hard: Advanced human techniques above Medium (no guessing).
 // - Impossible: Unsolvable even with backtracking, or requires guessing (invalid puzzle).
@@ -28,7 +28,7 @@
 // - Board representation: 81-length List<int> with 0 for empty.
 // - Constraint helpers compute peers and boxes.
 // - Solver applies strategies in passes until fixed point.
-// - Strategies: Naked Single, Hidden Single, Naked Pair/Triple, Hidden Pair/Triple, X-Wing (row/col).
+// - Strategies: Open Single, Hidden Single, Open Pair/Triple, Hidden Pair/Triple, X-Wing (row/col).
 // - Uniqueness check: limited backtracking counting up to 2 solutions.
 // - Generator: builds a full solution by backtracking, then removes clues symmetrically
 //   while preserving uniqueness and matching the requested difficulty.

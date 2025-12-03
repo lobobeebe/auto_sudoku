@@ -13,10 +13,10 @@ class TechniqueExplanation {
 }
 
 /// techniqueKey (supported):
-///   Naked:
-///     'nakedPairRow'|'nakedPairCol'|'nakedPairBox'
-///     'nakedTripleRow'|'nakedTripleCol'|'nakedTripleBox'
-///     'nakedQuadRow'|'nakedQuadCol'|'nakedQuadBox'
+///   Open:
+///     'openPairRow'|'openPairCol'|'openPairBox'
+///     'openTripleRow'|'openTripleCol'|'openTripleBox'
+///     'openQuadRow'|'openQuadCol'|'openQuadBox'
 ///   Hidden:
 ///     'hiddenPairRow'|'hiddenPairCol'|'hiddenPairBox'
 ///     'hiddenTripleRow'|'hiddenTripleCol'|'hiddenTripleBox'
@@ -37,11 +37,11 @@ TechniqueExplanation explainTechnique(Hint hint) {
     switch (hint.strategy) {
       // ------------------------ NAKED ------------------------
 
-      case StrategyType.nakedPair:
+      case StrategyType.openPair:
         switch (hint.unit) {
           case HintUnit.row:
             return TechniqueExplanation(
-              title: 'Naked Pair (Row)',
+              title: 'Open Pair (Row)',
               overview:
                   'Two cells in this row have exactly the same two $digit ($number). '
                   'Remove $those $digit from every other cell in the row.',
@@ -53,7 +53,7 @@ TechniqueExplanation explainTechnique(Hint hint) {
             );
           case HintUnit.column:
             return TechniqueExplanation(
-              title: 'Naked Pair (Column)',
+              title: 'Open Pair (Column)',
               overview:
                   'Two cells in this column have exactly the same two $digit ($number). '
                   'Remove $those $digit from the rest of the column.',
@@ -65,7 +65,7 @@ TechniqueExplanation explainTechnique(Hint hint) {
             );
           case HintUnit.box:
             return TechniqueExplanation(
-              title: 'Naked Pair (Box)',
+              title: 'Open Pair (Box)',
               overview:
                   'Two cells in this 3×3 box share the exact two $digit ($number). '
                   'Remove $them from the other cells in the box.',
@@ -76,14 +76,14 @@ TechniqueExplanation explainTechnique(Hint hint) {
               ],
             );
           default:
-            throw ArgumentError("Naked Pair require a 'HintUnit'");
+            throw ArgumentError("Open Pair require a 'HintUnit'");
         }
 
-      case StrategyType.nakedTriple:
+      case StrategyType.openTriple:
         switch (hint.unit) {
           case HintUnit.row:
             return TechniqueExplanation(
-              title: 'Naked Triple (Row)',
+              title: 'Open Triple (Row)',
               overview:
                   'Three cells in this row contain only three $digit ($number) among them. '
                   'Remove $them from all other cells in the row.',
@@ -95,7 +95,7 @@ TechniqueExplanation explainTechnique(Hint hint) {
             );
           case HintUnit.column:
             return TechniqueExplanation(
-              title: 'Naked Triple (Column)',
+              title: 'Open Triple (Column)',
               overview:
                   'Three cells in this column contain only three $digit ($number). '
                   'Remove $them from the remaining column cells.',
@@ -107,7 +107,7 @@ TechniqueExplanation explainTechnique(Hint hint) {
             );
           case HintUnit.box:
             return TechniqueExplanation(
-              title: 'Naked Triple (Box)',
+              title: 'Open Triple (Box)',
               overview:
                   'Three cells in this box contain only the $digit ($number). '
                   'Remove $them from the rest of the box.',
@@ -118,14 +118,14 @@ TechniqueExplanation explainTechnique(Hint hint) {
               ],
             );
           default:
-            throw ArgumentError("Naked Triples require a 'HintUnit'");
+            throw ArgumentError("Open Triples require a 'HintUnit'");
         }
 
-      case StrategyType.nakedQuad:
+      case StrategyType.openQuad:
         switch (hint.unit) {
           case HintUnit.row:
             return TechniqueExplanation(
-              title: 'Naked Quad (Row)',
+              title: 'Open Quad (Row)',
               overview:
                   'Four cells in this row hold exactly four $digit ($number). '
                   'Remove $them from the other cells in the row.',
@@ -137,7 +137,7 @@ TechniqueExplanation explainTechnique(Hint hint) {
             );
           case HintUnit.column:
             return TechniqueExplanation(
-              title: 'Naked Quad (Column)',
+              title: 'Open Quad (Column)',
               overview:
                   'Four cells in this column hold exactly four $digit ($number). '
                   'Remove $them from the remaining column cells.',
@@ -149,7 +149,7 @@ TechniqueExplanation explainTechnique(Hint hint) {
             );
           case HintUnit.box:
             return TechniqueExplanation(
-              title: 'Naked Quad (Box)',
+              title: 'Open Quad (Box)',
               overview:
                   'Four cells in this box contain only four $digit ($number). '
                   'Remove $them from the other box cells.',
@@ -160,7 +160,7 @@ TechniqueExplanation explainTechnique(Hint hint) {
               ],
             );
           default:
-            throw ArgumentError("Naked Quads require a 'HintUnit'");
+            throw ArgumentError("Open Quads require a 'HintUnit'");
         }
 
       // ------------------------ HIDDEN ------------------------

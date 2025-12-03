@@ -4,9 +4,9 @@
         "puzzle": "200010000000250100913467500804096700090020030000740809109605247006002000000074006",
         "solution": "275318694468259173913467528834596712697821435521743869189635247746982351352174986",
         "techniques": {
-            "Naked Single": 41,
+            "Open Single": 41,
             "Hidden Single": 8,
-            "Naked Pair": 3
+            "Open Pair": 3
         },
         "tutorial": {
             "showNotes": true,
@@ -38,11 +38,11 @@
                     ],
                     "solver": {
                         "allowed": [
-                            "Naked Pair"
+                            "Open Pair"
                         ]
                     },
                     "preventGridTaps": false,
-                    "advanceOnStrategy": "Naked Pair"
+                    "advanceOnStrategy": "Open Pair"
                 },
                 {
                     "title": "What Happened?",
@@ -59,11 +59,11 @@
                     ],
                     "solver": {
                         "allowed": [
-                            "Naked Pair"
+                            "Open Pair"
                         ]
                     },
                     "preventGridTaps": false,
-                    "advanceOnStrategy": "Naked Pair"
+                    "advanceOnStrategy": "Open Pair"
                 },
                 {
                     "title": "Resolved Moves",
@@ -73,7 +73,7 @@
                     ],
                     "solver": {
                         "allowed": [
-                            "Naked Pair"
+                            "Open Pair"
                         ]
                     },
                     "preventGridTaps": false
@@ -84,12 +84,12 @@
                     "centerDialog": true,
                     "solver": {
                         "allowed": [
-                            "Naked Pair"
+                            "Open Pair"
                         ]
                     },
                     "autoSolve": {
                         "allowed": [
-                            "Naked Single"
+                            "Open Single"
                         ]
                     }
                 }

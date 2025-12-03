@@ -245,7 +245,7 @@
         "puzzle": "000690000172004906094010850040069300319040675006370090087050410401800269000021000",
         "solution": "538692741172584936694713852745169328319248675826375194287956413451837269963421587",
         "techniques": {
-            "Naked Single": 40
+            "Open Single": 40
         },
         "tutorial": {
             "steps": [
@@ -341,7 +341,7 @@
                     "preventGridTaps": false,
                     "solver": {
                         "allowed": [
-                            "Naked Single"
+                            "Open Single"
                         ]
                     }
                 },
@@ -356,7 +356,7 @@
                     "centerDialog": true,
                     "solver": {
                         "allowed": [
-                            "Naked Single"
+                            "Open Single"
                         ]
                     }
                 }
@@ -368,7 +368,7 @@
         "puzzle": "008009406975000018200008000002060005409125307500080600000600002850000761607800500",
         "solution": "318279456975346218246518973782963145469125387531784629194657832853492761627831594",
         "techniques": {
-            "Naked Single": 32,
+            "Open Single": 32,
             "Hidden Single": 14
         },
         "tutorial": {
@@ -379,7 +379,7 @@
                     "centerDialog": true,
                     "solver": {
                         "allowed": [
-                            "Naked Single",
+                            "Open Single",
                             "Hidden Single"
                         ]
                     }
