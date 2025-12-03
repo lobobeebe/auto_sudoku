@@ -1,7 +1,6 @@
 import 'package:auto_sudoku/data/cell_view_model.dart';
 import 'package:auto_sudoku/state/board_mode.dart';
 import 'package:auto_sudoku/state/board_state/loading_state.dart';
-import 'package:auto_sudoku/state/board_state/animating_state.dart';
 import 'package:auto_sudoku/state/cell_state.dart';
 import 'package:auto_sudoku/ui/theme/sudoku_theme.dart';
 import 'package:auto_sudoku/ui/utils/feedback.dart';

@@ -1,0 +1,123 @@
+{
+    "id": "BAS102",
+    "puzzle": "000690000172004906094010850040069300319040675006370090087050410401800269000021000",
+    "solution": "538692741172584936694713852745169328319248675826375194287956413451837269963421587",
+    "techniques": {
+        "Open Single": 40
+    },
+    "tutorial": {
+        "steps": [
+            {
+                "title": "What are those tiny numbers?",
+                "body": "Those tiny numbers are called Candidates. They list all of the digits that could possibly be in that cell and we'll use them for our next strategy - Open Singles.",
+                "maskRows": [
+                    0,
+                    1,
+                    2,
+                    3,
+                    4,
+                    5,
+                    6,
+                    7,
+                    8
+                ]
+            },
+            {
+                "title": "Single Candidate",
+                "body": "In this cell, there is exactly one possible digit (candidate) that can be placed - 5. Let's take a look at why.",
+                "maskRows": [
+                    1
+                ],
+                "maskBoxes": [
+                    1
+                ],
+                "maskCols": [
+                    3
+                ],
+                "selectedIndices": [
+                    12
+                ]
+            },
+            {
+                "title": "3x3 Box",
+                "body": "The digits 1, 4, 6, and 9 exist within the same box. No duplicates in a box means those values can't possibly be in this cell.",
+                "maskBoxes": [
+                    1
+                ],
+                "selectedIndices": [
+                    12
+                ]
+            },
+            {
+                "title": "Row",
+                "body": "The digits 7 & 2 also exist within the same row - those values are also left out of that cell's candidates.",
+                "maskBoxes": [
+                    1
+                ],
+                "maskRows": [
+                    1
+                ],
+                "selectedIndices": [
+                    12
+                ]
+            },
+            {
+                "title": "Column",
+                "body": "The final digits, 3 & 8 exist within the same column - can't be those digits either!",
+                "maskBoxes": [
+                    1
+                ],
+                "maskRows": [
+                    1
+                ],
+                "maskCols": [
+                    3
+                ],
+                "selectedIndices": [
+                    12
+                ]
+            },
+            {
+                "title": "Open Single",
+                "body": "With candidates displayed, it's easy to see that only the 5 can be in this cell. We call this an Open Single - Give it a tap!",
+                "maskBoxes": [
+                    1
+                ],
+                "maskRows": [
+                    1
+                ],
+                "maskCols": [
+                    3
+                ],
+                "tappableIndices": [
+                    12
+                ],
+                "selectedIndices": [],
+                "advanceOnIndices": [
+                    12
+                ],
+                "preventGridTaps": false,
+                "solver": {
+                    "allowed": [
+                        "Open Single"
+                    ]
+                }
+            },
+            {
+                "title": "Complete the Puzzle",
+                "body": "The rest of this puzzle can be completed just by finding Open Singles. Hidden Singles won't be available here!",
+                "centerDialog": true
+            },
+            {
+                "title": "P.S. - Multi-selection",
+                "body": "Tapping multiple empty cells in a row will highlight them all - this is expected! We'll learn more about it later, but for now if you need to clear multiple selections, you can tap a filled cell or tap the cells again! Happy Tapping!",
+                "centerDialog": true,
+                "solver": {
+                    "allowed": [
+                        "Open Single"
+                    ]
+                }
+            }
+        ]
+    }
+}

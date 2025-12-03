@@ -1,9 +1,14 @@
+import 'dart:convert';
+
+import 'package:auto_sudoku/data/lesson.dart';
+import 'package:auto_sudoku/data/lessons.dart';
 import 'package:auto_sudoku/data/puzzle_repository.dart';
 import 'package:auto_sudoku/state/lesson_progress.dart';
 import 'package:auto_sudoku/state/sudoku_board_state.dart';
 import 'package:auto_sudoku/ui/pages/sudoku_home_page.dart';
 import 'package:auto_sudoku_solver/auto_sudoku_solver.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 class DifficultySelectionPage extends StatefulWidget {
@@ -27,7 +32,7 @@ class _DifficultySelectionPageState extends State<DifficultySelectionPage>
       title: 'Trivial',
       description: 'Singles-only puzzles to get you comfy with the basics.',
       icon: Icons.wb_sunny_rounded,
-      strategies: [StrategyType.openSingle, StrategyType.hiddenSingle],
+      strategies: [StrategyType.hiddenSingle, StrategyType.openSingle],
     ),
     _DifficultyOption(
       difficulty: Difficulty.easy,
@@ -162,7 +167,7 @@ class _DifficultySelectionPageState extends State<DifficultySelectionPage>
                             ).animate(curved),
                             child: _DifficultyCard(
                               option: option,
-                              onTap: () => _launchGame(option.difficulty),
+                              onTap: () => _handleDifficultyTap(option),
                             ),
                           ),
                         );
@@ -178,8 +183,26 @@ class _DifficultySelectionPageState extends State<DifficultySelectionPage>
     );
   }
 
-  void _launchGame(Difficulty difficulty) {
-    final repo = context.read<PuzzleRepository>();
+  Future<SudokuModel> _loadLessonPuzzle(String path) async {
+    final raw = await rootBundle.loadString(path);
+    final decoded = json.decode(raw);
+    if (decoded is List && decoded.isNotEmpty) {
+      final first = decoded.first;
+      if (first is Map<String, dynamic>) {
+        return SudokuModel.fromJson(first);
+      }
+      if (first is Map) {
+        return SudokuModel.fromJson(first.cast<String, dynamic>());
+      }
+    } else if (decoded is Map<String, dynamic>) {
+      return SudokuModel.fromJson(decoded);
+    } else if (decoded is Map) {
+      return SudokuModel.fromJson(decoded.cast<String, dynamic>());
+    }
+    throw StateError('Invalid puzzle data at $path');
+  }
+
+  void _pushGameWithLoader(Future<SudokuModel> Function() loader) {
     Navigator.of(context).push(
       PageRouteBuilder<void>(
         transitionDuration: const Duration(milliseconds: 420),
@@ -197,21 +220,30 @@ class _DifficultySelectionPageState extends State<DifficultySelectionPage>
                       curve: Curves.easeOutCubic,
                     ),
                   ),
-              child: ChangeNotifierProvider<SudokuBoardState>(
-                create: (_) {
-                  final board = SudokuBoardState();
-                  repo
-                      .loadRandomPuzzleByDifficulty(difficulty)
-                      .then((puzzle) => board.requestInitPuzzle(puzzle))
-                      .onError((error, st) {
-                        board.requestInitPuzzle(null, error: error.toString());
-                        debugPrintStack(
-                          label: error.toString(),
-                          stackTrace: st,
-                        );
-                      });
-                  return board;
-                },
+              child: MultiProvider(
+                providers: [
+                  ChangeNotifierProvider<SudokuBoardState>(
+                    create: (_) {
+                      final state = SudokuBoardState();
+                      loader()
+                          .then((puzzle) {
+                            state.requestInitPuzzle(puzzle);
+                          })
+                          .onError((error, st) {
+                            state.requestInitPuzzle(
+                              null,
+                              error: error.toString(),
+                            );
+                            debugPrintStack(
+                              label: error.toString(),
+                              stackTrace: st,
+                            );
+                          });
+
+                      return state;
+                    },
+                  ),
+                ],
                 child: const SudokuHomePage(),
               ),
             ),
@@ -219,6 +251,31 @@ class _DifficultySelectionPageState extends State<DifficultySelectionPage>
         },
       ),
     );
+  }
+
+  void _launchGame(Difficulty difficulty) {
+    final repo = context.read<PuzzleRepository>();
+    _pushGameWithLoader(() => repo.loadRandomPuzzleByDifficulty(difficulty));
+  }
+
+  PuzzleLesson? _nextIncompleteLesson(_DifficultyOption option) {
+    final progress = context.read<LessonProgress>();
+    for (final strategy in option.strategies) {
+      final lesson = PuzzleLessons.all[strategy];
+      if (lesson != null && !progress.isDone(strategy)) {
+        return lesson;
+      }
+    }
+    return null;
+  }
+
+  void _handleDifficultyTap(_DifficultyOption option) {
+    final lesson = _nextIncompleteLesson(option);
+    if (lesson != null) {
+      _pushGameWithLoader(() => _loadLessonPuzzle(lesson.path));
+      return;
+    }
+    _launchGame(option.difficulty);
   }
 }
 
@@ -266,8 +323,10 @@ class _DifficultyCardState extends State<_DifficultyCard> {
                   spacing: 8,
                   runSpacing: 8,
                   children: widget.option.strategies.map((strategy) {
-                    final learned =
-                        progress?.isDoneByTitle(strategy.toString()) ?? false;
+                    final lesson = PuzzleLessons.all[strategy];
+                    final learned = lesson != null
+                        ? (progress.isDone(strategy))
+                        : false;
                     final icon = learned
                         ? Icons.check_circle_rounded
                         : Icons.check_circle_outline_rounded;

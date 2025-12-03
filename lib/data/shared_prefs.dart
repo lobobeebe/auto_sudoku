@@ -1,7 +1,8 @@
+import 'package:auto_sudoku_solver/auto_sudoku_solver.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-int getProgress(SharedPreferences prefs, String lessonTitle) {
-  String key = "${_slug(lessonTitle)}_progress";
+int getProgress(SharedPreferences prefs, StrategyType type) {
+  String key = "${_slug(type)}_progress";
   if (prefs.containsKey(key)) {
     final progress = prefs.get(key);
     if (progress is int) {
@@ -14,15 +15,15 @@ int getProgress(SharedPreferences prefs, String lessonTitle) {
 
 Future<bool> setProgress(
   SharedPreferences prefs,
-  String lessonTitle,
+  StrategyType type,
   int progress,
 ) async {
-  String key = "${_slug(lessonTitle)}_progress";
+  String key = "${_slug(type)}_progress";
   return prefs.setInt(key, progress);
 }
 
-bool getDone(SharedPreferences prefs, String lessonTitle) {
-  String key = "${_slug(lessonTitle)}_done";
+bool getDone(SharedPreferences prefs, StrategyType type) {
+  String key = "${_slug(type)}_done";
   if (prefs.containsKey(key)) {
     final done = prefs.get(key);
     if (done is bool) {
@@ -33,12 +34,12 @@ bool getDone(SharedPreferences prefs, String lessonTitle) {
   return false;
 }
 
-Future<bool> setDone(SharedPreferences prefs, String lessonTitle, bool done) {
-  String key = "${_slug(lessonTitle)}_done";
+Future<bool> setDone(SharedPreferences prefs, StrategyType type, bool done) {
+  String key = "${_slug(type)}_done";
   return prefs.setBool(key, done);
 }
 
-String _slug(String input) => input
+String _slug(StrategyType type) => type.name
     .toLowerCase()
     .replaceAll(RegExp(r"[^a-z0-9]+"), '_')
     .replaceAll(RegExp(r"_+"), '_')

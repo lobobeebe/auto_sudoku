@@ -1,5 +1,35 @@
 import 'package:auto_sudoku/data/lesson.dart';
+import 'package:auto_sudoku_solver/auto_sudoku_solver.dart';
 import 'package:flutter/material.dart';
+
+abstract class PuzzleLessons {
+  static const Map<StrategyType, PuzzleLesson> all = {
+    StrategyType.openSingle: PuzzleLesson(
+      path: "assets/puzzles/lessons/open_single.json",
+    ),
+    StrategyType.openPair: PuzzleLesson(
+      path: "assets/puzzles/lessons/open_pair.json",
+    ),
+    StrategyType.openTriple: PuzzleLesson(
+      path: "assets/puzzles/lessons/open_triple.json",
+    ),
+    StrategyType.openQuad: PuzzleLesson(
+      path: "assets/puzzles/lessons/open_quad.json",
+    ),
+    StrategyType.hiddenSingle: PuzzleLesson(
+      path: "assets/puzzles/lessons/hidden_single.json",
+    ),
+    StrategyType.hiddenPair: PuzzleLesson(
+      path: "assets/puzzles/lessons/hidden_single.json",
+    ),
+    StrategyType.hiddenTriple: PuzzleLesson(
+      path: "assets/puzzles/lessons/hidden_pair.json",
+    ),
+    StrategyType.hiddenQuad: PuzzleLesson(
+      path: "assets/puzzles/lessons/hidden_quad.json",
+    ),
+  };
+}
 
 class Lessons {
   static const theBasics = Lesson(

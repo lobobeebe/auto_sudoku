@@ -1,8 +1,6 @@
-import 'package:auto_sudoku/data/lessons.dart';
 import 'package:auto_sudoku/data/puzzle_repository.dart';
 import 'package:auto_sudoku/state/lesson_progress.dart';
 import 'package:auto_sudoku/ui/pages/difficulty_selection_page.dart';
-import 'package:auto_sudoku/ui/pages/learning_journey_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/foundation.dart';
@@ -19,7 +17,6 @@ class HomeScreen extends StatelessWidget {
     final isLoadingRepo = repository.isLoading && !repository.isLoaded;
     final hasError = repository.error != null && !repository.isLoaded;
     final errorMessage = repository.error;
-    final progress = Provider.of<LessonProgress>(context);
 
     return Scaffold(
       body: Stack(
@@ -130,23 +127,9 @@ class HomeScreen extends StatelessWidget {
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                          onPressed:
-                              progress.isDone(Lessons.theBasics) &&
-                                  repository.isLoaded
+                          onPressed: repository.isLoaded
                               ? () => _openDifficultySelection(context)
                               : null,
-                        ),
-                        const SizedBox(height: 12),
-                        FilledButton.tonalIcon(
-                          icon: const Icon(Icons.school_rounded),
-                          label: const Text('Learn'),
-                          style: FilledButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 28,
-                              vertical: 14,
-                            ),
-                          ),
-                          onPressed: () => _openLearningJourney(context),
                         ),
                       ],
                     ),
@@ -178,30 +161,6 @@ void _openDifficultySelection(BuildContext context) {
               end: Offset.zero,
             ).animate(curved),
             child: const DifficultySelectionPage(),
-          ),
-        );
-      },
-    ),
-  );
-}
-
-void _openLearningJourney(BuildContext context) {
-  Navigator.of(context).push(
-    PageRouteBuilder<void>(
-      transitionDuration: const Duration(milliseconds: 420),
-      pageBuilder: (context, animation, secondaryAnimation) {
-        final curved = CurvedAnimation(
-          parent: animation,
-          curve: Curves.easeOutCubic,
-        );
-        return FadeTransition(
-          opacity: curved,
-          child: SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(0, 0.06),
-              end: Offset.zero,
-            ).animate(curved),
-            child: const LearningJourneyPage(),
           ),
         );
       },
