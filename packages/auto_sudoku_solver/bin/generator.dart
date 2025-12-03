@@ -55,6 +55,38 @@ String formatGrid(List<int> g) {
   return sb.toString();
 }
 
+void _printUsage() {
+  print('Sudoku Generator + Classifier');
+  print(
+    'Usage: dart run packages/auto_sudoku_solver/bin/generator.dart '
+    '[--target trivial|easy|medium|hard|any] [--seed N] [--board]',
+  );
+  print(
+    '       [--max-attempts N] [--beam W] [--exp K] [--count N] [--out path]',
+  );
+  print('       [--allow techniques] [--except techniques]');
+  print(
+    '       [--timeout MS] [--max-rounds N] [--min-moves N] [--max-moves N]',
+  );
+  print('Options:');
+  print('  --seed          RNG seed for reproducible generation');
+  print('  --board         Print board grids and progress for each result');
+  print('  --max-attempts  Limit attempts per puzzle (default: 500)');
+  print('  --beam          Beam width for search (default: 1)');
+  print('  --exp           Expansions per round (default: 8)');
+  print('  --count         Number of puzzles to generate (default: 1)');
+  print('  --out           Output JSON path (default: sudoku_output.json)');
+  print('  --allow         Comma-separated strategies to allow');
+  print('  --except        Comma-separated strategies to disallow');
+  print(
+    '  --timeout       Generation timeout per attempt in ms (default: 20000)',
+  );
+  print('  --max-rounds    Limit beam digging rounds (default: 400)');
+  print('  --min-moves     Require at least this many logical steps');
+  print('  --max-moves     Require at most this many logical steps');
+  print('  --help          Show this help and exit');
+}
+
 void main(List<String> args) {
   Set<StrategyType> must = {};
   Set<StrategyType>? only;
@@ -88,7 +120,10 @@ void main(List<String> args) {
 
   for (var i = 0; i < args.length; i++) {
     final a = args[i];
-    if (a == '--only' && i + 1 < args.length) {
+    if (a == '--help') {
+      _printUsage();
+      return;
+    } else if (a == '--only' && i + 1 < args.length) {
       only = parseTechList(args[++i]);
     } else if (a == '--must' && i + 1 < args.length) {
       must = parseTechList(args[++i]);

@@ -22,6 +22,12 @@ class _DifficultySelectionPageState extends State<DifficultySelectionPage>
 
   final List<_DifficultyOption> _options = const [
     _DifficultyOption(
+      difficulty: Difficulty.trivial,
+      title: 'Trivial',
+      description: 'Singles-only puzzles to get you comfy with the basics.',
+      icon: Icons.wb_sunny_rounded,
+    ),
+    _DifficultyOption(
       difficulty: Difficulty.easy,
       title: 'Easy',
       description: 'Perfect for warming up and learning the basics.',
@@ -121,7 +127,7 @@ class _DifficultySelectionPageState extends State<DifficultySelectionPage>
                           parent: _controller,
                           curve: Interval(
                             index * 0.12,
-                            0.55 + index * 0.18,
+                            (0.55 + index * 0.18).clamp(0.0, 1.0),
                             curve: Curves.easeOutCubic,
                           ),
                         );
