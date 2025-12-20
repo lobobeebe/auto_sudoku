@@ -1,0 +1,67 @@
+{
+    "id": "j8UYJR",
+    "puzzle": "006200000702090060405001008000070850020805030057030000300600509070080106000009300",
+    "solution": "986243715712598463435761298193476852624815937857932641341627589579384126268159374",
+    "techniques": {
+        "Open Single": 42,
+        "Hidden Single": 9,
+        "Open Triple": 1
+    },
+    "tutorial": {
+        "showNotes": true,
+        "steps": [
+            {
+                "alignment": "center",
+                "title": "Open Triple",
+                "body": "An Open Triple is similar to the Open Pair, but uses three cells instead of two. Look for three cells in the same unit that collectively contain exactly three candidates between them."
+            },
+            {
+                "title": "Find the Triple",
+                "body": "In the bottom-left box, three cells share candidates 1, 4, and 8. They form our Open Triple. Those candidates can't appear anywhere else in the unit.",
+                "alignment": "top",
+                "maskBoxes": [
+                    6
+                ],
+                "tappableIndices": [
+                    55,
+                    56,
+                    74
+                ],
+                "preventGridTaps": false,
+                "solver": {
+                    "allowed": [
+                        "Open Triple"
+                    ]
+                },
+                "advanceOnStrategy": "Open Triple"
+            },
+            {
+                "title": "Open Triple",
+                "body": "Just like the Open Pair, selecting the evidence cells will automatically remove the candidates from the puzzle!",
+                "alignment": "top",
+                "maskBoxes": [
+                    6
+                ]
+            },
+            {
+                "title": "Finish the Puzzle",
+                "body": "There's one more Open Triple to wrap this puzzle up. Singles will auto-complete as they appear.",
+                "alignment": "center",
+                "preventGridTaps": false,
+                "solver": {
+                    "allowed": [
+                        "Open Single",
+                        "Hidden Single",
+                        "Open Triple"
+                    ]
+                },
+                "autoSolve": {
+                    "allowed": [
+                        "Open Single",
+                        "Hidden Single"
+                    ]
+                }
+            }
+        ]
+    }
+}

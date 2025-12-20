@@ -1,0 +1,13 @@
+{
+    "id": "rFvhoF",
+    "puzzle": "050060032700000000090000570001570693360809045945026700039000050000000004670090020",
+    "solution": "158967432726453819493281576281574693367819245945326781839642157512738964674195328",
+    "techniques": {
+        "Open Single": 28,
+        "Hidden Single": 19,
+        "Locked Candidates (Pointing)": 1,
+        "X-Wing": 1,
+        "Locked Candidates (Claiming)": 1,
+        "XY-Wing": 2
+    }
+}

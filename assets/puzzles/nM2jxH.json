@@ -1,0 +1,13 @@
+{
+    "id": "nM2jxH",
+    "puzzle": "020701030083000100107320005062800000001000500000004270200083701008000340050407080",
+    "solution": "629751834583946127147328695962875413471239568835164279294683751718592346356417982",
+    "techniques": {
+        "Hidden Single": 19,
+        "Open Triple": 1,
+        "Locked Candidates (Claiming)": 2,
+        "Locked Candidates (Pointing)": 1,
+        "W-Wing": 1,
+        "Open Single": 30
+    }
+}

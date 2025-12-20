@@ -1,0 +1,14 @@
+{
+    "id": "rlJmuS",
+    "puzzle": "218000700904700058075083900380009000709000602000600093007340260460007309003000471",
+    "solution": "218954736934762158675183924386219547759438612142675893897341265461527389523896471",
+    "techniques": {
+        "Open Single": 39,
+        "Hidden Single": 4,
+        "Locked Candidates (Claiming)": 2,
+        "Open Quad": 1,
+        "Locked Candidates (Pointing)": 1,
+        "Open Pair": 1,
+        "XY-Wing": 1
+    }
+}

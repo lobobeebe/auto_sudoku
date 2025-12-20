@@ -1,4 +1,5 @@
 import 'package:auto_sudoku/state/sudoku_board_state.dart';
+import 'package:auto_sudoku/state/board_state/unit_state.dart';
 import 'package:auto_sudoku_solver/auto_sudoku_solver.dart';
 import 'package:auto_sudoku_solver/data/tutorial.dart';
 import 'package:auto_sudoku_solver/data/tutorial_step.dart';
@@ -11,6 +12,7 @@ class TutorialController extends ChangeNotifier {
   final Tutorial tutorial;
   int index;
   bool _isDone = false;
+  final Map<int, BoardSnapshot> _stepSnapshots = {};
 
   TutorialController({required this.tutorial, this.index = 0});
 
@@ -18,6 +20,13 @@ class TutorialController extends ChangeNotifier {
   bool get hasPrev => index > 0;
   bool get hasNext => index < tutorial.steps.length - 1;
   bool get isDone => _isDone;
+
+  void captureSnapshotIfNeeded(SudokuBoardState board) {
+    if (_stepSnapshots.containsKey(index)) return;
+    final snap = board.makeSnapshot();
+    _stepSnapshots[index] = snap;
+    board.pushSnapshot(snapshot: snap);
+  }
 
   void next() {
     if (hasNext) {
@@ -29,9 +38,14 @@ class TutorialController extends ChangeNotifier {
     }
   }
 
-  void back() {
+  void back(SudokuBoardState board) {
     if (hasPrev) {
-      index--;
+      final target = index - 1;
+      index = target;
+      final snap = _stepSnapshots[target];
+      if (snap != null) {
+        board.restoreSnapshot(snap);
+      }
       _isDone = false;
       notifyListeners();
     }
@@ -67,6 +81,7 @@ class GridMaskOverlay extends StatelessWidget {
       animation: controller,
       builder: (context, _) {
         final enterStep = controller.current;
+        controller.captureSnapshotIfNeeded(board);
 
         if (enterStep.selectedIndices != null) {
           // Defer mutation + notify to after this build to avoid
@@ -75,6 +90,9 @@ class GridMaskOverlay extends StatelessWidget {
             board.selectedIndices
               ..clear()
               ..addAll(enterStep.selectedIndices!);
+            if (enterStep.selectedIndices!.isEmpty) {
+              board.setMode(UnitMode(board));
+            }
             board.emitChange();
           });
         }
@@ -83,6 +101,10 @@ class GridMaskOverlay extends StatelessWidget {
         board.applyTutorialSolverSettings(
           enterStep.solverSettings ?? const SolverSettings(),
         );
+        board.applyAutoNextSettings(
+          SolverSettings(allowed: enterStep.autoSolveAllowed),
+        );
+
         final maskBase = _stepForMask(
           controller.tutorial.steps,
           controller.index,
@@ -108,6 +130,20 @@ class GridMaskOverlay extends StatelessWidget {
               children: [
                 CustomPaint(
                   painter: _OverlayPainter(allowed: allowedRects, grid: grid),
+                ),
+                AnimatedBuilder(
+                  animation: board,
+                  builder: (context, _) {
+                    final highlights = _resolveHighlightIndices(
+                      enterStep,
+                      board,
+                    );
+                    if (highlights.isEmpty) return const SizedBox.shrink();
+                    return _TappableHighlights(
+                      gridRect: grid,
+                      highlightedIndices: highlights,
+                    );
+                  },
                 ),
                 _TouchShield(
                   gridRect: grid,
@@ -216,7 +252,7 @@ class TutorialPanel extends StatelessWidget {
                                 IconButton.filledTonal(
                                   tooltip: 'Back',
                                   onPressed: controller.hasPrev
-                                      ? controller.back
+                                      ? () => controller.back(board)
                                       : null,
                                   icon: const Icon(Icons.arrow_back_rounded),
                                 ),
@@ -416,10 +452,195 @@ Rect _gridRect(Size size) {
   return Rect.fromLTWH(dx, dy, side, side);
 }
 
+// Fallback-friendly access so older summaries still compile if the dependency
+// surface hasn't been rebuilt yet.
+extension _TutorialStepHighlightAccess on TutorialStep {
+  Set<int>? get highlightedIndicesCompat {
+    try {
+      final dynamic self = this;
+      return self.highlightedIndices as Set<int>?;
+    } catch (_) {
+      return null;
+    }
+  }
+}
+
+Set<int> _resolveHighlightIndices(TutorialStep step, SudokuBoardState board) {
+  final base = step.highlightedIndicesCompat ?? step.tappableIndices;
+  if (base == null || base.isEmpty) return const <int>{};
+  final selected = board.selectedIndices.toSet();
+  final filtered = <int>{};
+  for (final idx in base) {
+    if (idx < 0 || idx > 80) continue;
+    if (selected.contains(idx)) continue;
+    filtered.add(idx);
+  }
+  return filtered;
+}
+
 // Determine the mask for the current step only (no merging from others).
 TutorialStep _stepForMask(List<TutorialStep> steps, int index) {
   if (index < 0 || index >= steps.length) return steps.first;
   return steps[index];
+}
+
+bool _isTapAllowed({
+  required int row,
+  required int col,
+  required TutorialStep step,
+  required SudokuBoardState board,
+}) {
+  if (step.preventGridTaps) return false;
+
+  final idx = row * 9 + col;
+  final box = (row ~/ 3) * 3 + (col ~/ 3);
+
+  final hasAny =
+      (step.maskIndices != null && step.maskIndices!.isNotEmpty) ||
+      (step.tappableIndices != null && step.tappableIndices!.isNotEmpty) ||
+      step.maskRows.isNotEmpty ||
+      step.maskCols.isNotEmpty ||
+      step.maskBoxes.isNotEmpty ||
+      step.cells.isNotEmpty ||
+      step.advanceOnValue != null;
+  if (!hasAny) return false;
+
+  bool baseAllowed =
+      (step.maskIndices?.contains(idx) ?? false) ||
+      (step.tappableIndices?.contains(idx) ?? false) ||
+      step.cells.contains(idx) ||
+      step.maskRows.contains(row) ||
+      step.maskCols.contains(col) ||
+      step.maskBoxes.contains(box);
+  if (!baseAllowed) return false;
+
+  if (step.advanceOnValue != null) {
+    final required = step.advanceOnValue!;
+    if (board.sudoku.isEmpty(idx) || board.sudoku.valueAt(idx) != required) {
+      return false;
+    }
+  }
+
+  if (step.tappableIndices != null && !step.tappableIndices!.contains(idx)) {
+    return false;
+  }
+
+  return true;
+}
+
+bool _processGridTap({
+  required int row,
+  required int col,
+  required TutorialStep step,
+  required SudokuBoardState board,
+  TutorialController? controller,
+}) {
+  if (!_isTapAllowed(row: row, col: col, step: step, board: board)) {
+    return false;
+  }
+
+  board.requestSelectCell(row, col);
+  final idx = row * 9 + col;
+  if (step.advanceOnIndices != null && step.advanceOnIndices!.contains(idx)) {
+    controller?.next();
+    return true;
+  }
+  if (step.advanceOnValue != null) {
+    controller?.next();
+  }
+  return true;
+}
+
+class _TappableHighlights extends StatefulWidget {
+  final Rect gridRect;
+  final Set<int> highlightedIndices;
+
+  const _TappableHighlights({
+    required this.gridRect,
+    required this.highlightedIndices,
+  });
+
+  @override
+  State<_TappableHighlights> createState() => _TappableHighlightsState();
+}
+
+class _TappableHighlightsState extends State<_TappableHighlights>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void didUpdateWidget(covariant _TappableHighlights oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.highlightedIndices != widget.highlightedIndices ||
+        oldWidget.gridRect != widget.gridRect) {
+      _controller.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.highlightedIndices.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final anim = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeInOutCubic,
+    );
+
+    return AnimatedBuilder(
+      animation: anim,
+      builder: (context, _) {
+        final t = anim.value;
+        final pulse = 0.94 + 0.08 * t;
+        final borderColor = const Color(0xFF2D8CFF);
+        final cellW = widget.gridRect.width / 9;
+        final cellH = widget.gridRect.height / 9;
+
+        return IgnorePointer(
+          child: Stack(
+            children: [
+              for (final idx in widget.highlightedIndices)
+                Positioned(
+                  left: widget.gridRect.left + (idx % 9) * cellW,
+                  top: widget.gridRect.top + (idx ~/ 9) * cellH,
+                  width: cellW,
+                  height: cellH,
+                  child: Transform.scale(
+                    scale: pulse,
+                    alignment: Alignment.center,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: borderColor.withValues(alpha: 0.65 + 0.25 * t),
+                          width: 3,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 }
 
 class _OverlayPainter extends CustomPainter {
@@ -460,55 +681,11 @@ class _TouchShield extends StatelessWidget {
   });
 
   bool _hitAllowed(Offset pos, Size size) {
-    // Global per-step block: when set, never allow grid taps
-    if (step.preventGridTaps) return false;
-
-    // No targets -> block (unless expecting a specific value tap)
-    final hasAny =
-        (step.maskIndices != null && step.maskIndices!.isNotEmpty) ||
-        (step.tappableIndices != null && step.tappableIndices!.isNotEmpty) ||
-        step.maskRows.isNotEmpty ||
-        step.maskCols.isNotEmpty ||
-        step.maskBoxes.isNotEmpty ||
-        step.cells.isNotEmpty ||
-        step.advanceOnValue != null;
-    if (!hasAny) return false;
-
     final w = size.width / 9;
     final h = size.height / 9;
     final col = (pos.dx ~/ w).clamp(0, 8);
     final row = (pos.dy ~/ h).clamp(0, 8);
-    final box = (row ~/ 3) * 3 + (col ~/ 3);
-    final idx = row * 9 + col;
-
-    // Compute base allowance from masks/units
-    bool baseAllowed;
-    if (step.maskIndices != null) {
-      baseAllowed = step.maskIndices!.contains(idx);
-    } else {
-      baseAllowed =
-          step.cells.contains(idx) ||
-          step.maskRows.contains(row) ||
-          step.maskCols.contains(col) ||
-          step.maskBoxes.contains(box);
-    }
-    if (!baseAllowed) return false;
-
-    // If a specific selection value is required, further restrict to cells
-    // whose filled value matches that digit.
-    if (step.advanceOnValue != null) {
-      final required = step.advanceOnValue!;
-      if (board.sudoku.isEmpty(idx) || board.sudoku.valueAt(idx) != required) {
-        return false;
-      }
-    }
-
-    // Further restrict with explicit tappable indices if provided.
-    if (step.tappableIndices != null && !step.tappableIndices!.contains(idx)) {
-      return false;
-    }
-
-    return true;
+    return _isTapAllowed(row: row, col: col, step: step, board: board);
   }
 
   @override
@@ -531,18 +708,13 @@ class _TouchShield extends StatelessWidget {
         final cellH = gridRect.height / 9;
         int col = (rel.dx ~/ cellW).clamp(0, 8);
         int row = (rel.dy ~/ cellH).clamp(0, 8);
-        board.requestSelectCell(row, col);
-        // Auto-advance rules
-        final idx = row * 9 + col;
-        if (step.advanceOnIndices != null &&
-            step.advanceOnIndices!.contains(idx)) {
-          controller?.next();
-          return;
-        }
-        if (step.advanceOnValue != null) {
-          controller?.next();
-          return;
-        }
+        _processGridTap(
+          row: row,
+          col: col,
+          step: step,
+          board: board,
+          controller: controller,
+        );
       },
     );
   }

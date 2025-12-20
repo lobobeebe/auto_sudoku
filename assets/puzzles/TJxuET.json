@@ -1,0 +1,12 @@
+{
+    "id": "TJxuET",
+    "puzzle": "020809000650070200300000700040060005003405100500010030005000006002040087000503020",
+    "solution": "724839651658174293319256748241368975873495162596712834485927316932641587167583429",
+    "techniques": {
+        "Hidden Single": 10,
+        "Open Single": 43,
+        "Locked Candidates (Claiming)": 2,
+        "Locked Candidates (Pointing)": 1,
+        "Open Pair": 1
+    }
+}

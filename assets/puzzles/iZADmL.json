@@ -1,0 +1,12 @@
+{
+    "id": "iZADmL",
+    "puzzle": "000380006006200003008004070602900807000000000703001205020600700300002500100038000",
+    "solution": "217389456456217983938564172642953817581726394793841265824695731369172548175438629",
+    "techniques": {
+        "Hidden Single": 16,
+        "Open Single": 37,
+        "Locked Candidates (Claiming)": 1,
+        "Locked Candidates (Pointing)": 1,
+        "XY-Wing": 1
+    }
+}

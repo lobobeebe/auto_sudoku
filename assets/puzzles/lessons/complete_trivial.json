@@ -1,0 +1,25 @@
+{
+    "id": "BAS103",
+    "puzzle": "000010203000370004600248709080001070150000032090700060902183007700026000308090000",
+    "solution": "574619283829375614631248759286931475157864932493752861962183547715426398348597126",
+    "techniques": {
+        "Open Single": 41,
+        "Hidden Single": 6
+    },
+    "tutorial": {
+        "steps": [
+            {
+                "title": "Complete the Puzzle",
+                "body": "Use the Hidden Single and Open Single techniques you've learned to complete the puzzle and unlock the Easy difficulty!",
+                "alignment": "center",
+                "preventGridTaps": false,
+                "solver": {
+                    "allowed": [
+                        "Hidden Single",
+                        "Open Single"
+                    ]
+                }
+            }
+        ]
+    }
+}

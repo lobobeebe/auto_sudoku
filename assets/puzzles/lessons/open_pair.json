@@ -1,0 +1,114 @@
+{
+    "id": "cCeFy1",
+    "puzzle": "200010000000250100913467500804096700090020030000740809109605247006002000000074006",
+    "solution": "275318694468259173913467528834596712697821435521743869189635247746982351352174986",
+    "techniques": {
+        "Open Single": 41,
+        "Hidden Single": 8,
+        "Open Pair": 3
+    },
+    "tutorial": {
+        "showNotes": true,
+        "steps": [
+            {
+                "title": "Open Pair",
+                "body": "Our first 'Easy' strategy is called the Open Pair. When exactly two cells in a unit share the same two candidates, no other cells in that unit can share those candidates. Let's take a look!",
+                "alignment": "center"
+            },
+            {
+                "title": "Spot the Pair",
+                "body": "In this box, two cells share candidates 3 and 8 — an Open Pair.",
+                "alignment": "top",
+                "maskBoxes": [
+                    7
+                ]
+            },
+            {
+                "title": "Why it Works",
+                "body": "Logically, one of these two cells must be 3 and the other must be 8. If we placed a 3 on the top cell, the other must be 8. If we placed a 8 on the top cell, the other must be 3. That means the 3 and 8 can't be anywhere else in the box!",
+                "alignment": "top",
+                "maskBoxes": [
+                    7
+                ]
+            },
+            {
+                "title": "First Open Pair",
+                "body": "Here's where selecting multiple empty cells comes in! We are going to select the evidence of our strategy. First, select one of the two cells with candidates 3 and 8, then select the other.",
+                "maskBoxes": [
+                    7
+                ],
+                "solver": {
+                    "allowed": [
+                        "Open Pair"
+                    ]
+                },
+                "alignment": "top",
+                "preventGridTaps": false,
+                "advanceOnStrategy": "Open Pair",
+                "tappableIndices": [
+                    58,
+                    67
+                ]
+            },
+            {
+                "title": "What Happened?",
+                "body": "Did you see the effect of the Open Pair? The 3 and 8 candidates were removed from the other cells in this box. Do you notice anything about the remaining cells? You can tap the back arrow to replay the effect!",
+                "alignment": "top",
+                "maskBoxes": [
+                    7
+                ]
+            },
+            {
+                "title": "Another Open Pair",
+                "body": "Those last two cells created another Open Pair in this column with the 1 and 9! Let's give those a tap too!",
+                "alignment": "top",
+                "maskCols": [
+                    3
+                ],
+                "solver": {
+                    "allowed": [
+                        "Open Pair"
+                    ]
+                },
+                "preventGridTaps": false,
+                "advanceOnStrategy": "Open Pair",
+                "tappableIndices": [
+                    66,
+                    75
+                ]
+            },
+            {
+                "title": "Resolved Moves",
+                "body": "Nice job! Keep in mind that if your selected cells aren't having an effect, they likely aren't a valid strategy or the strategy has no effect on the puzzle!",
+                "alignment": "center",
+                "maskCols": [
+                    3
+                ],
+                "solver": {
+                    "allowed": [
+                        "Open Pair"
+                    ]
+                },
+                "preventGridTaps": false
+            },
+            {
+                "title": "Complete the puzzle",
+                "body": "Use the Open Pair strategy to complete the rest of this puzzle - we will auto-complete the singles for you!",
+                "alignment": "center",
+                "solver": {
+                    "allowed": [
+                        "Open Pair",
+                        "Open Single",
+                        "Hidden Single"
+                    ]
+                },
+                "autoSolve": {
+                    "allowed": [
+                        "Open Single",
+                        "Hidden Single"
+                    ]
+                }
+            }
+        ]
+    }
+}

@@ -67,7 +67,7 @@ class HighlightMode extends BoardMode {
       return true;
     }
 
-    if (board.canAutoFinish()) {
+    if (board.nextAutoMove() != null) {
       board.setMode(AnimatingMode(board, this));
       return true;
     }

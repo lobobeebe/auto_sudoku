@@ -117,7 +117,7 @@ class HomeScreen extends StatelessWidget {
                         ),
                         FilledButton.icon(
                           icon: const Icon(Icons.play_arrow_rounded),
-                          label: const Text('Free Play'),
+                          label: const Text('Play'),
                           style: FilledButton.styleFrom(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 32,

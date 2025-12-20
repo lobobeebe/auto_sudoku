@@ -1,14 +1,9 @@
-import 'dart:convert';
-
-import 'package:auto_sudoku/data/lesson.dart';
-import 'package:auto_sudoku/data/lessons.dart';
 import 'package:auto_sudoku/data/puzzle_repository.dart';
 import 'package:auto_sudoku/state/lesson_progress.dart';
-import 'package:auto_sudoku/state/sudoku_board_state.dart';
 import 'package:auto_sudoku/ui/pages/sudoku_home_page.dart';
+import 'package:auto_sudoku/ui/widgets/background_orb.dart';
 import 'package:auto_sudoku_solver/auto_sudoku_solver.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 class DifficultySelectionPage extends StatefulWidget {
@@ -26,19 +21,19 @@ class _DifficultySelectionPageState extends State<DifficultySelectionPage>
     duration: const Duration(milliseconds: 520),
   )..forward();
 
-  final List<_DifficultyOption> _options = const [
+  final List<_DifficultyOption> _options = [
     _DifficultyOption(
       difficulty: Difficulty.trivial,
       title: 'Trivial',
       description: 'Singles-only puzzles to get you comfy with the basics.',
-      icon: Icons.wb_sunny_rounded,
+      icon: Icons.sentiment_satisfied_alt_rounded,
       strategies: [StrategyType.hiddenSingle, StrategyType.openSingle],
     ),
     _DifficultyOption(
       difficulty: Difficulty.easy,
       title: 'Easy',
       description: 'Perfect for warming up and learning the basics.',
-      icon: Icons.sentiment_satisfied_alt_rounded,
+      icon: Icons.wb_sunny_rounded,
       strategies: [
         StrategyType.openPair,
         StrategyType.hiddenPair,
@@ -85,6 +80,7 @@ class _DifficultySelectionPageState extends State<DifficultySelectionPage>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final progress = context.watch<LessonProgress>();
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
@@ -107,12 +103,12 @@ class _DifficultySelectionPageState extends State<DifficultySelectionPage>
           Positioned(
             top: -80,
             right: -40,
-            child: _BlurOrb(color: colorScheme.primary, size: 220),
+            child: BackgroundOrb(color: colorScheme.primary, size: 220),
           ),
           Positioned(
             bottom: -60,
             left: -20,
-            child: _BlurOrb(color: colorScheme.tertiary, size: 180),
+            child: BackgroundOrb(color: colorScheme.tertiary, size: 180),
           ),
           SafeArea(
             child: Padding(
@@ -150,6 +146,12 @@ class _DifficultySelectionPageState extends State<DifficultySelectionPage>
                       separatorBuilder: (_, __) => const SizedBox(height: 18),
                       itemBuilder: (context, index) {
                         final option = _options[index];
+                        final unlocked = _isUnlocked(index, progress);
+                        final description = _descriptionText(
+                          index,
+                          progress,
+                          option,
+                        );
                         final curved = CurvedAnimation(
                           parent: _controller,
                           curve: Interval(
@@ -167,6 +169,8 @@ class _DifficultySelectionPageState extends State<DifficultySelectionPage>
                             ).animate(curved),
                             child: _DifficultyCard(
                               option: option,
+                              unlocked: unlocked,
+                              description: description,
                               onTap: () => _handleDifficultyTap(option),
                             ),
                           ),
@@ -181,25 +185,6 @@ class _DifficultySelectionPageState extends State<DifficultySelectionPage>
         ],
       ),
     );
-  }
-
-  Future<SudokuModel> _loadLessonPuzzle(String path) async {
-    final raw = await rootBundle.loadString(path);
-    final decoded = json.decode(raw);
-    if (decoded is List && decoded.isNotEmpty) {
-      final first = decoded.first;
-      if (first is Map<String, dynamic>) {
-        return SudokuModel.fromJson(first);
-      }
-      if (first is Map) {
-        return SudokuModel.fromJson(first.cast<String, dynamic>());
-      }
-    } else if (decoded is Map<String, dynamic>) {
-      return SudokuModel.fromJson(decoded);
-    } else if (decoded is Map) {
-      return SudokuModel.fromJson(decoded.cast<String, dynamic>());
-    }
-    throw StateError('Invalid puzzle data at $path');
   }
 
   void _pushGameWithLoader(Future<SudokuModel> Function() loader) {
@@ -220,32 +205,7 @@ class _DifficultySelectionPageState extends State<DifficultySelectionPage>
                       curve: Curves.easeOutCubic,
                     ),
                   ),
-              child: MultiProvider(
-                providers: [
-                  ChangeNotifierProvider<SudokuBoardState>(
-                    create: (_) {
-                      final state = SudokuBoardState();
-                      loader()
-                          .then((puzzle) {
-                            state.requestInitPuzzle(puzzle);
-                          })
-                          .onError((error, st) {
-                            state.requestInitPuzzle(
-                              null,
-                              error: error.toString(),
-                            );
-                            debugPrintStack(
-                              label: error.toString(),
-                              stackTrace: st,
-                            );
-                          });
-
-                      return state;
-                    },
-                  ),
-                ],
-                child: const SudokuHomePage(),
-              ),
+              child: SudokuHomePage(future: loader()),
             ),
           );
         },
@@ -258,32 +218,69 @@ class _DifficultySelectionPageState extends State<DifficultySelectionPage>
     _pushGameWithLoader(() => repo.loadRandomPuzzleByDifficulty(difficulty));
   }
 
-  PuzzleLesson? _nextIncompleteLesson(_DifficultyOption option) {
+  Future<SudokuModel> _loadLessonPuzzle(String lessonId) {
+    final repo = context.read<PuzzleRepository>();
+    return repo.loadPuzzleById(lessonId);
+  }
+
+  String? _nextIncompleteLessonId(_DifficultyOption option) {
     final progress = context.read<LessonProgress>();
-    for (final strategy in option.strategies) {
-      final lesson = PuzzleLessons.all[strategy];
-      if (lesson != null && !progress.isDone(strategy)) {
-        return lesson;
-      }
-    }
-    return null;
+    return progress.getNextLessonByDifficulty(option.difficulty);
   }
 
   void _handleDifficultyTap(_DifficultyOption option) {
-    final lesson = _nextIncompleteLesson(option);
-    if (lesson != null) {
-      _pushGameWithLoader(() => _loadLessonPuzzle(lesson.path));
+    final lessonId = _nextIncompleteLessonId(option);
+    if (lessonId != null) {
+      _pushGameWithLoader(() => _loadLessonPuzzle(lessonId));
       return;
     }
     _launchGame(option.difficulty);
+  }
+
+  bool _isUnlocked(int index, LessonProgress progress) {
+    final option = _options[index];
+    if (!option.enabled) return false;
+    if (index == 0) return true;
+
+    final previous = _options[index - 1];
+    final nextLessonOfPreviousDiff = progress.getNextLessonByDifficulty(
+      previous.difficulty,
+    );
+    return nextLessonOfPreviousDiff == null;
+  }
+
+  String _descriptionText(
+    int index,
+    LessonProgress progress,
+    _DifficultyOption option,
+  ) {
+    if (!option.enabled) {
+      return '${option.title} is coming soon.';
+    }
+
+    if (_isUnlocked(index, progress)) {
+      return option.description;
+    }
+
+    final previous = _options[index - 1];
+    final completed = progress.getNumLessonsCompleted(previous.difficulty);
+    final required = progress.getNumLessonsRequired(previous.difficulty);
+    return '($completed/$required) Complete $required ${previous.title} puzzles to unlock.';
   }
 }
 
 class _DifficultyCard extends StatefulWidget {
   final _DifficultyOption option;
+  final bool unlocked;
+  final String description;
   final VoidCallback onTap;
 
-  const _DifficultyCard({required this.option, required this.onTap});
+  const _DifficultyCard({
+    required this.option,
+    required this.unlocked,
+    required this.description,
+    required this.onTap,
+  });
 
   @override
   State<_DifficultyCard> createState() => _DifficultyCardState();
@@ -294,9 +291,6 @@ class _DifficultyCardState extends State<_DifficultyCard> {
 
   void _showInfoDialog() {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final progress = Provider.of<LessonProgress>(context, listen: false);
-
     showDialog<void>(
       context: context,
       builder: (context) {
@@ -310,48 +304,6 @@ class _DifficultyCardState extends State<_DifficultyCard> {
                 Text(
                   widget.option.description,
                   style: theme.textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 14),
-                Text(
-                  'Strategies',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: widget.option.strategies.map((strategy) {
-                    final lesson = PuzzleLessons.all[strategy];
-                    final learned = lesson != null
-                        ? (progress.isDone(strategy))
-                        : false;
-                    final icon = learned
-                        ? Icons.check_circle_rounded
-                        : Icons.check_circle_outline_rounded;
-                    final iconColor = learned
-                        ? Colors.green
-                        : theme.disabledColor;
-                    return TextButton.icon(
-                      onPressed: () {},
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 8,
-                        ),
-                        foregroundColor: colorScheme.onSurface,
-                        backgroundColor: colorScheme.surfaceVariant.withValues(
-                          alpha: 0.4,
-                        ),
-                      ),
-                      icon: Icon(icon, size: 18, color: iconColor),
-                      label: Text(
-                        strategy.toString(),
-                        style: theme.textTheme.bodyMedium,
-                      ),
-                    );
-                  }).toList(),
                 ),
               ],
             ),
@@ -371,10 +323,13 @@ class _DifficultyCardState extends State<_DifficultyCard> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final enabled = widget.option.enabled;
+    final enabled = widget.unlocked;
+    final comingSoon = !widget.option.enabled;
 
     return GestureDetector(
-      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapDown: (_) {
+        if (enabled) setState(() => _isPressed = true);
+      },
       onTapUp: (_) {
         setState(() => _isPressed = false);
         if (enabled) {
@@ -421,7 +376,7 @@ class _DifficultyCardState extends State<_DifficultyCard> {
                     ),
                   ),
                   child: Icon(
-                    widget.option.icon,
+                    comingSoon ? Icons.lock : widget.option.icon,
                     color: colorScheme.primary.withAlpha(enabled ? 255 : 50),
                     size: 34,
                   ),
@@ -433,13 +388,11 @@ class _DifficultyCardState extends State<_DifficultyCard> {
                     children: [
                       Row(
                         children: [
-                          Expanded(
-                            child: Text(
-                              widget.option.title,
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w700,
-                                color: enabled ? null : theme.disabledColor,
-                              ),
+                          Text(
+                            widget.option.title,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: enabled ? null : theme.disabledColor,
                             ),
                           ),
                           IconButton(
@@ -457,12 +410,14 @@ class _DifficultyCardState extends State<_DifficultyCard> {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        widget.option.description,
+                        comingSoon ? 'Coming soon...' : widget.description,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: enabled
                               ? colorScheme.onSurfaceVariant
                               : theme.disabledColor,
                         ),
+                        overflow: TextOverflow.fade,
+                        softWrap: false,
                       ),
                     ],
                   ),
@@ -500,30 +455,4 @@ class _DifficultyOption {
     required this.strategies,
     this.enabled = true,
   });
-}
-
-class _BlurOrb extends StatelessWidget {
-  final Color color;
-  final double size;
-
-  const _BlurOrb({required this.color, required this.size});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: color.withValues(alpha: 0.25),
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.25),
-            blurRadius: size * 0.6,
-            spreadRadius: size * 0.18,
-          ),
-        ],
-      ),
-    );
-  }
 }

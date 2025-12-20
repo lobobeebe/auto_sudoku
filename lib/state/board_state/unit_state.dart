@@ -60,7 +60,7 @@ class UnitMode extends BoardMode {
       return;
     }
 
-    if (board.canAutoFinish()) {
+    if (board.nextAutoMove() != null) {
       board.setMode(AnimatingMode(board, this));
       return;
     }

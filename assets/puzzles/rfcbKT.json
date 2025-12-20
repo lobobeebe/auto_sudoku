@@ -1,0 +1,13 @@
+{
+    "id": "rfcbKT",
+    "puzzle": "010028000300400080504600000209500070000000000060007403000004109020003008000950030",
+    "solution": "617328954392415786584679312239546871478132695165897423753284169921763548846951237",
+    "techniques": {
+        "Hidden Single": 18,
+        "Open Pair": 2,
+        "Open Single": 37,
+        "Locked Candidates (Claiming)": 3,
+        "Locked Candidates (Pointing)": 1,
+        "X-Wing": 1
+    }
+}

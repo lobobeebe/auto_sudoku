@@ -1,0 +1,12 @@
+{
+    "id": "YLRC63",
+    "puzzle": "000740002049008000600003040095370800800409007004082590030800009000100250400025000",
+    "solution": "351746982749218635628593741295371864863459127174682593532867419987134256416925378",
+    "techniques": {
+        "Open Single": 38,
+        "Hidden Single": 11,
+        "Locked Candidates (Claiming)": 3,
+        "Locked Candidates (Pointing)": 1,
+        "XY-Wing": 1
+    }
+}

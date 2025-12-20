@@ -5,6 +5,7 @@ import 'package:auto_sudoku/state/cell_state.dart';
 import 'package:auto_sudoku/ui/theme/sudoku_theme.dart';
 import 'package:auto_sudoku/ui/utils/feedback.dart';
 import 'package:auto_sudoku_solver/auto_sudoku_solver.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 enum GameResult { playing, won, lost }
@@ -21,6 +22,7 @@ class SudokuBoardState extends ChangeNotifier {
   final List<BoardSnapshot> _history = <BoardSnapshot>[];
   bool _isDisposed = false;
   final List<int> _selectedIndices = [];
+  bool _hasRecordedWin = false;
 
   late BoardMode _mode;
   bool _hasBoardModeBuilt = false;
@@ -36,13 +38,14 @@ class SudokuBoardState extends ChangeNotifier {
 
   // Solver for auto-applying strategies
   // Only applies if the auto-finish solver cannot finish the game
-  final Solver? _autoNextSolver;
+  Solver? _autoNextSolver;
 
   // Optional override used by tutorials to control both hint and unit solvers
   SolverSettings? _tutorialSolverOverride;
 
   // Default category solver (updated when overrides change)
   late final Solver _defaultSolver = Solver(settings: SolverSettings.all());
+  void Function(SudokuModel puzzle)? onPuzzleWon;
 
   SudokuBoardState({
     bool? showNotes,
@@ -56,6 +59,12 @@ class SudokuBoardState extends ChangeNotifier {
            ? Solver(settings: autoFinishSettings)
            : null {
     _mode = LoadingMode(this);
+  }
+
+  // Apply per-step auto-solve settings for tutorials. If null/empty, clears
+  // the override so default solvers resume.
+  void applyAutoNextSettings(SolverSettings settings) {
+    _autoNextSolver = Solver(settings: settings);
   }
 
   // Apply per-step solver settings for tutorials. If null, defaults to none.
@@ -80,6 +89,9 @@ class SudokuBoardState extends ChangeNotifier {
     _mode = next;
     _hasBoardModeBuilt = false;
     _mode.onEnter();
+    if (next is CompleteMode) {
+      _handleComplete(next.result);
+    }
     emitChange();
   }
 
@@ -211,6 +223,7 @@ class SudokuBoardState extends ChangeNotifier {
 
   void initPuzzle(SudokuModel puzzle) {
     _currentPuzzle = puzzle;
+    _hasRecordedWin = false;
     _history.clear();
 
     _sudoku = Sudoku.fromString(puzzle.puzzle);
@@ -237,7 +250,23 @@ class SudokuBoardState extends ChangeNotifier {
 
   // Helper to determine if the current board has an auto-finishable move
   Hint? nextAutoMove() {
-    return _autoNextSolver?.nextHint(_sudoku);
+    final autoFinish = _autoFinishSolver;
+    if (autoFinish != null) {
+      final solution = autoFinish.solveLogical(_sudoku.clone());
+      if (solution.solved) {
+        return autoFinish.nextHint(_sudoku);
+      }
+    }
+
+    final autoNext = _autoNextSolver;
+    if (autoNext != null) {
+      final hint = autoNext.nextHint(_sudoku);
+      if (hint != null) {
+        return hint;
+      }
+    }
+
+    return null;
   }
 
   bool isDigitSelected(int digit) {
@@ -359,6 +388,16 @@ class SudokuBoardState extends ChangeNotifier {
     initPuzzle(_currentPuzzle!);
   }
 
+  void completeBoardForDebug() {
+    if (!kDebugMode) return;
+    final puzzle = _currentPuzzle;
+    if (puzzle == null) return;
+
+    _sudoku = Sudoku.fromString(puzzle.solution);
+    _syncFromSudoku();
+    setMode(CompleteMode(this, GameResult.won, _mode));
+  }
+
   void requestUndo() {
     _mode.onRequestUndo();
   }
@@ -379,14 +418,10 @@ class SudokuBoardState extends ChangeNotifier {
     _history.add(snapshot ?? makeSnapshot());
   }
 
-  bool canAutoFinish() {
-    if (_autoFinishSolver == null) {
-      return false;
-    }
-
-    final result = _autoFinishSolver.solveLogical(_sudoku.clone());
-
-    return result.solved;
+  void restoreSnapshot(BoardSnapshot snapshot) {
+    _sudoku = snapshot.sudoku.clone();
+    _syncFromSudoku();
+    emitChange();
   }
 
   GameResult? evaluateResult() {
@@ -415,6 +450,21 @@ class SudokuBoardState extends ChangeNotifier {
     }
 
     return hasEmptyCells ? null : GameResult.won;
+  }
+
+  void _handleComplete(GameResult result) {
+    if (result != GameResult.won) {
+      return;
+    }
+    if (_hasRecordedWin) {
+      return;
+    }
+    _hasRecordedWin = true;
+    final callback = onPuzzleWon;
+    final puzzle = _currentPuzzle;
+    if (callback != null && puzzle != null) {
+      callback(puzzle);
+    }
   }
 
   BoardSnapshot makeSnapshot() {

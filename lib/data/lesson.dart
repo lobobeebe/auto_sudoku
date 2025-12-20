@@ -1,11 +1,5 @@
 import 'package:flutter/material.dart';
 
-class PuzzleLesson {
-  final String path;
-
-  const PuzzleLesson({required this.path});
-}
-
 class Lesson {
   final String title;
   final String shortDesc;

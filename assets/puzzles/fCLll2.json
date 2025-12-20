@@ -1,0 +1,13 @@
+{
+    "id": "fCLll2",
+    "puzzle": "000065032600201000400300900080510007007000400900078050005009008000803004840750000",
+    "solution": "198465732673291845452387961386514297517932486924678153235149678769823514841756329",
+    "techniques": {
+        "Open Single": 40,
+        "Hidden Single": 11,
+        "Open Pair": 3,
+        "Locked Candidates (Claiming)": 1,
+        "Locked Candidates (Pointing)": 1,
+        "XY-Wing": 1
+    }
+}

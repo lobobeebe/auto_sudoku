@@ -6,11 +6,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 class PuzzleRepository extends ChangeNotifier {
-  PuzzleRepository({this.assetPath = 'assets/puzzles/puzzles.json'});
+  PuzzleRepository({this.assetPath = 'assets/puzzles/'});
 
   final String assetPath;
   final Random _random = Random();
   List<SudokuModel>? _cache;
+  Map<String, SudokuModel>? _cacheById;
   bool _isLoading = false;
   bool _isLoaded = false;
   String? _error;
@@ -122,6 +123,21 @@ class PuzzleRepository extends ChangeNotifier {
     return list;
   }
 
+  Future<SudokuModel> loadPuzzleById(String id) async {
+    if (!_isLoaded) {
+      await preload();
+    }
+    final cacheById = _cacheById;
+    if (cacheById == null || cacheById.isEmpty) {
+      throw StateError('Puzzle repository is empty.');
+    }
+    final puzzle = cacheById[id];
+    if (puzzle == null) {
+      throw StateError('Puzzle with id "$id" not found.');
+    }
+    return puzzle;
+  }
+
   Future<void> _performPreload() async {
     if (_isLoaded) {
       return;
@@ -131,8 +147,11 @@ class PuzzleRepository extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final raw = await rootBundle.loadString(assetPath);
-      _cache = await compute(_parsePuzzles, raw);
+      final puzzles = await _loadPuzzlesFromAsset(assetPath);
+      _cache = puzzles;
+      _cacheById = {
+        for (final puzzle in puzzles) puzzle.id: puzzle,
+      };
       _isLoaded = true;
     } catch (e) {
       _error = e.toString();
@@ -146,17 +165,62 @@ class PuzzleRepository extends ChangeNotifier {
     }
   }
 
-  // Load an arbitrary asset file that contains a JSON array of SudokuModel
-  // entries (same shape as assets/puzzles/puzzles.json or lesson files).
+  // Load an arbitrary asset file that resolves to SudokuModel entries.
   Future<List<SudokuModel>> loadAssetFile(String path) async {
-    final raw = await rootBundle.loadString(path);
-    return compute(_parsePuzzles, raw);
+    return _loadPuzzlesFromAsset(path);
+  }
+
+  Future<List<SudokuModel>> _loadPuzzlesFromAsset(String path) async {
+    final manifestContent = await rootBundle.loadString('AssetManifest.json');
+    final manifest = json.decode(manifestContent);
+    if (manifest is! Map<String, dynamic>) {
+      throw const FormatException('Invalid asset manifest');
+    }
+    final normalizedPath = path.endsWith('/') ? path : '$path/';
+    final isExactFile = manifest.containsKey(path);
+    final candidates = isExactFile
+        ? <String>[path]
+        : manifest.keys
+              .where(
+                (asset) =>
+                    asset.startsWith(normalizedPath) && asset.endsWith('.json'),
+              )
+              .toList(growable: false);
+    if (candidates.isEmpty) {
+      throw FormatException('No puzzles found under $path');
+    }
+    candidates.sort();
+    final rawEntries = await Future.wait(
+      candidates.map((puzzlePath) => rootBundle.loadString(puzzlePath)),
+    );
+    final parsed = await compute(_parsePuzzleAssets, rawEntries);
+    if (parsed.isEmpty) {
+      throw FormatException('No puzzles found under $path');
+    }
+    return parsed;
   }
 }
 
-List<SudokuModel> _parsePuzzles(String raw) {
-  final List<dynamic> jsonList = json.decode(raw) as List<dynamic>;
-  return jsonList
-      .map((entry) => SudokuModel.fromJson(entry as Map<String, dynamic>))
-      .toList(growable: false);
+List<SudokuModel> _parsePuzzleAssets(List<String> rawEntries) {
+  final puzzles = <SudokuModel>[];
+  for (final raw in rawEntries) {
+    final decoded = json.decode(raw);
+    if (decoded is Map<String, dynamic>) {
+      puzzles.add(SudokuModel.fromJson(decoded));
+      continue;
+    }
+    if (decoded is List) {
+      if (decoded.isEmpty) continue;
+      final first = decoded.first;
+      if (first is Map<String, dynamic>) {
+        puzzles.addAll(
+          decoded
+              .cast<Map<String, dynamic>>()
+              .map(SudokuModel.fromJson)
+              .toList(growable: false),
+        );
+      }
+    }
+  }
+  return puzzles.toList(growable: false);
 }

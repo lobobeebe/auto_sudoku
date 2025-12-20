@@ -44,3 +44,29 @@ String _slug(StrategyType type) => type.name
     .replaceAll(RegExp(r"[^a-z0-9]+"), '_')
     .replaceAll(RegExp(r"_+"), '_')
     .replaceAll(RegExp(r"^_+|_+$"), '');
+
+int getDifficultyCompletions(SharedPreferences prefs, Difficulty difficulty) {
+  final key = "${_difficultySlug(difficulty)}_completed";
+  if (prefs.containsKey(key)) {
+    final completed = prefs.get(key);
+    if (completed is int) {
+      return completed;
+    }
+  }
+  return 0;
+}
+
+Future<bool> setDifficultyCompletions(
+  SharedPreferences prefs,
+  Difficulty difficulty,
+  int completed,
+) {
+  final key = "${_difficultySlug(difficulty)}_completed";
+  return prefs.setInt(key, completed);
+}
+
+String _difficultySlug(Difficulty difficulty) => difficulty.name
+    .toLowerCase()
+    .replaceAll(RegExp(r"[^a-z0-9]+"), '_')
+    .replaceAll(RegExp(r"_+"), '_')
+    .replaceAll(RegExp(r"^_+|_+$"), '');

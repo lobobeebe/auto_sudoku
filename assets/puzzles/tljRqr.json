@@ -1,0 +1,13 @@
+{
+    "id": "tljRqr",
+    "puzzle": "420030000709000000010600480100960000200803006000045007075001030000000804000090015",
+    "solution": "426538971789124653513679482154967328297813546368245197675481239931752864842396715",
+    "techniques": {
+        "Open Single": 41,
+        "Hidden Single": 12,
+        "Locked Candidates (Claiming)": 1,
+        "Open Pair": 2,
+        "Locked Candidates (Pointing)": 1,
+        "XY-Wing": 1
+    }
+}

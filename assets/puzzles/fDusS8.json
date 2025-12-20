@@ -1,0 +1,14 @@
+{
+    "id": "fDusS8",
+    "puzzle": "004000003703009620000300940800040007000203000600080009057002000026700504300000100",
+    "solution": "964825713783419625215367948831946257549273861672581439457192386126738594398654172",
+    "techniques": {
+        "Hidden Single": 10,
+        "Open Single": 43,
+        "Open Pair": 2,
+        "Open Quad": 1,
+        "Locked Candidates (Claiming)": 1,
+        "Locked Candidates (Pointing)": 1,
+        "Open Triple": 1
+    }
+}
