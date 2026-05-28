@@ -45,7 +45,7 @@
             },
             {
                 "title": "Finish the Puzzle",
-                "body": "There's one more Open Triple to wrap this puzzle up. Singles will auto-complete as they appear.",
+                "body": "There's one more Open Triple to wrap this puzzle. Hint: All three cells do not need to have all three candidates! Tap the hint button at the bottom to find it if you're stumped.",
                 "alignment": "center",
                 "preventGridTaps": false,
                 "solver": {

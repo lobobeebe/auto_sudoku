@@ -210,6 +210,12 @@ class TutorialPanel extends StatelessWidget {
                         step.advanceOnStrategy == null &&
                         (step.advanceOnIndices == null ||
                             step.advanceOnIndices!.isEmpty);
+                    void handleNextPressed() {
+                      controller.next();
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        board.runAutoSolverIfAvailable();
+                      });
+                    }
                     // Install or update board-level hooks so advancing and
                     // auto-solve work even when the grid mask is not present.
                     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -260,16 +266,15 @@ class TutorialPanel extends StatelessWidget {
                                 if (controller.hasNext)
                                   IconButton.filled(
                                     tooltip: 'Next',
-                                    onPressed: canGoNext
-                                        ? controller.next
-                                        : null,
+                                    onPressed:
+                                        canGoNext ? handleNextPressed : null,
                                     icon: const Icon(
                                       Icons.arrow_forward_rounded,
                                     ),
                                   )
                                 else
                                   IconButton.filled(
-                                    onPressed: controller.next,
+                                    onPressed: handleNextPressed,
                                     icon: const Icon(Icons.check_rounded),
                                   ),
                               ],

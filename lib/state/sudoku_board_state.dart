@@ -1,5 +1,6 @@
 import 'package:auto_sudoku/data/cell_view_model.dart';
 import 'package:auto_sudoku/state/board_mode.dart';
+import 'package:auto_sudoku/state/board_state/animating_state.dart';
 import 'package:auto_sudoku/state/board_state/loading_state.dart';
 import 'package:auto_sudoku/state/cell_state.dart';
 import 'package:auto_sudoku/ui/theme/sudoku_theme.dart';
@@ -267,6 +268,21 @@ class SudokuBoardState extends ChangeNotifier {
     }
 
     return null;
+  }
+
+  /// Kicks off the auto-solver animation when a move is available.
+  /// Returns true if a move was started.
+  bool runAutoSolverIfAvailable() {
+    // Avoid re-entrancy if already animating.
+    if (_mode is AnimatingMode) return false;
+
+    if (nextAutoMove() == null) {
+      return false;
+    }
+
+    final currentMode = _mode;
+    setMode(AnimatingMode(this, currentMode));
+    return true;
   }
 
   bool isDigitSelected(int digit) {

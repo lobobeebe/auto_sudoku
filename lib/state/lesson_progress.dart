@@ -18,8 +18,9 @@ class LessonProgress extends ChangeNotifier {
       "yNlKCo", // claiming
     ],
     Difficulty.medium: [
-      "xYJlX2", // XY-Wing
-      "voICg2", // X-Wing
+      "MORECO", // More coming...
+      //"xYJlX2", // XY-Wing
+      //"voICg2", // X-Wing
       //"", // W-Wing
     ],
   };

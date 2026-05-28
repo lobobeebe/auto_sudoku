@@ -7,5 +7,111 @@
         "Hidden Single": 11,
         "Open Pair": 1,
         "Locked Candidates (Claiming)": 2
+    },
+    "tutorial": {
+        "showNotes": true,
+        "steps": [
+            {
+                "alignment": "center",
+                "title": "Claiming Candidates",
+                "body": "Claiming is the flip side of Pointing. When all candidates for a digit in a row or column fall inside the same 3×3 box, that line \"claims\" the digit and removes it from the rest of the box."
+            },
+            {
+                "title": "Set the Stage",
+                "body": "We'll clear the easy singles so the claiming pattern pops. Keep notes on — claiming uses the pencil marks you already know.",
+                "alignment": "top",
+                "autoSolve": {
+                    "allowed": [
+                        "Open Single",
+                        "Hidden Single"
+                    ]
+                }
+            },
+            {
+                "title": "Highlight the 1s",
+                "body": "Tap any filled 1 to highlight where 1s already sit. Seeing the existing 1s makes it easier to spot where they can't go.",
+                "alignment": "top",
+                "preventGridTaps": false,
+                "advanceOnValue": 1,
+                "maskRows": [
+                    0,
+                    1,
+                    2,
+                    3,
+                    4,
+                    5,
+                    6,
+                    7,
+                    8
+                ]
+            },
+            {
+                "title": "Only in This Box",
+                "body": "Look at the top row. The only places for a 1 are the two highlighted cells inside the middle box. That means this row forces the 1 to stay inside this box.",
+                "alignment": "bottom",
+                "maskRows": [
+                    0
+                ],
+                "maskBoxes": [
+                    1
+                ]
+            },
+            {
+                "title": "Apply the Claiming Move",
+                "body": "Select both candidate cells in the top row (columns 4 and 6). Because those are the only 1s in the row, the rest of this box can't contain a 1. The strategy will remove 1 from the other cells in the box.",
+                "alignment": "bottom",
+                "autoSolve": {
+                    "allowed": [
+                        "Open Single",
+                        "Hidden Single"
+                    ]
+                },
+                "maskRows": [
+                    0
+                ],
+                "maskBoxes": [
+                    1
+                ],
+                "tappableIndices": [
+                    3,
+                    5
+                ],
+                "preventGridTaps": false,
+                "solver": {
+                    "allowed": [
+                        "Locked Candidates (Claiming)"
+                    ]
+                },
+                "advanceOnStrategy": "Locked Candidates (Claiming)"
+            },
+            {
+                "title": "What Changed",
+                "body": "Claiming removed the 1 from the other cells in this box. Whenever a line claims a digit, scrub it from the rest of that box.",
+                "alignment": "bottom",
+                "maskBoxes": [
+                    1
+                ]
+            },
+            {
+                "title": "Finish the Puzzle",
+                "body": "Use Claiming along with the singles and open pairs you've already learned to finish up!",
+                "alignment": "center",
+                "preventGridTaps": false,
+                "solver": {
+                    "allowed": [
+                        "Locked Candidates (Claiming)",
+                        "Open Pair",
+                        "Open Single",
+                        "Hidden Single"
+                    ]
+                },
+                "autoSolve": {
+                    "allowed": [
+                        "Open Single",
+                        "Hidden Single"
+                    ]
+                }
+            }
+        ]
     }
 }

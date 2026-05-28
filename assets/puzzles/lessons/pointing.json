@@ -6,5 +6,99 @@
         "Open Single": 48,
         "Hidden Single": 3,
         "Locked Candidates (Pointing)": 2
+    },
+    "tutorial": {
+        "showNotes": true,
+        "steps": [
+            {
+                "alignment": "center",
+                "title": "Pointing Candidates",
+                "body": "When every note for a digit inside a 3×3 box sits on the same row or column, that box 'points' down the line. We can then clear that digit from the rest of that row/column outside the box."
+            },
+            {
+                "title": "Set the Stage",
+                "body": "We'll solve the obvious singles and keep notes on so the pattern stands out. Pointing Candidates often appear after a few easy moves.",
+                "alignment": "top",
+                "autoSolve": {
+                    "allowed": [
+                        "Open Single",
+                        "Hidden Single"
+                    ]
+                }
+            },
+            {
+                "title": "Highlight the 9s",
+                "body": "Tap any filled 9. Highlighting a digit makes it easier to see where that number already appears in the grid, which helps spot pointing patterns.",
+                "alignment": "top",
+                "preventGridTaps": false,
+                "advanceOnValue": 9,
+                "maskRows": [
+                    0,
+                    1,
+                    2,
+                    3,
+                    4,
+                    5,
+                    6,
+                    7,
+                    8
+                ]
+            },
+            {
+                "title": "Find the Pointing 9",
+                "body": "In the middle-right box, the only 9 candidates are stacked in the same column. That forces the 9 for this box to live in that column, so 9 can't appear elsewhere along it. Tap the two 9-candidate cells to apply the move.",
+                "alignment": "bottom",
+                "autoSolve": {
+                    "allowed": [
+                        "Open Single",
+                        "Hidden Single"
+                    ]
+                },
+                "maskBoxes": [
+                    5
+                ],
+                "maskCols": [
+                    7
+                ],
+                "tappableIndices": [
+                    34,
+                    43
+                ],
+                "preventGridTaps": false,
+                "solver": {
+                    "allowed": [
+                        "Locked Candidates (Pointing)"
+                    ]
+                },
+                "advanceOnStrategy": "Locked Candidates (Pointing)"
+            },
+            {
+                "title": "What Changed",
+                "body": "Those two cells pointed down the column and removed 9 from the other candidates in that column. Pointing always eliminates a digit outside the box that created the pattern.",
+                "alignment": "bottom",
+                "maskCols": [
+                    7
+                ]
+            },
+            {
+                "title": "Finish the Puzzle",
+                "body": "Keep using Pointing Candidates (and singles) to wrap up this puzzle. Hint: The pattern is easiest to see after selecting a filled cell!",
+                "alignment": "center",
+                "preventGridTaps": false,
+                "solver": {
+                    "allowed": [
+                        "Locked Candidates (Pointing)",
+                        "Open Single",
+                        "Hidden Single"
+                    ]
+                },
+                "autoSolve": {
+                    "allowed": [
+                        "Open Single",
+                        "Hidden Single"
+                    ]
+                }
+            }
+        ]
     }
 }

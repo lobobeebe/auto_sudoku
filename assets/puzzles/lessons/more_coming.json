@@ -1,0 +1,35 @@
+{
+    "id": "MORECO",
+    "puzzle": "709040008040200007020000046960370000000000000000054063150000070400008030300090802",
+    "solution": "719546328643289157825137946964372581537861294281954763158623479492718635376495812",
+    "techniques": {
+        "Open Single": 43,
+        "Hidden Single": 10,
+        "Locked Candidates (Claiming)": 1,
+        "X-Wing": 1,
+        "XY-Wing": 1
+    },
+    "tutorial": {
+        "showNotes": true,
+        "steps": [
+            {
+                "title": "More tutorials coming!",
+                "body": "The medium difficulty introduces XY-Wing and X-Wing strategies! Those tutorials are coming soon!",
+                "alignment": "center",
+                "preventGridTaps": false,
+                "solver": {
+                    "allowed": [
+                        "Hidden Single",
+                        "Open Single",
+                        "Open Pair",
+                        "Open Triple",
+                        "Claiming",
+                        "Pointing",
+                        "X-Wing",
+                        "XY-Wing"
+                    ]
+                }
+            }
+        ]
+    }
+}
