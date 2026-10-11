@@ -171,16 +171,15 @@ class PuzzleRepository extends ChangeNotifier {
   }
 
   Future<List<SudokuModel>> _loadPuzzlesFromAsset(String path) async {
-    final manifestContent = await rootBundle.loadString('AssetManifest.json');
-    final manifest = json.decode(manifestContent);
-    if (manifest is! Map<String, dynamic>) {
-      throw const FormatException('Invalid asset manifest');
-    }
+    // AssetManifest.json is no longer emitted by recent Flutter versions, so
+    // use the manifest API, which works across versions.
+    final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
+    final assets = manifest.listAssets();
     final normalizedPath = path.endsWith('/') ? path : '$path/';
-    final isExactFile = manifest.containsKey(path);
+    final isExactFile = assets.contains(path);
     final candidates = isExactFile
         ? <String>[path]
-        : manifest.keys
+        : assets
               .where(
                 (asset) =>
                     asset.startsWith(normalizedPath) && asset.endsWith('.json'),
