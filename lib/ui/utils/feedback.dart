@@ -135,3 +135,19 @@ void showHintToast(BuildContext context, String strategyName) {
     ),
   );
 }
+
+void showUnlockToast(BuildContext context, String strategyName) {
+  final colors = Theme.of(context).colorScheme;
+  showToast(
+    context,
+    Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.lock_open_rounded, color: colors.primary),
+        const SizedBox(width: 10),
+        Flexible(child: Text('$strategyName auto-solve unlocked!')),
+      ],
+    ),
+    duration: const Duration(milliseconds: 2800),
+  );
+}

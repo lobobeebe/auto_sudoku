@@ -58,6 +58,7 @@ class HighlightMode extends BoardMode {
 
     // Toast the technique name when a hint is applied automatically
     board.showHintToastIfPossible(hint.strategy.toString());
+    board.recordUserStrategy(hint);
 
     board.pushSnapshot(snapshot: snapshot);
 

@@ -3,6 +3,7 @@ import 'package:auto_sudoku/state/board_mode.dart';
 import 'package:auto_sudoku/state/board_state/animating_state.dart';
 import 'package:auto_sudoku/state/board_state/loading_state.dart';
 import 'package:auto_sudoku/state/cell_state.dart';
+import 'package:auto_sudoku/state/strategy_progress.dart';
 import 'package:auto_sudoku/ui/theme/sudoku_theme.dart';
 import 'package:auto_sudoku/ui/utils/feedback.dart';
 import 'package:auto_sudoku_solver/auto_sudoku_solver.dart';
@@ -35,7 +36,7 @@ class SudokuBoardState extends ChangeNotifier {
   void Function(Hint hint)? onHintApplied;
 
   // Solver for auto-finish attempts
-  Solver? _autoFinishSolver;
+  final Solver? _autoFinishSolver;
 
   // Solver for auto-applying strategies
   // Only applies if the auto-finish solver cannot finish the game
@@ -47,6 +48,26 @@ class SudokuBoardState extends ChangeNotifier {
   // Default category solver (updated when overrides change)
   late final Solver _defaultSolver = Solver(settings: SolverSettings.all());
   void Function(SudokuModel puzzle)? onPuzzleWon;
+
+  // Player-controlled auto-solve preferences and unlock progress. Ignored
+  // while a tutorial is loaded; tutorials configure their own solvers.
+  StrategyProgress? strategyProgress;
+
+  bool get _isTutorial => _currentPuzzle?.tutorial != null;
+
+  /// Counts a strategy the player identified by tapping tiles themselves.
+  /// Hints from the Hint button and auto-solver moves must not call this.
+  void recordUserStrategy(Hint hint) {
+    final progress = strategyProgress;
+    if (progress == null || _isTutorial) return;
+
+    if (progress.record(hint.strategy)) {
+      final ctx = _toastContext;
+      if (ctx != null) {
+        showUnlockToast(ctx, hint.strategy.toString());
+      }
+    }
+  }
 
   SudokuBoardState({
     bool? showNotes,
@@ -62,14 +83,7 @@ class SudokuBoardState extends ChangeNotifier {
     _mode = LoadingMode(this);
   }
 
-  // Apply per-step auto-solve settings for tutorials. If null/empty, clears
-  // the override so default solvers resume.
-  // Enables auto-finish: once the puzzle can be fully solved logically with
-  // the given strategies, the remaining moves are played out automatically.
-  void applyAutoFinishSettings(SolverSettings settings) {
-    _autoFinishSolver = Solver(settings: settings);
-  }
-
+  // Apply per-step auto-solve settings for tutorials.
   void applyAutoNextSettings(SolverSettings settings) {
     _autoNextSolver = Solver(settings: settings);
   }
@@ -257,7 +271,17 @@ class SudokuBoardState extends ChangeNotifier {
 
   // Helper to determine if the current board has an auto-finishable move
   Hint? nextAutoMove() {
-    final autoFinish = _autoFinishSolver;
+    Solver? autoFinish = _autoFinishSolver;
+    Solver? autoNext = _autoNextSolver;
+
+    final progress = strategyProgress;
+    if (progress != null && !_isTutorial) {
+      final settings = progress.autoSolverSettings();
+      if (settings == null) return null;
+      autoFinish = Solver(settings: settings);
+      autoNext = autoFinish;
+    }
+
     if (autoFinish != null) {
       final solution = autoFinish.solveLogical(_sudoku.clone());
       if (solution.solved) {
@@ -265,7 +289,6 @@ class SudokuBoardState extends ChangeNotifier {
       }
     }
 
-    final autoNext = _autoNextSolver;
     if (autoNext != null) {
       final hint = autoNext.nextHint(_sudoku);
       if (hint != null) {

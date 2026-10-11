@@ -1,6 +1,7 @@
 import 'package:auto_sudoku/data/puzzle_repository.dart';
 import 'package:auto_sudoku/state/lesson_progress.dart';
 import 'package:auto_sudoku/ui/pages/difficulty_selection_page.dart';
+import 'package:auto_sudoku/ui/pages/strategy_settings_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/foundation.dart';
@@ -40,7 +41,9 @@ class HomeScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(28),
                   ),
                   color: colorScheme.surface,
-                  child: Padding(
+                  child: Stack(
+                    children: [
+                      Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 32,
                       vertical: 40,
@@ -134,6 +137,17 @@ class HomeScreen extends StatelessWidget {
                       ],
                     ),
                   ),
+                      Positioned(
+                        top: 12,
+                        right: 12,
+                        child: IconButton(
+                          tooltip: 'Auto-solve settings',
+                          icon: const Icon(Icons.settings_rounded),
+                          onPressed: () => _openSettings(context),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -142,6 +156,12 @@ class HomeScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+void _openSettings(BuildContext context) {
+  Navigator.of(context).push(
+    MaterialPageRoute<void>(builder: (_) => const StrategySettingsPage()),
+  );
 }
 
 void _openDifficultySelection(BuildContext context) {

@@ -1,5 +1,6 @@
 import 'package:auto_sudoku/data/puzzle_repository.dart';
 import 'package:auto_sudoku/state/lesson_progress.dart';
+import 'package:auto_sudoku/state/strategy_progress.dart';
 import 'package:auto_sudoku/ui/pages/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -21,6 +22,9 @@ class AutoSudokuApp extends StatelessWidget {
         ),
         ChangeNotifierProvider<LessonProgress>(
           create: (_) => LessonProgress()..loadAll(),
+        ),
+        ChangeNotifierProvider<StrategyProgress>(
+          create: (_) => StrategyProgress()..loadAll(),
         ),
       ],
       child: MaterialApp(
