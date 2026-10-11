@@ -197,7 +197,7 @@ class SudokuHomePage extends StatelessWidget {
               parent: animation,
               curve: Curves.easeOutCubic,
             ),
-            axisAlignment: -1,
+            alignment: Alignment.topCenter,
             child: child,
           ),
         );

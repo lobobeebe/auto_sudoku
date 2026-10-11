@@ -100,8 +100,9 @@ Hint? _claimingFromClues(Sudoku s, List<int> indices) {
   if (!(sameRow || sameCol)) return null;
   final box = _boxOf(indices.first);
   if (!indices.every((i) => _boxOf(i) == box)) return null;
-  if (indices.length < 2) return null; // avoid hidden-single style degenerate claims
-
+  if (indices.length < 2) {
+    return null; // avoid hidden-single style degenerate claims
+  }
   final indexSet = indices.toSet();
   for (var d = 1; d <= 9; d++) {
     if (sameRow) {

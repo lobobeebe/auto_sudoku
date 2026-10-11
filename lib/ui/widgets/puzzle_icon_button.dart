@@ -109,10 +109,7 @@ class PuzzleIconButton extends StatelessWidget {
       enabled: !isDisabled,
       label: 'Puzzle $number ${state == PuzzleIconState.locked ? "locked" : ""}'
           .trim(),
-      child: Tooltip(
-        message: 'Puzzle $number',
-        child: button,
-      ),
+      child: Tooltip(message: 'Puzzle $number', child: button),
     );
   }
 }

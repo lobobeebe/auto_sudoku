@@ -216,6 +216,7 @@ class TutorialPanel extends StatelessWidget {
                         board.runAutoSolverIfAvailable();
                       });
                     }
+
                     // Install or update board-level hooks so advancing and
                     // auto-solve work even when the grid mask is not present.
                     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -266,8 +267,9 @@ class TutorialPanel extends StatelessWidget {
                                 if (controller.hasNext)
                                   IconButton.filled(
                                     tooltip: 'Next',
-                                    onPressed:
-                                        canGoNext ? handleNextPressed : null,
+                                    onPressed: canGoNext
+                                        ? handleNextPressed
+                                        : null,
                                     icon: const Icon(
                                       Icons.arrow_forward_rounded,
                                     ),
