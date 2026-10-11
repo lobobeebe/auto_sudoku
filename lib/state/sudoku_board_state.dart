@@ -35,7 +35,7 @@ class SudokuBoardState extends ChangeNotifier {
   void Function(Hint hint)? onHintApplied;
 
   // Solver for auto-finish attempts
-  final Solver? _autoFinishSolver;
+  Solver? _autoFinishSolver;
 
   // Solver for auto-applying strategies
   // Only applies if the auto-finish solver cannot finish the game
@@ -57,13 +57,19 @@ class SudokuBoardState extends ChangeNotifier {
            ? Solver(settings: autoFinishSettings)
            : null,
        _autoNextSolver = autoNextSettings != null
-           ? Solver(settings: autoFinishSettings)
+           ? Solver(settings: autoNextSettings)
            : null {
     _mode = LoadingMode(this);
   }
 
   // Apply per-step auto-solve settings for tutorials. If null/empty, clears
   // the override so default solvers resume.
+  // Enables auto-finish: once the puzzle can be fully solved logically with
+  // the given strategies, the remaining moves are played out automatically.
+  void applyAutoFinishSettings(SolverSettings settings) {
+    _autoFinishSolver = Solver(settings: settings);
+  }
+
   void applyAutoNextSettings(SolverSettings settings) {
     _autoNextSolver = Solver(settings: settings);
   }

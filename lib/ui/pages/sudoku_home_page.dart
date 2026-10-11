@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:auto_sudoku/state/lesson_progress.dart';
 import 'package:auto_sudoku/ui/widgets/background_orb.dart';
-import 'package:auto_sudoku_solver/data/sudoku_model.dart';
+import 'package:auto_sudoku_solver/auto_sudoku_solver.dart';
 import 'package:flutter/material.dart';
 
 import 'package:auto_sudoku/state/sudoku_board_state.dart';
@@ -33,6 +33,9 @@ class SudokuHomePage extends StatelessWidget {
                     .then((model) {
                       board.showNotes =
                           model.tutorial?.overrideShowNotes ?? board.showNotes;
+                      if (model.tutorial == null) {
+                        board.applyAutoFinishSettings(SolverSettings.all());
+                      }
                       board.requestInitPuzzle(model);
                     })
                     .catchError((error, stackTrace) {
