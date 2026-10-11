@@ -103,9 +103,7 @@ class StrategyProgress extends ChangeNotifier {
     final changed = value ? _disabled.remove(type) : _disabled.add(type);
     if (!changed) return;
     notifyListeners();
-    _getPrefs().then(
-      (p) => p.setStringList(_disabledPref, _names(_disabled)),
-    );
+    _getPrefs().then((p) => p.setStringList(_disabledPref, _names(_disabled)));
   }
 
   /// Clears the "New" badges. Intentionally silent so it can run on dispose.

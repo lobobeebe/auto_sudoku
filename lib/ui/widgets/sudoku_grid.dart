@@ -172,7 +172,7 @@ class CellNotesWidget extends StatelessWidget {
                     shouldRebuild: (prev, next) => prev != next,
                     builder: (_, isActive, __) {
                       return _CellNote(
-                        key: ValueKey('note-${index}-${digit}'),
+                        key: ValueKey('note-$index-$digit'),
                         index: sub,
                         width: cellWidth,
                         height: cellHeight,

@@ -44,99 +44,100 @@ class HomeScreen extends StatelessWidget {
                   child: Stack(
                     children: [
                       Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 32,
-                      vertical: 40,
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        GestureDetector(
-                          onLongPress: () => _debugResetProgress(context),
-                          child: Icon(
-                            Icons.grid_view_rounded,
-                            size: 64,
-                            color: colorScheme.primary,
-                          ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 32,
+                          vertical: 40,
                         ),
-                        const SizedBox(height: 24),
-                        Text(
-                          'Auto Sudoku',
-                          style: textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Relax, solve, and let smart notes assist you along the way.',
-                          style: textTheme.bodyLarge?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 32),
-                        AnimatedSize(
-                          duration: const Duration(milliseconds: 200),
-                          curve: Curves.easeInOut,
-                          child: Column(
-                            children: [
-                              if (isLoadingRepo)
-                                const Padding(
-                                  padding: EdgeInsets.only(bottom: 16),
-                                  child: CircularProgressIndicator.adaptive(),
-                                ),
-                              if (hasError) ...[
-                                Text(
-                                  'We couldn\'t load puzzles just yet.',
-                                  style: textTheme.bodyMedium?.copyWith(
-                                    color: colorScheme.error,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                                if (errorMessage != null) ...[
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    errorMessage,
-                                    style: textTheme.bodySmall?.copyWith(
-                                      color: colorScheme.error,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            GestureDetector(
+                              onLongPress: () => _debugResetProgress(context),
+                              child: Icon(
+                                Icons.grid_view_rounded,
+                                size: 64,
+                                color: colorScheme.primary,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            Text(
+                              'Auto Sudoku',
+                              style: textTheme.headlineMedium?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              'Relax, solve, and let smart notes assist you along the way.',
+                              style: textTheme.bodyLarge?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 32),
+                            AnimatedSize(
+                              duration: const Duration(milliseconds: 200),
+                              curve: Curves.easeInOut,
+                              child: Column(
+                                children: [
+                                  if (isLoadingRepo)
+                                    const Padding(
+                                      padding: EdgeInsets.only(bottom: 16),
+                                      child:
+                                          CircularProgressIndicator.adaptive(),
                                     ),
-                                    textAlign: TextAlign.center,
-                                  ),
+                                  if (hasError) ...[
+                                    Text(
+                                      'We couldn\'t load puzzles just yet.',
+                                      style: textTheme.bodyMedium?.copyWith(
+                                        color: colorScheme.error,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    if (errorMessage != null) ...[
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        errorMessage,
+                                        style: textTheme.bodySmall?.copyWith(
+                                          color: colorScheme.error,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ],
+                                    const SizedBox(height: 12),
+                                    FilledButton.tonalIcon(
+                                      icon: const Icon(Icons.refresh_rounded),
+                                      label: const Text('Try Again'),
+                                      onPressed: () {
+                                        repository.preload();
+                                      },
+                                    ),
+                                    const SizedBox(height: 16),
+                                  ],
                                 ],
-                                const SizedBox(height: 12),
-                                FilledButton.tonalIcon(
-                                  icon: const Icon(Icons.refresh_rounded),
-                                  label: const Text('Try Again'),
-                                  onPressed: () {
-                                    repository.preload();
-                                  },
+                              ),
+                            ),
+                            FilledButton.icon(
+                              icon: const Icon(Icons.play_arrow_rounded),
+                              label: const Text('Play'),
+                              style: FilledButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 32,
+                                  vertical: 16,
                                 ),
-                                const SizedBox(height: 16),
-                              ],
-                            ],
-                          ),
-                        ),
-                        FilledButton.icon(
-                          icon: const Icon(Icons.play_arrow_rounded),
-                          label: const Text('Play'),
-                          style: FilledButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 32,
-                              vertical: 16,
+                                textStyle: textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              onPressed: repository.isLoaded
+                                  ? () => _openDifficultySelection(context)
+                                  : null,
                             ),
-                            textStyle: textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          onPressed: repository.isLoaded
-                              ? () => _openDifficultySelection(context)
-                              : null,
+                          ],
                         ),
-                      ],
-                    ),
-                  ),
+                      ),
                       Positioned(
                         top: 12,
                         right: 12,
@@ -159,9 +160,9 @@ class HomeScreen extends StatelessWidget {
 }
 
 void _openSettings(BuildContext context) {
-  Navigator.of(context).push(
-    MaterialPageRoute<void>(builder: (_) => const StrategySettingsPage()),
-  );
+  Navigator.of(
+    context,
+  ).push(MaterialPageRoute<void>(builder: (_) => const StrategySettingsPage()));
 }
 
 void _openDifficultySelection(BuildContext context) {

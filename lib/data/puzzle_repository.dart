@@ -149,9 +149,7 @@ class PuzzleRepository extends ChangeNotifier {
     try {
       final puzzles = await _loadPuzzlesFromAsset(assetPath);
       _cache = puzzles;
-      _cacheById = {
-        for (final puzzle in puzzles) puzzle.id: puzzle,
-      };
+      _cacheById = {for (final puzzle in puzzles) puzzle.id: puzzle};
       _isLoaded = true;
     } catch (e) {
       _error = e.toString();
